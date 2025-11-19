@@ -21,7 +21,11 @@ export default function ProductionStation() {
   // Estado para el loop de generación
   const [currentCodeToRender, setCurrentCodeToRender] = useState<string>('');
 
-  const LOGO_URL = "https://wcczvedassfquzdrmwko.supabase.co/storage/v1/object/public/media/logo-qvisos.jpg";
+  // 1. TUS IMÁGENES (Reemplaza con las URL reales de Supabase)
+  const LOGO_URL = "https://sojkaasvfrzcdkseimqw.supabase.co/storage/v1/object/public/media/logo-qvisos.jpg"; // Tu logo Q
+  
+  // ¡IMPORTANTE! Pega aquí la URL de tu fondo limpio de Canva
+  const BG_TEMPLATE_URL = "https://wcczvedassfquzdrmwko.supabase.co/storage/v1/object/public/media/Se%20Vende1.png"; 
 
   // CONFIGURACIÓN EN PÍXELES FIJOS (Alta Resolución)
   // Definimos un ancho base de 1000px. La altura depende del formato.
@@ -122,89 +126,67 @@ export default function ProductionStation() {
     setIsGenerating(false);
   };
 
-  // --- DISEÑO MAESTRO DEL CARTEL (Rígido en Píxeles) ---
+  // --- DISEÑO HÍBRIDO (Fondo Canva + Datos React) ---
   const PosterTemplate = ({ code }: { code: string }) => (
     <div 
       style={{ 
         width: `${activeFormat.width}px`,
         height: `${activeFormat.height}px`,
-        backgroundColor: 'white',
-        display: 'flex',
-        flexDirection: 'column',
-        border: '20px solid black', // Borde Negro Grueso (Marco de corte)
-        boxSizing: 'border-box',
-        overflow: 'hidden'
+        backgroundImage: `url(${BG_TEMPLATE_URL})`, // Usamos tu diseño
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        position: 'relative',
+        overflow: 'hidden',
+        // Quitamos bordes CSS porque ya vienen en la imagen
+        border: '1px solid #ddd' 
       }}
     >
-      {/* Cabecera */}
+      {/* Ajusta estos valores de TOP/LEFT/WIDTH para que el QR 
+         caiga justo en el hueco blanco de tu diseño 
+      */}
       <div style={{ 
-        height: '20%', 
-        backgroundColor: activeColor.hex, 
-        display: 'flex', 
-        alignItems: 'center', 
-        justifyContent: 'center',
-        borderBottom: '10px solid black'
+        position: 'absolute',
+        top: '35%',    // <--- AJUSTA ESTO (Posición vertical del QR)
+        left: '50%',
+        transform: 'translate(-50%, -50%)', // Centrado exacto
+        width: '55%',  // <--- AJUSTA ESTO (Tamaño del QR)
+        aspectRatio: '1/1'
       }}>
-        <h1 style={{ 
-          color: 'white', 
-          fontFamily: 'Arial, sans-serif', 
-          fontWeight: 900, 
-          fontSize: activeFormat.headerSize, 
-          textTransform: 'uppercase',
-          margin: 0,
-          lineHeight: 1,
-          letterSpacing: '-4px'
-        }}>
-          {activeColor.label}
-        </h1>
-      </div>
-
-      {/* Cuerpo QR */}
-      <div style={{ 
-        flex: 1, 
-        display: 'flex', 
-        alignItems: 'center', 
-        justifyContent: 'center',
-        padding: '40px', // Aumentamos un poco el padding si es necesario
-        backgroundColor: 'white'
-      }}>
-         {/* Usamos QRCodeCanvas para mejor compatibilidad con PDF */}
          <QRCodeCanvas
            value={`https://qvisos.cl/q/${code}`}
-           size={activeFormat.qrSize}
+           size={activeFormat.qrSize} // Se ajustará al contenedor
            level="H"
-           fgColor={activeColor.hex}
+           fgColor="black" // O el color que quieras
            bgColor="#ffffff"
-           includeMargin={false} // No incluir margen extra en el QR
+           includeMargin={false}
+           style={{ width: '100%', height: '100%' }}
            imageSettings={{
-             src: LOGO_URL, // Aseguramos que toma la URL corregida
-             x: undefined, // Dejamos que el componente centre automáticamente en 'x' si no especificamos
-             y: undefined, // Dejamos que el componente centre automáticamente en 'y' si no especificamos
-             height: activeFormat.qrSize * 0.25, // Logo al 25% del tamaño del QR
-             width: activeFormat.qrSize * 0.25,
-             excavate: true, // Esto es CRÍTICO: Recorta el QR para hacer espacio al logo
+             src: LOGO_URL,
+             x: undefined, y: undefined,
+             height: activeFormat.qrSize * 0.24,
+             width: activeFormat.qrSize * 0.24,
+             excavate: true,
            }}
          />
       </div>
 
-      {/* Pie */}
+      {/* Texto del Código Dinámico (Abajo a la derecha según tu diseño) */}
       <div style={{ 
-        height: '15%', 
-        backgroundColor: 'black', 
-        display: 'flex', 
-        alignItems: 'center', 
-        justifyContent: 'space-between',
-        padding: '0 60px'
+        position: 'absolute',
+        bottom: '5%',   // <--- AJUSTA ESTO (Altura del texto)
+        right: '8%',    // <--- AJUSTA ESTO (Margen derecho)
+        textAlign: 'right'
       }}>
-         <div style={{ display: 'flex', flexDirection: 'column' }}>
-            <span style={{ color: '#9ca3af', fontSize: '24px', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '2px' }}>Escanea:</span>
-            <span style={{ color: 'white', fontSize: activeFormat.footerTitle, fontWeight: 'bold', lineHeight: 1 }}>Qvisos.cl</span>
-         </div>
-         <div style={{ display: 'flex', flexDirection: 'column', textAlign: 'right' }}>
-            <span style={{ color: '#9ca3af', fontSize: '24px', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '2px' }}>Código:</span>
-            <span style={{ color: '#facc15', fontSize: activeFormat.footerCode, fontFamily: 'monospace', fontWeight: 'bold', lineHeight: 1 }}>{code}</span>
-         </div>
+         <span style={{ 
+           fontFamily: 'Arial, sans-serif', 
+           fontSize: '30px', 
+           color: '#dc2626', // Rojo (o el color de tu diseño)
+           fontWeight: 'bold' 
+         }}>
+           Código: {code}
+         </span>
       </div>
+
     </div>
   );
 

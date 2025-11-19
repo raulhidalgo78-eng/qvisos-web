@@ -4,6 +4,7 @@ import { createClient } from '@/utils/supabase/server';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import React from 'react';
+import AiChat from '@/components/AiChat'; // Importamos el Chat
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -13,7 +14,6 @@ export default async function AdDetailPage({ params }: Props) {
   const { id } = await params;
   const supabase = await createClient();
 
-  // Consultamos el anuncio por ID
   const { data: ad, error } = await supabase
     .from('ads')
     .select('*')
@@ -21,135 +21,87 @@ export default async function AdDetailPage({ params }: Props) {
     .single();
 
   if (error || !ad) {
-    console.error('Error fetching ad:', error);
     notFound();
   }
 
-  // Estilos simples para la ficha
-  const styles = {
-    container: {
-      padding: '40px 20px',
-      maxWidth: '1024px',
-      margin: 'auto',
-      fontFamily: 'system-ui, sans-serif',
-    },
-    backLink: {
-      display: 'inline-block',
-      marginBottom: '20px',
-      color: '#3b82f6',
-      textDecoration: 'none',
-      fontWeight: '500',
-    },
-    grid: {
-      display: 'grid',
-      gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-      gap: '40px',
-      alignItems: 'start',
-    },
-    imageContainer: {
-      backgroundColor: '#f3f4f6',
-      borderRadius: '12px',
-      overflow: 'hidden',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      minHeight: '300px',
-    },
-    image: {
-      width: '100%',
-      height: 'auto',
-      display: 'block',
-    },
-    info: {
-      display: 'flex',
-      flexDirection: 'column' as const,
-      gap: '15px',
-    },
-    badge: {
-      display: 'inline-block',
-      padding: '5px 10px',
-      backgroundColor: '#e0f2fe',
-      color: '#0369a1',
-      borderRadius: '99px',
-      fontSize: '0.875rem',
-      fontWeight: '600',
-      alignSelf: 'flex-start',
-      textTransform: 'capitalize' as const,
-    },
-    title: {
-      fontSize: '2.5rem',
-      fontWeight: '800',
-      color: '#1a202c',
-      margin: 0,
-      lineHeight: 1.1,
-    },
-    price: {
-      fontSize: '2rem',
-      fontWeight: '700',
-      color: '#10b981',
-      margin: 0,
-    },
-    description: {
-      fontSize: '1.1rem',
-      color: '#4b5563',
-      lineHeight: 1.6,
-      whiteSpace: 'pre-wrap' as const,
-    },
-    button: {
-      marginTop: '20px',
-      padding: '15px',
-      backgroundColor: '#25D366',
-      color: 'white',
-      textAlign: 'center' as const,
-      borderRadius: '8px',
-      fontWeight: 'bold',
-      textDecoration: 'none',
-      fontSize: '1.1rem',
-    }
+  // --- ESTILOS ---
+  const colors = {
+    primary: '#1a202c',
+    success: '#10b981',
+    textSecondary: '#4a5568',
+    border: '#e2e8f0',
+    white: '#ffffff',
+    bg: '#f8f9fa',
   };
 
   return (
-    <div style={styles.container}>
-      <Link href="/" style={styles.backLink}>← Volver al Inicio</Link>
-      
-      <div style={styles.grid}>
-        {/* Imagen */}
-        <div style={styles.imageContainer}>
+    <div style={{ backgroundColor: colors.bg, minHeight: '100vh', padding: '20px' }}>
+      <div style={{ maxWidth: '1024px', margin: '0 auto 20px auto' }}>
+        <Link href="/" style={{ color: '#3b82f6', textDecoration: 'none', fontWeight: '500' }}>
+          ← Volver al Inicio
+        </Link>
+      </div>
+
+      <div style={{ 
+        maxWidth: '1024px', margin: 'auto', backgroundColor: colors.white, 
+        borderRadius: '12px', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
+        overflow: 'hidden', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', gap: '0'
+      }}>
+        
+        {/* COLUMNA IZQUIERDA: IMAGEN */}
+        <div style={{ backgroundColor: '#f3f4f6', minHeight: '400px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           {ad.media_url ? (
-            <img src={ad.media_url} alt={ad.title} style={styles.image} />
+            <img src={ad.media_url} alt={ad.title} style={{ width: '100%', height: '100%', maxHeight: '600px', objectFit: 'contain' }} />
           ) : (
             <span style={{ color: '#9ca3af' }}>Sin imagen</span>
           )}
         </div>
 
-        {/* Información */}
-        <div style={styles.info}>
-          <span style={styles.badge}>{ad.category || 'General'}</span>
-          <h1 style={styles.title}>{ad.title}</h1>
-          <p style={styles.price}>${ad.price?.toLocaleString('es-CL')}</p>
-          
-          <div style={{ borderTop: '1px solid #e5e7eb', paddingTop: '20px' }}>
-            <h3 style={{ fontSize: '1.1rem', fontWeight: '600', marginBottom: '10px' }}>Descripción</h3>
-            <p style={styles.description}>{ad.description}</p>
+        {/* COLUMNA DERECHA: INFO */}
+        <div style={{ padding: '40px', display: 'flex', flexDirection: 'column' }}>
+          <span style={{ alignSelf: 'flex-start', padding: '4px 12px', borderRadius: '99px', backgroundColor: '#e0f2fe', color: '#0369a1', fontSize: '0.8rem', fontWeight: '600', marginBottom: '15px', textTransform: 'capitalize' }}>
+            {ad.category || 'General'}
+          </span>
+
+          <h1 style={{ fontSize: '2.5rem', fontWeight: '800', color: colors.primary, marginBottom: '10px', lineHeight: '1.1' }}>{ad.title}</h1>
+          <p style={{ fontSize: '2rem', fontWeight: 'bold', color: colors.success, marginBottom: '30px' }}>
+            ${ad.price ? ad.price.toLocaleString('es-CL') : 'A convenir'}
+          </p>
+
+          <div style={{ borderTop: `1px solid ${colors.border}`, paddingTop: '20px', marginBottom: '30px', flex: 1 }}>
+            <h3 style={{ fontSize: '1.1rem', fontWeight: '600', color: colors.primary, marginBottom: '10px' }}>Descripción</h3>
+            <p style={{ color: colors.textSecondary, lineHeight: '1.6', whiteSpace: 'pre-wrap' }}>{ad.description}</p>
           </div>
 
-          {ad.contact_phone ? (
-            <a
-              href={`httpshttps://wa.me/${ad.contact_phone.replace(/\D/g, '')}?text=Hola, vi tu anuncio ${encodeURIComponent(ad.title)} en Qvisos.cl`}
-              style={styles.button}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Contactar Vendedor
-            </a>
-          ) : (
-            <button
-              style={{ ...styles.button, backgroundColor: '#9ca3af', cursor: 'not-allowed' }}
-              disabled
-            >
-              Contacto no disponible
-            </button>
-          )}
+          {/* --- ZONA DE ACCIÓN --- */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+            
+            {/* 1. CHATBOT IA */}
+            <AiChat adTitle={ad.title} />
+
+            {/* 2. WHATSAPP (Solo si hay teléfono) */}
+            {ad.contact_phone ? (
+              <a 
+                /* CORRECCIÓN: Aseguramos que solo haya un 'https://' */
+                href={`https://wa.me/${ad.contact_phone.replace(/\D/g, '')}?text=Hola, vi tu anuncio ${encodeURIComponent(ad.title)} en Qvisos.cl`}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  display: 'block', width: '100%', padding: '15px', textAlign: 'center',
+                  backgroundColor: '#25D366', color: 'white', textDecoration: 'none',
+                  borderRadius: '8px', fontSize: '1.1rem', fontWeight: 'bold',
+                  boxShadow: '0 4px 6px -1px rgba(37, 211, 102, 0.3)'
+                }}
+              >
+                Contactar por WhatsApp
+              </a>
+            ) : (
+              <button disabled style={{ width: '100%', padding: '15px', backgroundColor: '#9ca3af', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'not-allowed' }}>
+                Contacto no disponible
+              </button>
+            )}
+          </div>
+
         </div>
       </div>
     </div>

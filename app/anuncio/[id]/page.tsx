@@ -4,7 +4,7 @@ import { createClient } from '@/utils/supabase/server';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import React from 'react';
-import AiChat from '@/components/AiChat'; // <--- 1. IMPORTANTE
+import AiChat from '@/components/AiChat';
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -47,6 +47,7 @@ export default async function AdDetailPage({ params }: Props) {
         overflow: 'hidden', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', gap: '0'
       }}>
         
+        {/* COLUMNA IZQUIERDA: IMAGEN */}
         <div style={{ backgroundColor: '#f3f4f6', minHeight: '400px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           {ad.media_url ? (
             <img src={ad.media_url} alt={ad.title} style={{ width: '100%', height: '100%', maxHeight: '600px', objectFit: 'contain' }} />
@@ -55,6 +56,7 @@ export default async function AdDetailPage({ params }: Props) {
           )}
         </div>
 
+        {/* COLUMNA DERECHA: INFO */}
         <div style={{ padding: '40px', display: 'flex', flexDirection: 'column' }}>
           <span style={{ alignSelf: 'flex-start', padding: '4px 12px', borderRadius: '99px', backgroundColor: '#e0f2fe', color: '#0369a1', fontSize: '0.8rem', fontWeight: '600', marginBottom: '15px', textTransform: 'capitalize' }}>
             {ad.category || 'General'}
@@ -70,12 +72,13 @@ export default async function AdDetailPage({ params }: Props) {
             <p style={{ color: colors.textSecondary, lineHeight: '1.6', whiteSpace: 'pre-wrap' }}>{ad.description}</p>
           </div>
 
+          {/* --- ZONA DE ACCIÓN --- */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
             
-            {/* --- 2. AQUÍ VA EL CHAT --- */}
+            {/* 1. CHATBOT IA */}
             <AiChat adTitle={ad.title} />
-            {/* -------------------------- */}
 
+            {/* 2. WHATSAPP (Solo si hay teléfono) */}
             {ad.contact_phone ? (
               <a 
                 href={`https://wa.me/${ad.contact_phone.replace(/\D/g, '')}?text=Hola, vi tu anuncio ${encodeURIComponent(ad.title)} en Qvisos.cl`}

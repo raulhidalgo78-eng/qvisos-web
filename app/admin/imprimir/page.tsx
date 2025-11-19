@@ -24,9 +24,6 @@ export default function ProductionStation() {
   // 1. TUS IMÁGENES (Reemplaza con las URL reales de Supabase)
   const LOGO_URL = "https://sojkaasvfrzcdkseimqw.supabase.co/storage/v1/object/public/media/logo-qvisos.jpg"; // Tu logo Q
   
-  // ¡IMPORTANTE! Pega aquí la URL de tu fondo limpio de Canva
-  const BG_TEMPLATE_URL = "https://wcczvedassfquzdrmwko.supabase.co/storage/v1/object/public/media/Se%20Vende1.png"; 
-
   // CONFIGURACIÓN EN PÍXELES FIJOS (Alta Resolución)
   // Definimos un ancho base de 1000px. La altura depende del formato.
   const config = {
@@ -123,72 +120,159 @@ export default function ProductionStation() {
     }
 
     pdf.save(`qvisos-${format}-${codesList[0]}.pdf`);
+
+    // ¡ACTUALIZACIÓN CRÍTICA!
+    // Avanzamos el contador para que el siguiente lote no se repita
+    if (startNum !== null) {
+      setStartNum(startNum + quantity);
+    }
+
     setIsGenerating(false);
   };
 
-  // --- DISEÑO HÍBRIDO (Fondo Canva + Datos React) ---
-  const PosterTemplate = ({ code }: { code: string }) => (
-    <div 
-      style={{ 
-        width: `${activeFormat.width}px`,
-        height: `${activeFormat.height}px`,
-        backgroundImage: `url(${BG_TEMPLATE_URL})`, // Usamos tu diseño
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        position: 'relative',
-        overflow: 'hidden',
-        // Quitamos bordes CSS porque ya vienen en la imagen
-        border: '1px solid #ddd' 
-      }}
-    >
-      {/* Ajusta estos valores de TOP/LEFT/WIDTH para que el QR 
-         caiga justo en el hueco blanco de tu diseño 
-      */}
-      <div style={{ 
-        position: 'absolute',
-        top: '35%',    // <--- AJUSTA ESTO (Posición vertical del QR)
-        left: '50%',
-        transform: 'translate(-50%, -50%)', // Centrado exacto
-        width: '55%',  // <--- AJUSTA ESTO (Tamaño del QR)
-        aspectRatio: '1/1'
-      }}>
-         <QRCodeCanvas
-           value={`https://qvisos.cl/q/${code}`}
-           size={activeFormat.qrSize} // Se ajustará al contenedor
-           level="H"
-           fgColor="black" // O el color que quieras
-           bgColor="#ffffff"
-           includeMargin={false}
-           style={{ width: '100%', height: '100%' }}
-           imageSettings={{
-             src: LOGO_URL,
-             x: undefined, y: undefined,
-             height: activeFormat.qrSize * 0.24,
-             width: activeFormat.qrSize * 0.24,
-             excavate: true,
-           }}
-         />
-      </div>
+  // --- DISEÑO MAESTRO "THE MONOLITH" ---
+  const PosterTemplate = ({ code }: { code: string }) => {
+    // Colores dinámicos según intención
+    const mainColor = intent === 'venta' ? '#ef4444' : '#3b82f6'; // Red-500 / Blue-500
+    const darkColor = intent === 'venta' ? '#991b1b' : '#1e3a8a'; // Red-800 / Blue-900
+    const actionText = intent === 'venta' ? 'VENDE' : 'ARRIENDA';
+    const preText = 'SE';
 
-      {/* Texto del Código Dinámico (Abajo a la derecha según tu diseño) */}
-      <div style={{ 
-        position: 'absolute',
-        bottom: '5%',   // <--- AJUSTA ESTO (Altura del texto)
-        right: '8%',    // <--- AJUSTA ESTO (Margen derecho)
-        textAlign: 'right'
-      }}>
-         <span style={{ 
-           fontFamily: 'Arial, sans-serif', 
-           fontSize: '30px', 
-           color: '#dc2626', // Rojo (o el color de tu diseño)
-           fontWeight: 'bold' 
-         }}>
-           Código: {code}
-         </span>
-      </div>
+    return (
+      <div 
+        style={{ 
+          width: `${activeFormat.width}px`,
+          height: `${activeFormat.height}px`,
+          backgroundColor: 'white',
+          display: 'flex',
+          flexDirection: 'column',
+          position: 'relative',
+          overflow: 'hidden',
+          fontFamily: 'Arial, Helvetica, sans-serif' // Fuente segura para PDF
+        }}
+      >
+        {/* 1. FONDO DE SEGURIDAD (Micro-trama) */}
+        <div style={{
+          position: 'absolute', inset: 0, opacity: 0.08,
+          backgroundImage: `radial-gradient(${darkColor} 1px, transparent 1px)`,
+          backgroundSize: '20px 20px'
+        }}></div>
 
-    </div>
-  );
+        {/* 2. BANDA LATERAL DE MARCA (Solo en formato Propiedad) */}
+        {format === 'propiedad' && (
+           <div style={{
+             position: 'absolute', left: 0, top: 0, bottom: 0, width: '60px',
+             backgroundColor: '#111', display: 'flex', alignItems: 'center', justifyContent: 'center'
+           }}>
+              <span style={{ 
+                color: 'white', fontSize: '40px', fontWeight: 900, letterSpacing: '10px',
+                transform: 'rotate(-90deg)', whiteSpace: 'nowrap'
+              }}>
+                QVISOS.CL CERTIFIED
+              </span>
+           </div>
+        )}
+
+        {/* 3. CABECERA DE IMPACTO */}
+        <div style={{ 
+          height: '35%', 
+          backgroundColor: mainColor, 
+          display: 'flex', 
+          flexDirection: 'column',
+          justifyContent: 'center',
+          paddingLeft: format === 'propiedad' ? '100px' : '50px',
+          position: 'relative',
+          clipPath: 'polygon(0 0, 100% 0, 100% 85%, 0% 100%)' // Corte diagonal moderno
+        }}>
+          {/* Texto pequeño "SE" */}
+          <span style={{ 
+            color: 'rgba(255,255,255,0.8)', fontSize: '60px', fontWeight: 900, 
+            textTransform: 'uppercase', lineHeight: 0.8, marginLeft: '5px' 
+          }}>
+            {preText}
+          </span>
+          {/* Texto gigante "VENDE" */}
+          <span style={{ 
+            color: 'white', fontSize: format === 'propiedad' ? '280px' : '180px', fontWeight: 900, 
+            textTransform: 'uppercase', lineHeight: 0.85, letterSpacing: '-10px'
+          }}>
+            {actionText}
+          </span>
+          
+          {/* Sello de Garantía Flotante */}
+          <div style={{
+            position: 'absolute', right: '50px', top: '50%', transform: 'translateY(-50%)',
+            width: '180px', height: '180px', borderRadius: '50%',
+            border: '8px solid white', backgroundColor: darkColor,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            boxShadow: '0 20px 40px rgba(0,0,0,0.2)'
+          }}>
+             <span style={{ color: 'white', fontSize: '30px', fontWeight: 'bold', textAlign: 'center', lineHeight: 1.1 }}>
+               100%<br/>REAL
+             </span>
+          </div>
+        </div>
+
+        {/* 4. NÚCLEO DEL QR */}
+        <div style={{ 
+          flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+          paddingLeft: format === 'propiedad' ? '60px' : '0' 
+        }}>
+           
+           <div style={{
+             padding: '30px', backgroundColor: 'white', borderRadius: '30px',
+             boxShadow: '0 20px 60px -10px rgba(0,0,0,0.15), 0 0 0 4px rgba(0,0,0,0.05)'
+           }}>
+             <QRCodeCanvas
+               value={`https://qvisos.cl/q/${code}`}
+               size={activeFormat.qrSize}
+               level="H"
+               fgColor="#111" // Negro puro para máximo contraste
+               bgColor="#FFFFFF"
+               includeMargin={false}
+               imageSettings={{
+                 src: LOGO_URL,
+                 x: undefined, y: undefined,
+                 height: activeFormat.qrSize * 0.24,
+                 width: activeFormat.qrSize * 0.24,
+                 excavate: true,
+               }}
+             />
+           </div>
+           
+           <p style={{ 
+             marginTop: '40px', fontSize: '50px', color: '#4b5563', fontWeight: 600, 
+             textTransform: 'uppercase', letterSpacing: '2px' 
+           }}>
+             Escanea para ver detalles
+           </p>
+        </div>
+
+        {/* 5. PIE DE DATOS */}
+        <div style={{ 
+          height: '12%', backgroundColor: '#111', 
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          padding: '0 60px 0 120px'
+        }}>
+           <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+              <div style={{ width: '15px', height: '15px', borderRadius: '50%', backgroundColor: '#22c55e' }}></div>
+              <span style={{ color: 'white', fontSize: '40px', fontWeight: 700, letterSpacing: '1px' }}>
+                QVISOS.CL
+              </span>
+           </div>
+           <div style={{ textAlign: 'right' }}>
+              <span style={{ color: '#6b7280', fontSize: '20px', fontWeight: 700, display: 'block', marginBottom: '5px' }}>
+                ID UNICO
+              </span>
+              <span style={{ color: 'white', fontSize: '50px', fontFamily: 'monospace', fontWeight: 700, letterSpacing: '2px' }}>
+                {code}
+              </span>
+           </div>
+        </div>
+
+      </div>
+    );
+  };
 
   if (loading) return <div className="h-screen flex items-center justify-center">Cargando...</div>;
 

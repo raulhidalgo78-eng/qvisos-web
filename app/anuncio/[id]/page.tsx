@@ -83,7 +83,7 @@ export default async function AdDetailPage({ params }: Props) {
             {ad.contact_phone ? (
               <a 
                 /* CORRECCIÓN: Aseguramos que solo haya un 'https://' */
-                href={`https://wa.me/${ad.contact_phone.replace(/\D/g, '')}?text=Hola, vi tu anuncio ${encodeURIComponent(ad.title)} en Qvisos.cl`}
+                href={`wa.me/${ad.contactar por whatsapp.replace/\D/g, '')}?text=Hola, vi tu anuncio ${encodeURIComponent(ad.title)} en Qvisos.cl`}
                 target="_blank"
                 rel="noopener noreferrer"
                 style={{

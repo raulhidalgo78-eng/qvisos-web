@@ -4,7 +4,7 @@ import { createClient } from '@/utils/supabase/server';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import React from 'react';
-import AiChat from '@/components/AiChat'; // Importamos el Chat
+import AiChat from '@/components/AiChat'; 
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -82,7 +82,7 @@ export default async function AdDetailPage({ params }: Props) {
             {/* 2. WHATSAPP (Solo si hay teléfono) */}
             {ad.contact_phone ? (
               <a 
-                /* CORRECCIÓN: Enlace limpio, sin duplicar https */
+                /* Enlace Corregido y Limpio */
                 href={`https://wa.me/${ad.contact_phone.replace(/\D/g, '')}?text=Hola, vi tu anuncio ${encodeURIComponent(ad.title)} en Qvisos.cl`}
                 target="_blank"
                 rel="noopener noreferrer"
@@ -96,4 +96,14 @@ export default async function AdDetailPage({ params }: Props) {
                 Contactar por WhatsApp
               </a>
             ) : (
-              <button disabled style={{ width: '100%', padding: '15px', backgroundColor: '#9ca3af', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'not-allowed' }}></button>
+              <button disabled style={{ width: '100%', padding: '15px', backgroundColor: '#9ca3af', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'not-allowed' }}>
+                Contacto no disponible
+              </button>
+            )}
+          </div>
+
+        </div>
+      </div>
+    </div>
+  );
+}

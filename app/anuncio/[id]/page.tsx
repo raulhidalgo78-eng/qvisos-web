@@ -93,7 +93,7 @@ export default async function AdDetailPage({ params }: Props) {
                   boxShadow: '0 4px 6px -1px rgba(37, 211, 102, 0.3)'
                 }}
               >
-                Contactar por WhatsApp
+                Contactar por WhatsApp (final)
               </a>
             ) : (
               <button disabled style={{ width: '100%', padding: '15px', backgroundColor: '#9ca3af', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'not-allowed' }}>

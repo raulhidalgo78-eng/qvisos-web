@@ -65,7 +65,7 @@ export default async function AdDetailPage({ params }: Props) {
 
           <h1 style={{ fontSize: '2.5rem', fontWeight: '800', color: colors.primary, marginBottom: '10px', lineHeight: '1.1' }}>{ad.title}</h1>
           <p style={{ fontSize: '2rem', fontWeight: 'bold', color: colors.success, marginBottom: '30px' }}>
-            ${ad.price ? ad.price.toLocaleString('es-CL') : 'A convenir'}
+            ${ad.price ? ad.price.toLocaleString('es-CL') : 'A convenir'}// Actualización forzada de WhatsApp
           </p>
 
           <div style={{ borderTop: `1px solid ${colors.border}`, paddingTop: '20px', marginBottom: '30px', flex: 1 }}>

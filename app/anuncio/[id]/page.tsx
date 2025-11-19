@@ -82,8 +82,8 @@ export default async function AdDetailPage({ params }: Props) {
             {/* 2. WHATSAPP (Solo si hay teléfono) */}
             {ad.contact_phone ? (
               <a 
-                /* CORRECCIÓN: Aseguramos que solo haya un 'https://' */
-                href={`wa.me/${ad.contactar por whatsapp.replace/\D/g, '')}?text=Hola, vi tu anuncio ${encodeURIComponent(ad.title)} en Qvisos.cl`}
+                /* CORRECCIÓN: Enlace limpio, sin duplicar https */
+                href={`https://wa.me/${ad.contact_phone.replace(/\D/g, '')}?text=Hola, vi tu anuncio ${encodeURIComponent(ad.title)} en Qvisos.cl`}
                 target="_blank"
                 rel="noopener noreferrer"
                 style={{
@@ -96,14 +96,4 @@ export default async function AdDetailPage({ params }: Props) {
                 Contactar por WhatsApp
               </a>
             ) : (
-              <button disabled style={{ width: '100%', padding: '15px', backgroundColor: '#9ca3af', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'not-allowed' }}>
-                Contacto no disponible
-              </button>
-            )}
-          </div>
-
-        </div>
-      </div>
-    </div>
-  );
-}
+              <button disabled style={{ width: '100%', padding: '15px', backgroundColor: '#9ca3af', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'not-allowed' }}></button>

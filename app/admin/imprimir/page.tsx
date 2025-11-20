@@ -76,57 +76,89 @@ export default function ProductionStation() {
   
   const codesList = generateCodes();
 
+  // --- FUNCIÓN AUXILIAR ---
+  const getBase64FromUrl = async (url: string): Promise<string> => {
+    const res = await fetch(url);
+    const blob = await res.blob();
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(blob);
+      reader.onloadend = () => resolve(reader.result as string);
+    });
+  };
+
+  // --- GENERADOR PDF CON FONDO DE IMAGEN ---
   const handleGeneratePDF = async () => {
     setIsGenerating(true);
     const supabase = createClient();
-    const orientation = activeFormat.height > activeFormat.width ? 'p' : 'l';
     
-    // Crear PDF
+    // 1. CONFIGURACIÓN (URL del Fondo)
+    // ¡IMPORTANTE! Reemplaza esto con tu URL real de la plantilla limpia
+    const BG_IMAGE_URL = "https://sojkaasvfrzcdkseimqw.supabase.co/storage/v1/object/public/media/Se%20Vende2.jpg"; // Ejemplo
+    
+    const orientation = activeFormat.height > activeFormat.width ? 'p' : 'l';
     const pdf = new jsPDF({
       orientation: orientation,
       unit: 'mm',
       format: activeFormat.pdfFormat
     });
 
-    // Registrar en BD
+    // 2. Cargar la imagen de fondo en memoria (Base64)
+    let bgBase64 = '';
+    try {
+      bgBase64 = await getBase64FromUrl(BG_IMAGE_URL);
+    } catch (e) {
+      console.error("Error cargando fondo:", e);
+      alert("Error cargando la imagen de fondo. Verifica la URL.");
+      setIsGenerating(false);
+      return;
+    }
+
+    // 3. Registrar en BD
     const records = codesList.map(code => ({ code, status: 'new' }));
     await supabase.from('qr_codes').upsert(records, { onConflict: 'code', ignoreDuplicates: true });
 
-    // Generar páginas
+    // 4. Generar Páginas
     for (let i = 0; i < codesList.length; i++) {
       const code = codesList[i];
-      setCurrentCodeToRender(code);
-      
-      // Esperar renderizado (crítico para que el QR se dibuje)
-      await new Promise(resolve => setTimeout(resolve, 300));
+      if (i > 0) pdf.addPage(activeFormat.pdfFormat, orientation);
 
-      if (posterRef.current) {
-        try {
-          const canvas = await html2canvas(posterRef.current, {
-            scale: 2, // Alta calidad
-            useCORS: true, // Permitir imágenes externas
-            backgroundColor: '#ffffff',
-            logging: false
-          });
+      const w = activeFormat.pdfFormat[0];
+      const h = activeFormat.pdfFormat[1];
+
+      // A. DIBUJAR FONDO (Imagen Canva)
+      // Ocupa el 100% de la página
+      pdf.addImage(bgBase64, 'JPEG', 0, 0, w, h);
+
+      // B. DIBUJAR QR (Sobre la imagen)
+      const qrCanvas = document.getElementById(`qr-canvas-${code}`) as HTMLCanvasElement;
+      if (qrCanvas) {
+          const qrData = qrCanvas.toDataURL('image/png');
           
-          const imgData = canvas.toDataURL('image/jpeg', 0.9);
+          // CALIBRACIÓN: Ajusta estos valores según tu diseño
+          // (Estos valores funcionan para el diseño centrado de "Se Vende")
+          const qrSize = w * 0.55; // El QR ocupa el 55% del ancho
+          const qrX = (w - qrSize) / 2; // Centrado horizontal
+          const qrY = h * 0.38; // Posición vertical (aprox 38% desde arriba)
           
-          if (i > 0) pdf.addPage(activeFormat.pdfFormat, orientation);
-          pdf.addImage(imgData, 'JPEG', 0, 0, activeFormat.pdfFormat[0], activeFormat.pdfFormat[1]);
-        } catch (err) {
-          console.error("Error capturando página:", err);
-        }
+          pdf.addImage(qrData, 'PNG', qrX, qrY, qrSize, qrSize);
       }
+
+      // C. DIBUJAR CÓDIGO (Texto)
+      pdf.setTextColor(220, 38, 38); // Rojo (o el color que combine)
+      pdf.setFont("helvetica", "bold");
+      pdf.setFontSize(w / 12); // Tamaño relativo
+      
+      // Posición: Abajo a la derecha (ajusta según tu diseño)
+      const text = `Código: ${code}`;
+      const textW = pdf.getTextWidth(text);
+      pdf.text(text, w - textW - 20, h - 20); 
     }
 
-    pdf.save(`qvisos-${format}-${codesList[0]}.pdf`);
-
-    // ¡ACTUALIZACIÓN CRÍTICA!
-    // Avanzamos el contador para que el siguiente lote no se repita
-    if (startNum !== null) {
-      setStartNum(startNum + quantity);
-    }
-
+    // 5. Avanzar contador y Descargar
+    if (startNum !== null) setStartNum(startNum + quantity);
+    
+    pdf.save(`qvisos-lote-${codesList[0]}.pdf`);
     setIsGenerating(false);
   };
 
@@ -326,6 +358,26 @@ export default function ProductionStation() {
       <div style={{ position: 'fixed', top: '-9999px', left: '-9999px' }}>
          <div ref={posterRef}>
             {currentCodeToRender && <PosterTemplate code={currentCodeToRender} />}
+         </div>
+         {/* Contenedor para los QR que se usarán en el PDF */}
+         <div>
+            {codesList.map(code => (
+                <QRCodeCanvas
+                    key={code}
+                    id={`qr-canvas-${code}`}
+                    value={`https://qvisos.cl/q/${code}`}
+                    size={512}
+                    level="H"
+                    includeMargin={false}
+                    fgColor={activeColor.hex}
+                    imageSettings={{
+                        src: LOGO_URL,
+                        height: 128,
+                        width: 128,
+                        excavate: true,
+                    }}
+                />
+            ))}
          </div>
       </div>
 

@@ -100,9 +100,9 @@ export default function ProductionStation() {
       }
 
       // C. DIBUJAR CÓDIGO DE TEXTO
-      pdf.setTextColor(255, 0, 0); // Rojo (Ajusta si quieres otro color)
+      pdf.setTextColor(220, 38, 38); // Rojo
       pdf.setFont("helvetica", "bold");
-      pdf.setFontSize(120); // Tamaño de letra gigante
+      pdf.setFontSize(80); // Reducido de 120 a 80 para mejor ajuste
 
       const text = `CÓDIGO: ${codesList[i]}`;
       const textWidth = pdf.getTextWidth(text);

@@ -89,16 +89,43 @@ export default function ProductionStation() {
     setIsGenerating(true);
     const supabase = createClient();
 
+    // CONFIGURACIÓN DE POSICIONES (Ajustable)
+    const LAYOUTS = {
+      portrait: {
+        // A4 Vertical: 210mm x 297mm
+        qr: {
+          size: 140, // QR Grande
+          y: 85      // Posición vertical (bajamos un poco del header)
+        },
+        text: {
+          size: 24,  // Tamaño fuente para el ID Code box
+          x: 178,    // Cerca del borde derecho (ajustar según recuadro)
+          y: 284,    // Al fondo, dentro del footer negro/blanco
+          color: [0, 0, 0] // Negro (para fondo blanco)
+        }
+      },
+      landscape: {
+        // A4 Horizontal: 297mm x 210mm
+        qr: {
+          size: 110, // Un poco más chico por la altura
+          y: 55      // Centrado verticalmente
+        },
+        text: {
+          size: 24,
+          x: 265,    // Cerca del borde derecho horizontal
+          y: 198,    // Al fondo
+          color: [0, 0, 0]
+        }
+      }
+    };
+
     // Configuración dinámica según orientación
     const isPortrait = currentTemplate.orientation === 'portrait';
     const pageWidth = isPortrait ? 210 : 297; // mm (A4)
     const pageHeight = isPortrait ? 297 : 210; // mm (A4)
 
-    // Ajustes de posición del QR y Texto
-    // Estos valores son aproximados para A4, ajústalos según tu diseño exacto
-    const qrSize = isPortrait ? 120 : 100; // mm
-    const qrY = isPortrait ? 80 : 50;     // mm
-    const textY = isPortrait ? 220 : 170; // mm
+    // Seleccionar layout actual
+    const layout = LAYOUTS[currentTemplate.orientation];
 
     const pdf = new jsPDF({
       orientation: currentTemplate.orientation,
@@ -135,20 +162,22 @@ export default function ProductionStation() {
       const canvas = document.getElementById(`qr-canvas-${codesList[i]}`) as HTMLCanvasElement;
       if (canvas) {
         const qrData = canvas.toDataURL('image/png');
-        const x = (pageWidth - qrSize) / 2;
-        pdf.addImage(qrData, 'PNG', x, qrY, qrSize, qrSize);
+        // Centrar QR horizontalmente siempre
+        const qrX = (pageWidth - layout.qr.size) / 2;
+        pdf.addImage(qrData, 'PNG', qrX, layout.qr.y, layout.qr.size, layout.qr.size);
       }
 
       // C. DIBUJAR CÓDIGO DE TEXTO
-      pdf.setTextColor(220, 38, 38); // Rojo
+      pdf.setFontSize(layout.text.size);
+      // @ts-ignore
+      pdf.setTextColor(...layout.text.color);
       pdf.setFont("helvetica", "bold");
-      pdf.setFontSize(isPortrait ? 60 : 50);
 
-      const text = `CÓDIGO: ${codesList[i]}`;
-      const textWidth = pdf.getTextWidth(text);
-      const textX = (pageWidth - textWidth) / 2;
-
-      pdf.text(text, textX, textY);
+      // Usamos align: 'center' para que la coordenada X sea el centro del recuadro blanco (o aproximado)
+      // Nota: Si x es el centro del recuadro, align center es correcto.
+      // Si x es el borde derecho, align right sería mejor. El prompt dice "Cerca del borde derecho", pero pide "align: center".
+      // Asumiremos que la coordenada X dada es el punto central deseado para el texto.
+      pdf.text(codesList[i], layout.text.x, layout.text.y, { align: 'center' });
     }
 
     if (startNum !== null) setStartNum(startNum + quantity);

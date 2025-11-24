@@ -38,10 +38,19 @@ export default function ProductionStation() {
   // Inicializar secuencia desde BD
   useEffect(() => {
     const init = async () => {
-      const supabase = createClient();
-      const { data } = await supabase.from('qr_codes').select('code').order('code', { ascending: false }).limit(1).single();
+      // Importamos dinámicamente la server action
+      const { getLastQrCode } = await import('@/app/actions/get-last-qr');
+      const lastCode = await getLastQrCode();
+
       let next = 1;
-      if (data?.code) next = parseInt(data.code.split('-')[1]) + 1;
+      if (lastCode) {
+        // Asumimos formato QV-XXX
+        const parts = lastCode.split('-');
+        if (parts.length > 1) {
+          const num = parseInt(parts[1]);
+          if (!isNaN(num)) next = num + 1;
+        }
+      }
       setStartNum(next);
       setLoading(false);
     };
@@ -179,7 +188,7 @@ export default function ProductionStation() {
           <img
             src={BG_IMAGE_URL}
             alt="Plantilla"
-            className="w-full max-w-[350px] mx-auto h-auto shadow-2xl border border-gray-300 rounded-md"
+            className="w-full max-w-[350px] h-auto mx-auto shadow-2xl border-4 border-gray-800 rounded-lg"
           />
         </div>
       </div>

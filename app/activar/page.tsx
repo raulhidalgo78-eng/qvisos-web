@@ -1,130 +1,48 @@
-// Archivo: app/activar/page.tsx
+'use client';
 
-'use client'; 
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 
-import React, { useState } from 'react';
-import { useRouter } from 'next/navigation'; // <-- (1/3) NUEVA IMPORTACIÓN
+export default function ActivarPage() {
+    const [code, setCode] = useState('');
+    const router = useRouter();
 
-export default function ActivarKitPage() {
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
-    const [activationCode, setActivationCode] = useState('');
-    const [loading, setLoading] = useState(false);
-    const [message, setMessage] = useState('');
-    const [isSuccess, setIsSuccess] = useState(false);
-
-    const router = useRouter(); // <-- (2/3) INICIALIZAR EL ROUTER
-
-    const handleSubmit = async (e: React.FormEvent) => {
+    const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        setLoading(true);
-        setMessage('');
-        setIsSuccess(false);
-
-        try {
-            const response = await fetch('/api/activate-kit', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, password, activationCode }),
-            });
-
-            const data = await response.json();
-            
-            if (response.ok) {
-                setMessage('✅ Activación Exitosa! Redirigiendo a la creación de tu anuncio...');
-                setIsSuccess(true);
-                
-                // --- (3/3) NUEVA LÓGICA DE REDIRECCIÓN ---
-                // Espera 2 segundos para que el usuario lea el mensaje
-                setTimeout(() => {
-                    router.push('/anuncio'); // Redirige a la página de crear anuncio
-                }, 2000); // 2000ms = 2 segundos
-                
-            } else {
-                setMessage(`❌ Error: ${data.message || 'Intente nuevamente.'}`);
-            }
-        
-        } catch (error) {
-            console.error("Error en el fetch:", error);
-            setMessage('❌ Error de conexión con el servidor. Revisa la terminal.');
-        } finally {
-            setLoading(false);
-        }
+        if (!code.trim()) return;
+        // Redirige a la ruta dinámica del QR
+        router.push(`/q/${code.trim().toUpperCase()}`);
     };
 
-    // ... (el resto del código JSX del return es idéntico) ...
-    
     return (
-        <div style={{ padding: '40px', maxWidth: '500px', margin: '50px auto', fontFamily: 'sans-serif', border: '1px solid #ddd', borderRadius: '8px' }}>
-            <h1 style={{ textAlign: 'center', color: '#0070f3' }}>
-                Activar Kit QR | Qvisos
-            </h1>
-            <p style={{ textAlign: 'center', marginBottom: '30px' }}>
-                Ingresa tu código único y crea tu cuenta de vendedor.
-            </p>
-
-            <form onSubmit={handleSubmit}>
-                
-                <div style={{ marginBottom: '15px' }}>
-                    <label style={{ display: 'block', marginBottom: '5px' }}>Email:</label>
-                    <input 
-                        type="email" 
-                        value={email} 
-                        onChange={(e) => setEmail(e.target.value)} 
-                        required 
-                        disabled={loading}
-                        style={{ width: '100%', padding: '12px', border: '1px solid #ccc' }}
-                    />
-                </div>
-                
-                <div style={{ marginBottom: '15px' }}>
-                    <label style={{ display: 'block', marginBottom: '5px' }}>Contraseña (mín. 6 caracteres):</label>
-                    <input 
-                        type="password" 
-                        value={password} 
-                        onChange={(e) => setPassword(e.target.value)} 
-                        required 
-                        minLength={6}
-                        disabled={loading}
-                        style={{ width: '100%', padding: '12px', border: '1px solid #ccc' }}
-                    />
-                </div>
-                
-                <div style={{ marginBottom: '25px' }}>
-                    <label style={{ display: 'block', marginBottom: '5px' }}>Código de Activación (Kit QR):</label>
-                    <input 
-                        type="text" 
-                        value={activationCode} 
-                        onChange={(e) => setActivationCode(e.target.value.toUpperCase())} 
-                        required 
-                        disabled={loading}
-                        style={{ width: '100%', padding: '12px', border: '2px solid #0070f3' }}
-                    />
-                </div>
-
-                <button 
-                    type="submit" 
-                    disabled={loading || isSuccess} // Deshabilitado si ya fue exitoso
-                    style={{ width: '100%', padding: '12px', backgroundColor: isSuccess ? '#4CAF50' : '#0070f3', color: 'white', border: 'none', cursor: 'pointer', fontSize: '16px' }}
-                >
-                    {loading ? 'Validando Kit...' : 'Activar Cuenta y Kit'}
-                </button>
-            </form>
-
-            {message && (
-                <p style={{ 
-                    color: isSuccess ? 'green' : 'red', 
-                    marginTop: '20px', 
-                    fontWeight: 'bold',
-                    textAlign: 'center'
-                }}>
-                    {message}
+        <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+            <div className="max-w-md w-full bg-white rounded-lg shadow-md p-8">
+                <h1 className="text-2xl font-bold text-center mb-6 text-gray-800">
+                    Activar Letrero
+                </h1>
+                <p className="text-center text-gray-600 mb-6">
+                    Ingresa el código que aparece en tu letrero (ej: QV-001)
                 </p>
-            )}
 
-            <p style={{ marginTop: '30px', fontSize: '12px', textAlign: 'center', color: '#666' }}>
-                *Usa el código de prueba **TEST-QVISOS-123** para la primera activación.
-            </p>
+                <form onSubmit={handleSubmit} className="space-y-4">
+                    <div>
+                        <input
+                            type="text"
+                            placeholder="QV-..."
+                            value={code}
+                            onChange={(e) => setCode(e.target.value)}
+                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition-all text-center text-lg uppercase font-mono"
+                        />
+                    </div>
+                    <button
+                        type="submit"
+                        disabled={!code}
+                        className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-4 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        Continuar
+                    </button>
+                </form>
+            </div>
         </div>
     );
 }

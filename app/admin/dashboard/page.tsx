@@ -3,12 +3,13 @@ import React from 'react';
 import Link from 'next/link';
 import { createClient } from '@/utils/supabase/server';
 import { redirect } from 'next/navigation';
-import ApproveButton from './ApproveButton'; 
+import ApproveButton from './ApproveButton';
+import AdManageButtons from '@/components/AdManageButtons';
 
-const ADMIN_USER_ID = '6411ba0e-5e36-4e4e-aa1f-4183a2f88d45'; 
+const ADMIN_USER_ID = '6411ba0e-5e36-4e4e-aa1f-4183a2f88d45';
 
 export default async function AdminDashboard() {
-  
+
   const supabase = await createClient();
 
   // --- ¡ARREGLO DE SEGURIDAD! ---
@@ -31,7 +32,7 @@ export default async function AdminDashboard() {
     .select('*')
     // --- ¡LA CORRECCIÓN ESTÁ AQUÍ! ---
     .eq('status', 'pending_verification'); // De 'pending' a 'pendiente'
-    // ---------------------------------
+  // ---------------------------------
 
   if (error) {
     console.error('Error fetching pending ads:', error);
@@ -40,7 +41,7 @@ export default async function AdminDashboard() {
   return (
     <div style={{ padding: '20px' }}>
       <h1>Panel de Administrador</h1>
-      
+
       <div style={{ display: 'flex', gap: '20px', margin: '10px 0 20px 0' }}>
         <Link href="/" style={{ color: '#0070f3', textDecoration: 'underline' }}>
           ← Ir al Inicio
@@ -51,7 +52,7 @@ export default async function AdminDashboard() {
       </div>
 
       <p>Bienvenido, Admin. Aquí están los anuncios por aprobar.</p>
-      
+
       <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '20px' }}>
         <thead>
           <tr style={{ background: '#f4f4f4' }}>
@@ -67,7 +68,10 @@ export default async function AdminDashboard() {
                 <td style={{ border: '1px solid #ddd', padding: '8px' }}>{ad.title}</td>
                 <td style={{ border: '1px solid #ddd', padding: '8px' }}>{ad.status}</td>
                 <td style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'center' }}>
-                  <ApproveButton adId={ad.id} />
+                  <div className="flex flex-col gap-2 items-center">
+                    <ApproveButton adId={ad.id} />
+                    <AdManageButtons adId={ad.id} currentStatus={ad.status} isOwnerOrAdmin={true} />
+                  </div>
                 </td>
               </tr>
             ))

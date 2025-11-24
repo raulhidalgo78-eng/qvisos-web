@@ -179,7 +179,7 @@ export default function ProductionStation() {
           <img
             src={BG_IMAGE_URL}
             alt="Plantilla"
-            className="w-full max-w-md mx-auto h-auto shadow-lg rounded-lg border border-gray-200"
+            className="w-full max-w-[350px] mx-auto h-auto shadow-2xl border border-gray-300 rounded-md"
           />
         </div>
       </div>

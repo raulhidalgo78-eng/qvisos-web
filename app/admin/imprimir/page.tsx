@@ -11,6 +11,7 @@ export default function ProductionStation() {
   const [quantity, setQuantity] = useState(1);
   // Solo usamos formato Propiedad para este diseño de Canva (50x70)
   const [format, setFormat] = useState<'propiedad'>('propiedad');
+  const [category, setCategory] = useState('venta_propiedad'); // Estado para la categoría
   const [isGenerating, setIsGenerating] = useState(false);
   const [loading, setLoading] = useState(true);
 
@@ -79,8 +80,12 @@ export default function ProductionStation() {
       return;
     }
 
-    // 3. Registrar códigos en BD
-    const records = codesList.map(code => ({ code, status: 'new' }));
+    // 3. Registrar códigos en BD con CATEGORÍA
+    const records = codesList.map(code => ({
+      code,
+      status: 'new',
+      category: category // Guardamos la categoría seleccionada
+    }));
     await supabase.from('qr_codes').upsert(records, { onConflict: 'code', ignoreDuplicates: true });
 
     // 4. Generar Páginas
@@ -125,8 +130,8 @@ export default function ProductionStation() {
       <div className="w-full max-w-4xl bg-white p-8 rounded-xl shadow-xl">
         <h1 className="text-3xl font-black text-gray-800 mb-6">🖨️ Impresión con Plantilla</h1>
 
-        <div className="flex gap-4 mb-8 items-end">
-          <div className="flex-1">
+        <div className="flex gap-4 mb-8 items-end flex-wrap">
+          <div className="flex-1 min-w-[200px]">
             <label className="block text-sm font-bold text-gray-500 mb-2">CANTIDAD</label>
             <input
               type="number" min="1" max="50"
@@ -135,7 +140,22 @@ export default function ProductionStation() {
               className="w-full p-4 border-2 border-gray-300 rounded-lg text-2xl font-bold text-center"
             />
           </div>
-          <div className="flex-1 pb-4">
+
+          <div className="flex-1 min-w-[200px]">
+            <label className="block text-sm font-bold text-gray-500 mb-2">CATEGORÍA / TIPO</label>
+            <select
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              className="w-full p-4 border-2 border-gray-300 rounded-lg text-lg font-medium bg-white"
+            >
+              <option value="venta_propiedad">🏠 Venta Propiedad</option>
+              <option value="arriendo_propiedad">🔑 Arriendo Propiedad</option>
+              <option value="venta_auto">🚗 Venta Auto</option>
+              <option value="generico">🌐 Genérico (Usuario Elige)</option>
+            </select>
+          </div>
+
+          <div className="flex-1 pb-4 min-w-[200px]">
             <p className="text-lg text-gray-600">
               Generando del <strong>{codesList[0]}</strong> al <strong>{codesList[codesList.length - 1]}</strong>
             </p>
@@ -156,7 +176,11 @@ export default function ProductionStation() {
         {/* VISTA PREVIA DE LA IMAGEN DE FONDO */}
         <div className="mt-8 text-center">
           <p className="text-xs text-gray-400 mb-2 uppercase tracking-widest">Plantilla Activa</p>
-          <img src={BG_IMAGE_URL} alt="Plantilla" className="w-64 h-auto mx-auto border shadow-sm" />
+          <img
+            src={BG_IMAGE_URL}
+            alt="Plantilla"
+            className="w-full max-w-md mx-auto h-auto shadow-lg rounded-lg border border-gray-200"
+          />
         </div>
       </div>
 

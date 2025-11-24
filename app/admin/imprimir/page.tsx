@@ -9,24 +9,41 @@ import jsPDF from 'jspdf';
 export default function ProductionStation() {
   const [startNum, setStartNum] = useState<number | null>(null);
   const [quantity, setQuantity] = useState(1);
-  // Solo usamos formato Propiedad para este diseño de Canva (50x70)
-  const [format, setFormat] = useState<'propiedad'>('propiedad');
-  const [category, setCategory] = useState('venta_propiedad'); // Estado para la categoría
+  const [category, setCategory] = useState('venta_propiedad');
   const [isGenerating, setIsGenerating] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  // 1. TUS IMÁGENES (Fondo y Logo)
-  const BG_IMAGE_URL = "https://wcczvedassfquzdrmwko.supabase.co/storage/v1/object/public/media/Se%20Vende1.png";
-  const LOGO_URL = "https://sojkaasvfrzcdkseimqw.supabase.co/storage/v1/object/public/media/logo-qvisos.jpg";
+  // Estado para la plantilla actual
+  const [currentTemplate, setCurrentTemplate] = useState({
+    url: 'https://wcczvedassfquzdrmwko.supabase.co/storage/v1/object/public/media/venta_prop_qvisos.png',
+    orientation: 'portrait' as 'portrait' | 'landscape'
+  });
 
-  // Configuración Fija para tu diseño de 50x70
-  const config = {
-    width: 500, // mm
-    height: 700, // mm
-    qrSize: 300, // mm (Tamaño del QR en el PDF)
-    qrY: 200,   // mm (Posición vertical del QR desde arriba)
-    textY: 600  // mm (Posición vertical del texto del código)
+  // MAPA DE PLANTILLAS
+  const TEMPLATES: Record<string, { url: string, orientation: 'portrait' | 'landscape' }> = {
+    venta_propiedad: {
+      url: 'https://wcczvedassfquzdrmwko.supabase.co/storage/v1/object/public/media/venta_prop_qvisos.png',
+      orientation: 'portrait'
+    },
+    arriendo_propiedad: {
+      url: 'https://wcczvedassfquzdrmwko.supabase.co/storage/v1/object/public/media/arriendo_propiedades_qvisos.png',
+      orientation: 'portrait'
+    },
+    venta_auto: {
+      url: 'https://wcczvedassfquzdrmwko.supabase.co/storage/v1/object/public/media/venta_auto_qvisos.png',
+      orientation: 'landscape'
+    },
+    generico: {
+      url: 'https://wcczvedassfquzdrmwko.supabase.co/storage/v1/object/public/media/venta_prop_qvisos.png', // Fallback
+      orientation: 'portrait'
+    }
   };
+
+  // Efecto para cambiar la plantilla cuando cambia la categoría
+  useEffect(() => {
+    const template = TEMPLATES[category] || TEMPLATES['generico'];
+    setCurrentTemplate(template);
+  }, [category]);
 
   // Generador de códigos
   const generateCodes = () => {
@@ -72,67 +89,76 @@ export default function ProductionStation() {
     setIsGenerating(true);
     const supabase = createClient();
 
-    // 1. Preparar PDF
+    // Configuración dinámica según orientación
+    const isPortrait = currentTemplate.orientation === 'portrait';
+    const pageWidth = isPortrait ? 210 : 297; // mm (A4)
+    const pageHeight = isPortrait ? 297 : 210; // mm (A4)
+
+    // Ajustes de posición del QR y Texto
+    // Estos valores son aproximados para A4, ajústalos según tu diseño exacto
+    const qrSize = isPortrait ? 120 : 100; // mm
+    const qrY = isPortrait ? 80 : 50;     // mm
+    const textY = isPortrait ? 220 : 170; // mm
+
     const pdf = new jsPDF({
-      orientation: 'p',
+      orientation: currentTemplate.orientation,
       unit: 'mm',
-      format: [config.width, config.height]
+      format: 'a4'
     });
 
-    // 2. Cargar Fondo (Plantilla Canva)
+    // Cargar Fondo
     let bgData = '';
     try {
-      bgData = await getBase64FromUrl(BG_IMAGE_URL);
+      bgData = await getBase64FromUrl(currentTemplate.url);
     } catch (e) {
       alert("Error cargando la imagen de fondo. Revisa la URL.");
       setIsGenerating(false);
       return;
     }
 
-    // 3. Registrar códigos en BD con CATEGORÍA
+    // Registrar códigos en BD
     const records = codesList.map(code => ({
       code,
       status: 'new',
-      category: category // Guardamos la categoría seleccionada
+      category: category
     }));
     await supabase.from('qr_codes').upsert(records, { onConflict: 'code', ignoreDuplicates: true });
 
-    // 4. Generar Páginas
+    // Generar Páginas
     for (let i = 0; i < codesList.length; i++) {
-      if (i > 0) pdf.addPage([config.width, config.height], 'p');
+      if (i > 0) pdf.addPage([pageWidth, pageHeight], currentTemplate.orientation);
 
-      // A. DIBUJAR FONDO (Imagen Completa)
-      pdf.addImage(bgData, 'PNG', 0, 0, config.width, config.height);
+      // A. DIBUJAR FONDO
+      pdf.addImage(bgData, 'PNG', 0, 0, pageWidth, pageHeight);
 
       // B. DIBUJAR QR
       const canvas = document.getElementById(`qr-canvas-${codesList[i]}`) as HTMLCanvasElement;
       if (canvas) {
         const qrData = canvas.toDataURL('image/png');
-        // Centrar QR horizontalmente
-        const x = (config.width - config.qrSize) / 2;
-        pdf.addImage(qrData, 'PNG', x, config.qrY, config.qrSize, config.qrSize);
+        const x = (pageWidth - qrSize) / 2;
+        pdf.addImage(qrData, 'PNG', x, qrY, qrSize, qrSize);
       }
 
       // C. DIBUJAR CÓDIGO DE TEXTO
       pdf.setTextColor(220, 38, 38); // Rojo
       pdf.setFont("helvetica", "bold");
-      pdf.setFontSize(80); // Reducido de 120 a 80 para mejor ajuste
+      pdf.setFontSize(isPortrait ? 60 : 50);
 
       const text = `CÓDIGO: ${codesList[i]}`;
       const textWidth = pdf.getTextWidth(text);
-      const textX = (config.width - textWidth) / 2; // Centrado
+      const textX = (pageWidth - textWidth) / 2;
 
-      // Ajustamos la posición Y para que quede abajo del QR (o donde tu diseño lo pida)
-      pdf.text(text, textX, config.textY);
+      pdf.text(text, textX, textY);
     }
 
-    // 5. Finalizar
     if (startNum !== null) setStartNum(startNum + quantity);
-    pdf.save(`qvisos-lote-${codesList[0]}.pdf`);
+    pdf.save(`qvisos-${category}-${codesList[0]}.pdf`);
     setIsGenerating(false);
   };
 
   if (loading) return <div className="h-screen flex items-center justify-center">Cargando...</div>;
+
+  const LOGO_URL = "https://sojkaasvfrzcdkseimqw.supabase.co/storage/v1/object/public/media/logo-qvisos.jpg";
 
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col items-center p-10 font-sans">
@@ -184,11 +210,12 @@ export default function ProductionStation() {
 
         {/* VISTA PREVIA DE LA IMAGEN DE FONDO */}
         <div className="mt-8 text-center">
-          <p className="text-xs text-gray-400 mb-2 uppercase tracking-widest">Plantilla Activa</p>
+          <p className="text-xs text-gray-400 mb-2 uppercase tracking-widest">Plantilla Activa ({currentTemplate.orientation})</p>
           <img
-            src={BG_IMAGE_URL}
+            src={currentTemplate.url}
             alt="Plantilla"
-            className="w-full max-w-[350px] h-auto mx-auto shadow-2xl border-4 border-gray-800 rounded-lg"
+            className={`w-full h-auto mx-auto shadow-2xl border-4 border-gray-800 rounded-lg ${currentTemplate.orientation === 'landscape' ? 'max-w-[500px]' : 'max-w-[350px]'
+              }`}
           />
         </div>
       </div>

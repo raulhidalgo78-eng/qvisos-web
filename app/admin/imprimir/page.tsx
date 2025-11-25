@@ -92,28 +92,28 @@ export default function ProductionStation() {
     // CONFIGURACIÓN DE POSICIONES (Ajustable)
     const LAYOUTS = {
       portrait: {
-        // A4 Vertical: 210mm x 297mm
+        // A4 Vertical
         qr: {
-          size: 140, // QR Grande
-          y: 85      // Posición vertical (bajamos un poco del header)
+          size: 140,
+          y: 85 // Centrado en la parte blanca superior
         },
         text: {
-          size: 24,  // Tamaño fuente para el ID Code box
-          x: 178,    // Cerca del borde derecho (ajustar según recuadro)
-          y: 284,    // Al fondo, dentro del footer negro/blanco
-          color: [0, 0, 0] // Negro (para fondo blanco)
+          size: 30,       // Tamaño mucho más pequeño para el recuadro ID
+          x: 182,         // Casi al borde derecho (ajustar si se sale)
+          y: 288,         // Casi al fondo (ajustar si toca el borde)
+          color: [0, 0, 0]
         }
       },
       landscape: {
-        // A4 Horizontal: 297mm x 210mm
+        // A4 Horizontal (Auto)
         qr: {
-          size: 110, // Un poco más chico por la altura
-          y: 55      // Centrado verticalmente
+          size: 110,
+          y: 45
         },
         text: {
-          size: 24,
-          x: 265,    // Cerca del borde derecho horizontal
-          y: 198,    // Al fondo
+          size: 30,
+          x: 270,         // Esquina inferior derecha horizontal
+          y: 200,
           color: [0, 0, 0]
         }
       }
@@ -168,16 +168,14 @@ export default function ProductionStation() {
       }
 
       // C. DIBUJAR CÓDIGO DE TEXTO
+      // DIBUJAR CÓDIGO ID
+      pdf.setFont("helvetica", "bold");
       pdf.setFontSize(layout.text.size);
       // @ts-ignore
-      pdf.setTextColor(...layout.text.color);
-      pdf.setFont("helvetica", "bold");
+      pdf.setTextColor(layout.text.color[0], layout.text.color[1], layout.text.color[2]);
 
-      // Usamos align: 'center' para que la coordenada X sea el centro del recuadro blanco (o aproximado)
-      // Nota: Si x es el centro del recuadro, align center es correcto.
-      // Si x es el borde derecho, align right sería mejor. El prompt dice "Cerca del borde derecho", pero pide "align: center".
-      // Asumiremos que la coordenada X dada es el punto central deseado para el texto.
-      pdf.text(codesList[i], layout.text.x, layout.text.y, { align: 'center' });
+      const text = codesList[i]; // Solo el código, sin prefijo
+      pdf.text(text, layout.text.x, layout.text.y, { align: 'center' });
     }
 
     if (startNum !== null) setStartNum(startNum + quantity);

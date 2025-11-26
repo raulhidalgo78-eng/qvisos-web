@@ -100,8 +100,8 @@ export default function ProductionStation() {
       landscape: {
         // Venta Auto (Horizontal - Diseño SCAN)
         qr: {
-          size: 85,     // Tamaño ajustado para no chocar con la flecha
-          y: 50         // Centrado vertical
+          size: 100,     // Tamaño ajustado para no chocar con la flecha
+          y: 60         // Centrado vertical
         },
         text: {
           size: 26,

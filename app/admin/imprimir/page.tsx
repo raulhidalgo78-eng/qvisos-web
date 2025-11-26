@@ -92,31 +92,21 @@ export default function ProductionStation() {
     // CONFIGURACIÓN DE POSICIONES (Ajustable)
     const LAYOUTS = {
       portrait: {
-        // VENTA/ARRIENDO PROPIEDAD (Vertical)
-        // Problema anterior: QR tocaba lo rojo. Texto no se veía.
-        qr: {
-          size: 100,   // Reducido de 120 a 100 (Más espacio libre)
-          y: 120       // Bajamos más (de 110 a 120) para alejarnos totalmente del rojo
-        },
-        text: {
-          size: 22,    // Fuente más pequeña para que quepa seguro
-          x: 165,      // Movido a la izquierda (era 182) para entrar al recuadro
-          y: 285,      // Altura del footer
-          color: [0, 0, 0]
-        }
+        // VENTA/ARRIENDO PROPIEDAD (Vertical) - Se mantiene igual
+        qr: { size: 100, y: 120 },
+        text: { size: 22, x: 165, y: 285, color: [0, 0, 0] }
       },
       landscape: {
-        // VENTA AUTO (Horizontal)
-        // Problema anterior: Espacio muy angosto.
+        // VENTA AUTO (Horizontal) - AJUSTE CRÍTICO
         qr: {
-          size: 70,    // Reducción DRÁSTICA (de 110 a 70) para que entre holgado
-          y: 60        // Centrado verticalmente en el espacio blanco
+          size: 100,    // AUMENTADO: Tamaño grande para que sea el protagonista
+          y: 55         // Posición Y calculada para centrarlo en la franja blanca actual
         },
         text: {
-          size: 22,
-          x: 245,      // Movido a la izquierda (era 270)
-          y: 195,      // Altura del footer
-          color: [0, 0, 0]
+          size: 24,
+          x: 250,       // Posición X en la esquina inferior derecha
+          y: 198,       // Posición Y bien abajo, sobre la franja negra
+          color: [255, 255, 255] // CAMBIO CLAVE: Texto BLANCO (RGB)
         }
       }
     };

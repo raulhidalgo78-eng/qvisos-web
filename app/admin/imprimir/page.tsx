@@ -99,7 +99,7 @@ export default function ProductionStation() {
       landscape: {
         // VENTA AUTO (Horizontal) - AJUSTE CRÍTICO
         qr: {
-          size: 120,    // AUMENTADO: Tamaño grande para que sea el protagonista
+          size: 80,    // AUMENTADO: Tamaño grande para que sea el protagonista
           y: 40         // Posición Y calculada para centrarlo en la franja blanca actual
         },
         text: {

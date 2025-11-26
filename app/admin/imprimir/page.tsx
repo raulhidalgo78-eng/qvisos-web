@@ -93,14 +93,14 @@ export default function ProductionStation() {
     const LAYOUTS = {
       portrait: {
         // VENTA/ARRIENDO PROPIEDAD (Vertical) - Se mantiene igual
-        qr: { size: 100, y: 120 },
+        qr: { size: 120, y: 140 },
         text: { size: 22, x: 165, y: 285, color: [0, 0, 0] }
       },
       landscape: {
         // VENTA AUTO (Horizontal) - AJUSTE CRÍTICO
         qr: {
-          size: 100,    // AUMENTADO: Tamaño grande para que sea el protagonista
-          y: 55         // Posición Y calculada para centrarlo en la franja blanca actual
+          size: 80,    // AUMENTADO: Tamaño grande para que sea el protagonista
+          y: 45         // Posición Y calculada para centrarlo en la franja blanca actual
         },
         text: {
           size: 24,

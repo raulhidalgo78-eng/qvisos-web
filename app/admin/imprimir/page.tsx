@@ -90,23 +90,24 @@ export default function ProductionStation() {
     const supabase = createClient();
 
     // CONFIGURACIÓN DE POSICIONES (Ajustable)
+    // CONFIGURACIÓN DE POSICIONES (Ajustable)
     const LAYOUTS = {
       portrait: {
-        // VENTA/ARRIENDO PROPIEDAD (Vertical) - Se mantiene igual (con tus ajustes manuales)
-        qr: { size: 140, y: 92.5 },
+        // Venta/Arriendo Propiedad (Vertical)
+        qr: { size: 100, y: 120 },
         text: { size: 22, x: 165, y: 285, color: [0, 0, 0] }
       },
       landscape: {
-        // Diseño "SCAN Arrow" (Auto)
+        // Venta Auto (Horizontal - Diseño SCAN)
         qr: {
-          size: 110,     // Tamaño mediano-grande (evita chocar con la flecha)
-          y: 60       // Centrado verticalmente
+          size: 85,     // Tamaño ajustado para no chocar con la flecha
+          y: 50         // Centrado vertical
         },
         text: {
-          size: 24,
-          x: 262,       // Ajustado a la derecha (dentro de la caja blanca)
-          y: 199,       // Abajo en el footer (dentro de la caja blanca)
-          color: [0, 0, 0] // NEGRO (Crucial para fondo blanco)
+          size: 26,
+          x: 255,       // Alineado a la derecha (cajita blanca)
+          y: 198,       // Abajo en el footer
+          color: [0, 0, 0] // NEGRO (¡Muy importante!)
         }
       }
     };

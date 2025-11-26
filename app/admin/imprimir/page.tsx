@@ -93,7 +93,7 @@ export default function ProductionStation() {
     const LAYOUTS = {
       portrait: {
         // VENTA/ARRIENDO PROPIEDAD (Vertical) - Se mantiene igual
-        qr: { size: 140, y: 95 },
+        qr: { size: 140, y: 92.5 },
         text: { size: 22, x: 165, y: 285, color: [0, 0, 0] }
       },
       landscape: {

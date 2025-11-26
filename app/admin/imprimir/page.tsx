@@ -100,7 +100,7 @@ export default function ProductionStation() {
         // Diseño "SCAN Arrow" (Auto)
         qr: {
           size: 118,     // Tamaño mediano-grande (evita chocar con la flecha)
-          y: 60        // Centrado verticalmente
+          y: 57.5       // Centrado verticalmente
         },
         text: {
           size: 24,

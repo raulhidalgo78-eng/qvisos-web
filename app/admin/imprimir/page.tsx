@@ -30,7 +30,7 @@ export default function ProductionStation() {
       orientation: 'portrait'
     },
     venta_auto: {
-      url: 'https://wcczvedassfquzdrmwko.supabase.co/storage/v1/object/public/media/venta_auto_qvisos.png',
+      url: 'https://wcczvedassfquzdrmwko.supabase.co/storage/v1/object/public/media/auto.png', // <--- PEGA AQUÍ TU NUEVA URL
       orientation: 'landscape'
     },
     generico: {
@@ -92,21 +92,21 @@ export default function ProductionStation() {
     // CONFIGURACIÓN DE POSICIONES (Ajustable)
     const LAYOUTS = {
       portrait: {
-        // VENTA/ARRIENDO PROPIEDAD (Vertical) - Se mantiene igual
+        // VENTA/ARRIENDO PROPIEDAD (Vertical) - Se mantiene igual (con tus ajustes manuales)
         qr: { size: 140, y: 92.5 },
         text: { size: 22, x: 165, y: 285, color: [0, 0, 0] }
       },
       landscape: {
-        // VENTA AUTO (Horizontal) - AJUSTE CRÍTICO
+        // Diseño "SCAN Arrow" (Auto)
         qr: {
-          size: 80,    // AUMENTADO: Tamaño grande para que sea el protagonista
-          y: 67.5         // Posición Y calculada para centrarlo en la franja blanca actual
+          size: 90,     // Tamaño mediano-grande (evita chocar con la flecha)
+          y: 50         // Centrado verticalmente
         },
         text: {
           size: 24,
-          x: 250,       // Posición X en la esquina inferior derecha
-          y: 198,       // Posición Y bien abajo, sobre la franja negra
-          color: [255, 255, 255] // CAMBIO CLAVE: Texto BLANCO (RGB)
+          x: 262,       // Ajustado a la derecha (dentro de la caja blanca)
+          y: 199,       // Abajo en el footer (dentro de la caja blanca)
+          color: [0, 0, 0] // NEGRO (Crucial para fondo blanco)
         }
       }
     };

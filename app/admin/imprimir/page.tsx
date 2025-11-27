@@ -186,10 +186,10 @@ export default function ProductionStation() {
       <div className="w-full max-w-4xl bg-white p-8 rounded-xl shadow-xl">
         <div className="mb-6">
           <Link
-            href="/admin"
+            href="/mis-anuncios"
             className="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded inline-flex items-center"
           >
-            <span>&larr; Volver al Dashboard</span>
+            <span>&larr; Volver a Mis Anuncios</span>
           </Link>
         </div>
         <h1 className="text-3xl font-black text-gray-800 mb-6">🖨️ Impresión con Plantilla</h1>

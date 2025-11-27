@@ -30,7 +30,7 @@ export default function ProductionStation() {
       orientation: 'portrait'
     },
     venta_auto: {
-      url: 'https://wcczvedassfquzdrmwko.supabase.co/storage/v1/object/public/media/auto.png', // <--- PEGA AQUÍ TU NUEVA URL
+      url: 'https://wcczvedassfquzdrmwko.supabase.co/storage/v1/object/public/media/autoq.png', // <--- PEGA AQUÍ TU NUEVA URL
       orientation: 'landscape'
     },
     generico: {

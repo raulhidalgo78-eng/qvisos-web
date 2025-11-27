@@ -2,6 +2,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { createClient } from '@/utils/supabase/client';
 import { QRCodeCanvas } from 'qrcode.react';
 import jsPDF from 'jspdf';
@@ -183,6 +184,14 @@ export default function ProductionStation() {
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col items-center p-10 font-sans">
       <div className="w-full max-w-4xl bg-white p-8 rounded-xl shadow-xl">
+        <div className="mb-6">
+          <Link
+            href="/admin"
+            className="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded inline-flex items-center"
+          >
+            <span>&larr; Volver al Dashboard</span>
+          </Link>
+        </div>
         <h1 className="text-3xl font-black text-gray-800 mb-6">🖨️ Impresión con Plantilla</h1>
 
         <div className="flex gap-4 mb-8 items-end flex-wrap">

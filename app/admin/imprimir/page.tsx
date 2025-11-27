@@ -13,6 +13,7 @@ export default function ProductionStation() {
   const [category, setCategory] = useState('venta_propiedad');
   const [isGenerating, setIsGenerating] = useState(false);
   const [loading, setLoading] = useState(true);
+  const supabase = createClient();
 
   // Estado para la plantilla actual
   const [currentTemplate, setCurrentTemplate] = useState({
@@ -88,7 +89,8 @@ export default function ProductionStation() {
 
   const handleGeneratePDF = async () => {
     setIsGenerating(true);
-    const supabase = createClient();
+    setIsGenerating(true);
+    // const supabase = createClient(); // Moved to component level
 
     // CONFIGURACIÓN DE POSICIONES (Ajustable)
     // CONFIGURACIÓN DE POSICIONES (Ajustable)

@@ -100,12 +100,12 @@ export default function ProductionStation() {
       landscape: {
         // Venta Auto (Horizontal - Diseño SCAN)
         qr: {
-          size: 100,     // Tamaño ajustado para no chocar con la flecha
-          y: 60         // Centrado vertical
+          size: 110,     // Tamaño ajustado para no chocar con la flecha
+          y: 55         // Centrado vertical
         },
         text: {
           size: 26,
-          x: 255,       // Alineado a la derecha (cajita blanca)
+          x: 260,       // Alineado a la derecha (cajita blanca)
           y: 198,       // Abajo en el footer
           color: [0, 0, 0] // NEGRO (¡Muy importante!)
         }

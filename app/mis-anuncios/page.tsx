@@ -4,11 +4,12 @@ import { createClient } from '@/utils/supabase/server';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import React from 'react';
+import AdActions from '@/components/AdActions';
 
-const ADMIN_USER_ID = '6411ba0e-5e36-4e4e-aa1f-4183a2f88d45'; 
+const ADMIN_USER_ID = '6411ba0e-5e36-4e4e-aa1f-4183a2f88d45';
 
 export default async function MisAnunciosPage() {
-  
+
   const supabase = await createClient();
 
   // 1. Auth Guard
@@ -67,7 +68,7 @@ export default async function MisAnunciosPage() {
 
   return (
     <div style={styles.container}>
-      
+
       {/* Header */}
       <div style={styles.header}>
         <div>
@@ -117,6 +118,7 @@ export default async function MisAnunciosPage() {
                   <Link href={`/anuncio/${ad.id}`} style={styles.btnOutline}>
                     Ver Ficha
                   </Link>
+                  <AdActions id={ad.id} status={ad.status} code={ad.code} />
                 </div>
               </div>
             </div>

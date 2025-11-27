@@ -22,15 +22,15 @@ export default function ProductionStation() {
   // MAPA DE PLANTILLAS
   const TEMPLATES: Record<string, { url: string, orientation: 'portrait' | 'landscape' }> = {
     venta_propiedad: {
-      url: 'https://wcczvedassfquzdrmwko.supabase.co/storage/v1/object/public/media/venta_prop_qvisos.png',
+      url: 'https://wcczvedassfquzdrmwko.supabase.co/storage/v1/object/public/media/Se%20Vende.png',
       orientation: 'portrait'
     },
     arriendo_propiedad: {
-      url: 'https://wcczvedassfquzdrmwko.supabase.co/storage/v1/object/public/media/arriendo_propiedades_qvisos.png',
+      url: 'https://wcczvedassfquzdrmwko.supabase.co/storage/v1/object/public/media/arriendo.png',
       orientation: 'portrait'
     },
     venta_auto: {
-      url: 'https://wcczvedassfquzdrmwko.supabase.co/storage/v1/object/public/media/autoq.png', // <--- PEGA AQUÍ TU NUEVA URL
+      url: 'https://wcczvedassfquzdrmwko.supabase.co/storage/v1/object/public/media/vende%20auto.png', // <--- PEGA AQUÍ TU NUEVA URL
       orientation: 'landscape'
     },
     generico: {

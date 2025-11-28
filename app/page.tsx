@@ -184,7 +184,7 @@ export default async function HomePage() {
       <header style={styles.header}>
         <Link href="/" style={{ ...styles.logo, display: 'flex', alignItems: 'center', gap: '10px' }}>
           <img
-            src="https://wcczvedassfquzdrmwko.supabase.co/storage/v1/object/public/media/logo-qvisos.jpg"
+            src="/logo.png"
             alt="Logo Qvisos"
             style={{ height: '200px', width: '200px' }}
           />

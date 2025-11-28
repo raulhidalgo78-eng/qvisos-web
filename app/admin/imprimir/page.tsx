@@ -181,7 +181,7 @@ export default function ProductionStation() {
 
   if (loading) return <div className="h-screen flex items-center justify-center">Cargando...</div>;
 
-  const LOGO_URL = "https://sojkaasvfrzcdkseimqw.supabase.co/storage/v1/object/public/media/logo-qvisos.jpg";
+  const LOGO_URL = "/logo.png";
 
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col items-center p-10 font-sans">

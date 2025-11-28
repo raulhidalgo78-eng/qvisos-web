@@ -267,6 +267,7 @@ export default function ProductionStation() {
               src: LOGO_URL,
               height: 240, width: 240,
               excavate: true,
+              crossOrigin: 'anonymous',
             }}
           />
         ))}

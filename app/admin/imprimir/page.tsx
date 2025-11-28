@@ -181,7 +181,7 @@ export default function ProductionStation() {
 
   if (loading) return <div className="h-screen flex items-center justify-center">Cargando...</div>;
 
-  const LOGO_URL = "/logo.png";
+  const LOGO_URL = "https://placehold.co/150x50?text=Qvisos";
 
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col items-center p-10 font-sans">

@@ -184,9 +184,9 @@ export default async function HomePage() {
       <header style={styles.header}>
         <Link href="/" style={{ ...styles.logo, display: 'flex', alignItems: 'center', gap: '10px' }}>
           <img
-            src="/logo.png"
+            src="https://placehold.co/150x50?text=Qvisos"
             alt="Logo Qvisos"
-            style={{ height: '200px', width: '200px' }}
+            style={{ height: '50px', width: '150px' }}
           />
           <span>Qvisos.cl</span>
         </Link>

@@ -43,7 +43,7 @@ export async function updateSession(request: NextRequest) {
     const protectedRoutes = ['/anuncio', '/mis-anuncios', '/dashboard'];
     const isProtectedRoute = protectedRoutes.some(route => request.nextUrl.pathname.startsWith(route));
 
-    if (!user && isProtectedRoute) {
+    if (!user && isProtectedRoute && !request.nextUrl.pathname.startsWith('/activar')) {
         // Si no hay usuario y trata de entrar a ruta protegida, redirigir a login
         // PERO si va a /anuncio con params (ej: code=...), guardamos la intención o dejamos pasar a /activar?
         // En este caso, el requerimiento es redirigir a /login, pero ahora queremos usar /activar.

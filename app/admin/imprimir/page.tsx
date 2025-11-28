@@ -3,7 +3,8 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { createClient } from '@/utils/supabase/client';
+import Link from 'next/link';
+import { registerCodes } from './actions';
 import { QRCodeCanvas } from 'qrcode.react';
 import jsPDF from 'jspdf';
 
@@ -13,7 +14,7 @@ export default function ProductionStation() {
   const [category, setCategory] = useState('venta_propiedad');
   const [isGenerating, setIsGenerating] = useState(false);
   const [loading, setLoading] = useState(true);
-  const supabase = createClient();
+  const [loading, setLoading] = useState(true);
 
   // Estado para la plantilla actual
   const [currentTemplate, setCurrentTemplate] = useState({
@@ -145,7 +146,9 @@ export default function ProductionStation() {
       status: 'printed',
       category: category
     }));
-    await supabase.from('qr_codes').upsert(records, { onConflict: 'code', ignoreDuplicates: true });
+
+    // Usar Server Action para evitar problemas de permisos/RLS en cliente
+    await registerCodes(records);
 
     // Generar Páginas
     for (let i = 0; i < codesList.length; i++) {

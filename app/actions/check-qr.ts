@@ -11,7 +11,7 @@ export async function checkQrCategory(code: string) {
 
         const { data, error } = await supabase
             .from('qr_codes')
-            .select('category')
+            .select('category, status')
             .eq('code', code)
             .single();
 
@@ -22,6 +22,11 @@ export async function checkQrCategory(code: string) {
 
         if (!data) {
             console.warn('QR CODE NOT FOUND:', code);
+            return null;
+        }
+
+        if (data.status !== 'printed') {
+            console.warn('QR CODE NOT PRINTED (Status invalid):', data.status);
             return null;
         }
 

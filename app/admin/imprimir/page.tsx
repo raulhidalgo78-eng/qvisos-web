@@ -142,7 +142,7 @@ export default function ProductionStation() {
     // Registrar códigos en BD
     const records = codesList.map(code => ({
       code,
-      status: 'new',
+      status: 'printed',
       category: category
     }));
     await supabase.from('qr_codes').upsert(records, { onConflict: 'code', ignoreDuplicates: true });

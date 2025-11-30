@@ -4,7 +4,7 @@ import { createClient } from '@/utils/supabase/server';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import React from 'react';
-import AiChat from '@/components/AiChat';
+import AdChat from '@/components/AdChat';
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -41,12 +41,12 @@ export default async function AdDetailPage({ params }: Props) {
         </Link>
       </div>
 
-      <div style={{ 
-        maxWidth: '1024px', margin: 'auto', backgroundColor: colors.white, 
+      <div style={{
+        maxWidth: '1024px', margin: 'auto', backgroundColor: colors.white,
         borderRadius: '12px', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
         overflow: 'hidden', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', gap: '0'
       }}>
-        
+
         {/* COLUMNA IZQUIERDA: IMAGEN */}
         <div style={{ backgroundColor: '#f3f4f6', minHeight: '400px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           {ad.media_url ? (
@@ -74,13 +74,13 @@ export default async function AdDetailPage({ params }: Props) {
 
           {/* --- ZONA DE ACCIÓN --- */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-            
+
             {/* 1. CHATBOT IA */}
-            <AiChat adTitle={ad.title} />
+            <AdChat adData={ad} />
 
             {/* 2. WHATSAPP (Solo si hay teléfono) */}
             {ad.contact_phone ? (
-              <a 
+              <a
                 href={`https://wa.me/${ad.contact_phone.replace(/\D/g, '')}?text=Hola, vi tu anuncio ${encodeURIComponent(ad.title)} en Qvisos.cl`}
                 target="_blank"
                 rel="noopener noreferrer"

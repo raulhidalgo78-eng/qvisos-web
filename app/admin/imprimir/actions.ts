@@ -2,36 +2,39 @@
 import { createClient } from '@supabase/supabase-js'
 
 export async function registerCodes(newCodes: any[]) {
-    console.log('Iniciando registro de códigos con Admin Client...');
+    console.log('--- Server Action: Registrando códigos ---');
 
-    // 1. Verificar variables de entorno
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-    if (!supabaseUrl || !serviceRoleKey) {
-        console.error('Faltan variables de entorno en Vercel');
-        throw new Error('Configuración de servidor incompleta (Missing Env Vars)');
+    // 1. Verificación de Seguridad
+    if (!supabaseUrl || !serviceKey) {
+        console.error('ERROR CRÍTICO: Faltan variables de entorno en Vercel.');
+        console.error('URL:', supabaseUrl ? 'OK' : 'MISSING');
+        console.error('KEY:', serviceKey ? 'OK' : 'MISSING');
+        throw new Error('Error de configuración del servidor (Faltan Keys). Revisa los logs de Vercel.');
     }
 
-    // 2. Crear cliente Admin (Bypass RLS)
-    const supabase = createClient(supabaseUrl, serviceRoleKey, {
+    // 2. Crear Cliente Admin (Bypass RLS)
+    // Usamos createClient directo para no depender de cookies de usuario
+    const supabase = createClient(supabaseUrl, serviceKey, {
         auth: {
             autoRefreshToken: false,
             persistSession: false
         }
     });
 
-    // 3. Insertar códigos
+    // 3. Insertar/Actualizar
     const { data, error } = await supabase
         .from('qr_codes')
         .upsert(newCodes, { onConflict: 'code' })
         .select();
 
     if (error) {
-        console.error('Error Supabase Admin:', error);
-        throw new Error(`Error al guardar: ${error.message}`);
+        console.error('Error Supabase:', error);
+        throw new Error(`Error al guardar en BD: ${error.message}`);
     }
 
-    console.log('Códigos registrados con éxito:', data?.length);
+    console.log('Éxito. Códigos guardados:', data?.length);
     return { success: true, count: data?.length };
 }

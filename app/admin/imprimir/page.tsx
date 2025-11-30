@@ -3,7 +3,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import Link from 'next/link';
+
 import { registerCodes } from './actions';
 import { QRCodeCanvas } from 'qrcode.react';
 import jsPDF from 'jspdf';
@@ -14,7 +14,7 @@ export default function ProductionStation() {
   const [category, setCategory] = useState('venta_propiedad');
   const [isGenerating, setIsGenerating] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [loading, setLoading] = useState(true);
+
 
   // Estado para la plantilla actual
   const [currentTemplate, setCurrentTemplate] = useState({

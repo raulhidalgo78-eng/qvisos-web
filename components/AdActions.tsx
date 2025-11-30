@@ -1,118 +1,100 @@
 'use client';
 
-import React, { useState } from 'react';
-import { createClient } from '@/utils/supabase/client';
-import { useRouter } from 'next/navigation';
+import { useChat } from 'ai/react';
+import { useRef, useEffect } from 'react';
 
-interface AdActionsProps {
-    id: string;
-    status: string;
-    code: string;
+interface AdChatProps {
+    adData: any;
 }
 
-export default function AdActions({ id, status, code }: AdActionsProps) {
-    const router = useRouter();
-    const [loading, setLoading] = useState(false);
-    const supabase = createClient();
+export default function AdChat({ adData }: AdChatProps) {
+    // 1. Contexto para la IA
+    const contextString = `
+    Título: ${adData.title}
+    Precio: $${adData.price}
+    Categoría: ${adData.category}
+    Descripción: ${adData.description}
+    Características: ${JSON.stringify(adData.features || {})}
+    Contacto: ${adData.contact_phone}
+  `;
 
-    const handleToggleStatus = async () => {
-        if (loading) return;
-        setLoading(true);
+    // 2. Hook del Chat
+    const { messages, input, handleInputChange, handleSubmit, isLoading } = useChat({
+        api: '/api/chat',
+        body: { adContext: contextString },
+        onError: (err) => console.error("Error en el chat:", err) // Para ver si falla la conexión
+    });
 
-        const newStatus = status === 'publicado' ? 'pausado' : 'publicado';
-
-        try {
-            const { error } = await supabase
-                .from('ads')
-                .update({ status: newStatus })
-                .eq('id', id);
-
-            if (error) throw error;
-
-            router.refresh();
-        } catch (error) {
-            console.error('Error updating status:', error);
-            alert('Error al actualizar el estado del anuncio.');
-        } finally {
-            setLoading(false);
-        }
+    // 3. Scroll automático
+    const messagesEndRef = useRef<HTMLDivElement>(null);
+    const scrollToBottom = () => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     };
+    useEffect(() => {
+        scrollToBottom();
+    }, [messages]);
 
-    const handleDelete = async () => {
-        if (!window.confirm('¿Estás seguro de que quieres eliminar este anuncio? Esta acción liberará el código QR para ser usado nuevamente.')) {
-            return;
-        }
-
-        if (loading) return;
-        setLoading(true);
-
-        try {
-            // 1. Eliminar anuncio
-            const { error: deleteError } = await supabase
-                .from('ads')
-                .delete()
-                .eq('id', id);
-
-            if (deleteError) throw deleteError;
-
-            // 2. Liberar código QR (Reciclaje)
-            if (code) {
-                const { error: qrError } = await supabase
-                    .from('qr_codes')
-                    .update({ status: 'printed' }) // Volver a estado 'impreso' pero libre
-                    .eq('code', code);
-
-                if (qrError) console.error('Error recycling QR code:', qrError);
+    // 4. Manejo manual del Enter (por si el form falla)
+    const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault(); // Evita saltos de línea
+            if (input.trim()) {
+                const fakeEvent = { preventDefault: () => { } } as any;
+                handleSubmit(fakeEvent);
             }
-
-            router.refresh();
-        } catch (error) {
-            console.error('Error deleting ad:', error);
-            alert('Error al eliminar el anuncio.');
-        } finally {
-            setLoading(false);
         }
     };
 
     return (
-        <div style={{ display: 'flex', gap: '8px' }}>
-            <button
-                onClick={handleToggleStatus}
-                disabled={loading}
-                title={status === 'publicado' ? 'Pausar Anuncio' : 'Reanudar Anuncio'}
-                style={{
-                    padding: '8px',
-                    border: '1px solid #d1d5db',
-                    borderRadius: '6px',
-                    backgroundColor: 'white',
-                    cursor: loading ? 'wait' : 'pointer',
-                    fontSize: '1.2rem',
-                    lineHeight: 1,
-                    transition: 'background 0.2s',
-                    opacity: loading ? 0.5 : 1
-                }}
-            >
-                {status === 'publicado' ? '⏸️' : '▶️'}
-            </button>
+        <div className="flex flex-col h-[400px] border border-gray-300 rounded-lg bg-white shadow-sm overflow-hidden mt-6">
+            {/* Header */}
+            <div className="bg-blue-600 p-3 text-white flex items-center gap-2">
+                <span className="text-xl">🤖</span>
+                <span className="font-bold text-sm">Asistente Qvisos</span>
+            </div>
 
-            <button
-                onClick={handleDelete}
-                disabled={loading}
-                title="Eliminar Anuncio y Reciclar QR"
-                style={{
-                    padding: '8px',
-                    border: '1px solid #fee2e2',
-                    borderRadius: '6px',
-                    backgroundColor: '#fef2f2',
-                    cursor: loading ? 'wait' : 'pointer',
-                    fontSize: '1.2rem',
-                    lineHeight: 1,
-                    transition: 'background 0.2s',
-                    opacity: loading ? 0.5 : 1
-                }}
-            >
-                🗑️
-            </button>
+            {/* Área de Mensajes */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-50">
+                {messages.length === 0 && (
+                    <div className="text-center text-gray-500 text-xs mt-4">
+                        <p>👋 ¡Hola! Pregúntame sobre el precio o detalles del auto.</p>
+                    </div>
+                )}
+
+                {messages.map((m) => (
+                    <div key={m.id} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                        <div className={`max-w-[85%] p-2 px-3 text-sm rounded-lg ${m.role === 'user'
+                                ? 'bg-blue-600 text-white'
+                                : 'bg-white border border-gray-200 text-gray-800'
+                            }`}>
+                            {m.content}
+                        </div>
+                    </div>
+                ))}
+
+                {isLoading && (
+                    <div className="text-xs text-gray-400 italic ml-2">Escribiendo...</div>
+                )}
+                <div ref={messagesEndRef} />
+            </div>
+
+            {/* Input y Botón (Diseño Robusto) */}
+            <form onSubmit={handleSubmit} className="p-2 bg-white border-t flex gap-2 items-center">
+                <input
+                    className="flex-1 border border-gray-300 rounded px-3 py-2 text-sm text-black focus:outline-none focus:border-blue-500"
+                    value={input}
+                    placeholder="Escribe aquí..."
+                    onChange={handleInputChange}
+                    onKeyDown={handleKeyDown} // Enter forzado
+                />
+                <button
+                    type="submit"
+                    disabled={isLoading || !input}
+                    className="bg-blue-600 text-white px-4 py-2 rounded text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
+                >
+                    Enviar
+                </button>
+            </form>
         </div>
     );
 }

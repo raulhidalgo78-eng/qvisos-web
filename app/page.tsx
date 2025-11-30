@@ -186,7 +186,7 @@ export default async function HomePage() {
           <img
             src="https://wcczvedassfquzdrmwko.supabase.co/storage/v1/object/public/media/logo-qvisos.jpg"
             alt="Logo Qvisos"
-            style={{ height: '50px', width: '150px' }}
+            className="h-12 w-auto"
           />
           <span>Qvisos.cl</span>
         </Link>

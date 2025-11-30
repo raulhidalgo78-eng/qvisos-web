@@ -268,7 +268,7 @@ export default function ProductionStation() {
             includeMargin={false}
             imageSettings={{
               src: LOGO_URL,
-              height: 240, width: 240,
+              height: 300, width: 300, // Aumentado para mejor visibilidad en impresión (30% del canvas)
               excavate: true,
               crossOrigin: 'anonymous',
             }}

@@ -196,25 +196,28 @@ function AnuncioForm() {
           />
         </div>
 
-        {/* Campo Categoría */}
-        <div style={{ marginBottom: '15px' }}>
-          <label htmlFor="category" style={{ display: 'block', marginBottom: '5px' }}>Categoría</label>
-          <select
-            id="category"
-            name="categoria"
-            required
-            value={category}
-            onChange={(e) => setCategory(e.target.value)}
-            // No bloqueamos el select totalmente, pero sugerimos lo del QR
-            style={{ width: '100%', padding: '8px', color: '#333', backgroundColor: 'white' }}
-          >
-            <option value="">-- Selecciona una categoría --</option>
-            <option value="autos">Autos</option>
-            <option value="inmuebles">Inmuebles</option>
-            <option value="tecnologia">Tecnología</option>
-            <option value="otros">Otros</option>
-          </select>
-        </div>
+        {/* Campo Categoría - Ocultar si viene predefinida */}
+        {!urlTipo && (
+          <div style={{ marginBottom: '15px' }}>
+            <label htmlFor="category" style={{ display: 'block', marginBottom: '5px' }}>Categoría</label>
+            <select
+              id="category"
+              name="categoria"
+              required
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              style={{ width: '100%', padding: '8px', color: '#333', backgroundColor: 'white' }}
+            >
+              <option value="">-- Selecciona una categoría --</option>
+              <option value="autos">Autos</option>
+              <option value="inmuebles">Inmuebles</option>
+              <option value="tecnologia">Tecnología</option>
+              <option value="otros">Otros</option>
+            </select>
+          </div>
+        )}
+        {/* Si viene predefinida, enviamos el valor oculto */}
+        {urlTipo && <input type="hidden" name="categoria" value={category} />}
 
         {/* CAMPOS ESPECÍFICOS: AUTO */}
         {showAutoFields && (

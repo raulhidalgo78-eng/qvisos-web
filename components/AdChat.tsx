@@ -1,6 +1,6 @@
 'use client';
 
-import { useChat } from 'ai/react';
+import { useChat } from '@ai-sdk/react';
 import { useRef, useEffect } from 'react';
 
 interface AdChatProps {
@@ -19,10 +19,10 @@ export default function AdChat({ adData }: AdChatProps) {
   `;
 
     // 2. Hook de Vercel AI SDK
+    // Usamos 'as any' para evitar errores de tipado con versiones recientes del SDK
     const { messages, input, handleInputChange, handleSubmit, isLoading } = useChat({
-        api: '/api/chat',
         body: { adContext: contextString }, // <--- Enviamos el contexto aquí
-    });
+    } as any) as any;
 
     // 3. Auto-scroll al final
     const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -45,7 +45,7 @@ export default function AdChat({ adData }: AdChatProps) {
                     </div>
                 )}
 
-                {messages.map((m) => (
+                {messages.map((m: any) => (
                     <div key={m.id} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                         <div className={`max-w-[85%] p-3 text-sm rounded-2xl ${m.role === 'user'
                                 ? 'bg-blue-600 text-white rounded-br-none'

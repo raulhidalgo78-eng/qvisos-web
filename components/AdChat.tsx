@@ -1,6 +1,6 @@
 'use client';
 
-import { useChat } from 'ai/react';
+import { useChat } from '@ai-sdk/react';
 import { useRef, useEffect } from 'react';
 
 interface AdChatProps {
@@ -22,7 +22,7 @@ export default function AdChat({ adData }: AdChatProps) {
     const { messages, input, handleInputChange, handleSubmit, isLoading } = useChat({
         api: '/api/chat',
         body: { adContext: contextString },
-        onError: (err) => console.error("Error en el chat:", err)
+        onError: (err: any) => console.error("Error en el chat:", err)
     });
 
     // 3. Scroll automático al fondo
@@ -100,4 +100,12 @@ export default function AdChat({ adData }: AdChatProps) {
                 />
                 <button
                     type="submit"
-                    disabled={
+                    disabled={isLoading || !input}
+                    className="bg-blue-600 text-white px-5 py-2 rounded-full text-sm font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
+                >
+                    Enviar
+                </button>
+            </form>
+        </div>
+    );
+}

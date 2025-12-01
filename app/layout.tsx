@@ -1,30 +1,19 @@
-// Archivo: app/layout.tsx
-
-import './globals.css'; // Importamos estilos globales
-import { Inter } from 'next/font/google'; // Usaremos Inter como fuente base
-import Navbar from '@/components/Navbar';
-
-// 1. Definimos la fuente principal
+import type { Metadata } from 'next';
+import { Inter } from 'next/font/google';
+import './globals.css';
+import Navbar from '@/components/Navbar'; // <--- IMPORTANTE: Importamos el componente
 const inter = Inter({ subsets: ['latin'] });
 
-// 2. Definimos los metadatos del sitio (SEO y Título de Pestaña)
-export const metadata = {
-  title: 'Qvisos.cl | El Marketplace de Anuncios Verificados',
-  description: 'Vende tu auto o propiedad con seguridad y ahorra la comisión.',
-};
+export const metadata: Metadata = { title: 'QVisos.cl - Avisos Verificados', description: 'La forma más segura de vender tu auto o propiedad.', };
 
-// 3. El componente Layout que envuelve toda la aplicación
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function RootLayout({ children, }: { children: React.ReactNode; }) {
   return (
     <html lang="es">
-      {/* Aplicamos la fuente base a todo el cuerpo del documento */}
       <body className={inter.className}>
         <Navbar />
-        {children}
+        <main className="min-h-screen bg-gray-50">
+          {children}
+        </main>
       </body>
     </html>
   );

@@ -180,25 +180,7 @@ export default async function HomePage() {
   return (
     <div style={styles.container}>
 
-      {/* --- Encabezado --- */}
-      <header style={styles.header}>
-        <Link href="/" style={{ ...styles.logo, display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <img
-            src="https://wcczvedassfquzdrmwko.supabase.co/storage/v1/object/public/media/logo-qvisos.jpg"
-            alt="Logo Qvisos"
-            className="h-12 w-auto"
-          />
-          <span>Qvisos.cl</span>
-        </Link>
-        <nav style={styles.nav}>
-          <Link href="/activar" style={styles.link}>
-            Activa tu QR
-          </Link>
-          <Link href="/login" style={styles.buttonPrimary}>
-            Ingresar
-          </Link>
-        </nav>
-      </header>
+      {/* --- Encabezado eliminado (ahora en Navbar global) --- */}
 
       {/* --- Hero Section (ACTUALIZADO) --- */}
       <section style={styles.heroSection}>

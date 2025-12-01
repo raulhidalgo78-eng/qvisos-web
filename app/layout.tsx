@@ -2,6 +2,7 @@
 
 import './globals.css'; // Importamos estilos globales
 import { Inter } from 'next/font/google'; // Usaremos Inter como fuente base
+import Navbar from '@/components/Navbar';
 
 // 1. Definimos la fuente principal
 const inter = Inter({ subsets: ['latin'] });
@@ -22,6 +23,7 @@ export default function RootLayout({
     <html lang="es">
       {/* Aplicamos la fuente base a todo el cuerpo del documento */}
       <body className={inter.className}>
+        <Navbar />
         {children}
       </body>
     </html>

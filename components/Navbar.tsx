@@ -12,7 +12,10 @@ export default function Navbar() {
                             <img
                                 src="https://wcczvedassfquzdrmwko.supabase.co/storage/v1/object/public/media/logo-qvisos.jpg"
                                 alt="Logo Qvisos"
-                                className="h-8 md:h-11 w-auto object-contain transition-all hover:opacity-90"
+                                // Clases Tailwind para control responsive
+                                className="h-10 md:h-14 w-auto object-contain"
+                                // Estilos en línea como "seguro de vida" para evitar que crezca
+                                style={{ maxHeight: '56px', maxWidth: '200px' }}
                             />
                         </Link>
                     </div>

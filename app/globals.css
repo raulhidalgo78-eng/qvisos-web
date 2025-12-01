@@ -1,22 +1,9 @@
+@import "tailwindcss";
+
 /* Archivo: app/globals.css */
-/* Estas tres directivas son OBLIGATORIAS para que Tailwind funcione */
-/* stylelint-disable at-rule-no-unknown */
-/*@tailwind base;
-@tailwind components;
-@tailwind utilities;
-/* stylelint-enable at-rule-no-unknown */
 
-/* * AÑADE ESTILOS GLOBALES DE QVISOS.CL AQUÍ 
- * (Hemos eliminado la regla @theme que causaba el error)
-*/
-
-/* Reset básico para un desarrollo limpio */
+/* Reset básico y estilos globales */
 body {
-    padding: 0;
-    margin: 0;
-    box-sizing: border-box;
     /* Aseguramos que el contenido principal no se desborde horizontalmente */
     overflow-x: hidden; 
 }
-
-/* Puedes añadir más estilos de fuentes o de tipografía aquí si los necesitas */

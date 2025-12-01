@@ -5,15 +5,15 @@ export default function Navbar() {
     return (
         <nav className="bg-white shadow-sm sticky top-0 z-50 border-b border-gray-100">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div className="flex justify-between h-16">
+                <div className="flex justify-between h-20">
                     {/* LOGO MÁS GRANDE */}
                     <div className="flex-shrink-0 flex items-center cursor-pointer">
                         <Link href="/">
                             <img
                                 src="https://wcczvedassfquzdrmwko.supabase.co/storage/v1/object/public/media/logo-qvisos.jpg"
                                 alt="Logo Qvisos"
-                                className="h-10 md:h-14 w-auto object-contain hover:opacity-95 transition-opacity"
-                                style={{ maxHeight: '60px' }}
+                                className="h-14 md:h-16 w-auto object-contain hover:opacity-95 transition-opacity"
+                                style={{ maxHeight: '80px' }}
                             />
                         </Link>
                     </div>

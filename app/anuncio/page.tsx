@@ -6,6 +6,7 @@ import { createClient } from '@/utils/supabase/client'; // ¡Importante! Usamos 
 import { useRouter, useSearchParams } from 'next/navigation';
 import React, { useState, useEffect, Suspense } from 'react';
 import type { User } from '@supabase/supabase-js'; // Para el tipado
+import LocationPicker from '@/components/LocationPicker';
 
 function AnuncioForm() {
   const router = useRouter();
@@ -28,6 +29,10 @@ function AnuncioForm() {
 
   // Estado para detectar la categoría real del QR (desde la BD)
   const [qrCategory, setQrCategory] = useState<string | null>(null);
+
+  // Estado para ubicación (Google Maps)
+  const [lat, setLat] = useState<number | null>(null);
+  const [lng, setLng] = useState<number | null>(null);
 
   // --- ¡AQUÍ ESTÁ LA SEGURIDAD! ---
   useEffect(() => {
@@ -294,6 +299,14 @@ function AnuncioForm() {
             type="number"
             style={{ width: '100%', padding: '8px', color: '#333' }}
           />
+        </div>
+
+        {/* Campo Ubicación (Mapa) */}
+        <div style={{ marginBottom: '15px' }}>
+          <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Ubicación</label>
+          <LocationPicker onLocationSelect={(la, lo) => { setLat(la); setLng(lo); }} />
+          <input type="hidden" name="latitude" value={lat || ''} />
+          <input type="hidden" name="longitude" value={lng || ''} />
         </div>
 
         {/* Campo de Archivo (Imagen/Video) */}

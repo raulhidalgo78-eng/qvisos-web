@@ -1,14 +1,14 @@
 'use client';
 
-import { useChat } from '@ai-sdk/react';
+import { useChat } from 'ai/react';
 import { useRef, useEffect } from 'react';
 
 interface AdChatProps {
-    adData: any; // Recibe el objeto completo del anuncio desde Supabase
+    adData: any;
 }
 
 export default function AdChat({ adData }: AdChatProps) {
-    // 1. Aplanamos los datos relevantes en un string para la IA
+    // 1. Preparamos el contexto (la "memoria" del auto para la IA)
     const contextString = `
     Título: ${adData.title}
     Precio: $${adData.price}
@@ -18,34 +18,57 @@ export default function AdChat({ adData }: AdChatProps) {
     Contacto: ${adData.contact_phone}
   `;
 
-    // 2. Hook de Vercel AI SDK
-    // Usamos 'as any' para evitar errores de tipado con versiones recientes del SDK
+    // 2. Hook del Chat (Vercel AI SDK)
     const { messages, input, handleInputChange, handleSubmit, isLoading } = useChat({
-        body: { adContext: contextString }, // <--- Enviamos el contexto aquí
-    } as any) as any;
+        api: '/api/chat',
+        body: { adContext: contextString },
+        onError: (err) => console.error("Error en el chat:", err)
+    });
 
-    // 3. Auto-scroll al final
+    // 3. Scroll automático al fondo
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     };
-
     useEffect(() => {
         scrollToBottom();
     }, [messages]);
 
+    // 4. Manejo manual del Enter (Mejora de UX)
+    const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault(); // Evita el salto de línea
+            if (input.trim()) {
+                // Simulamos el evento de envío
+                const fakeEvent = { preventDefault: () => { } } as any;
+                handleSubmit(fakeEvent);
+            }
+        }
+    };
+
     return (
-        <div className="flex flex-col h-[400px] border rounded-xl overflow-hidden shadow-sm bg-white">
-            {/* Mensajes */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
+        <div className="flex flex-col h-[450px] border border-gray-300 rounded-xl bg-white shadow-sm overflow-hidden mt-6">
+            {/* Header del Chat */}
+            <div className="bg-blue-600 p-4 text-white flex items-center gap-3">
+                <div className="bg-white/20 p-2 rounded-full">
+                    <span className="text-xl">🤖</span>
+                </div>
+                <div>
+                    <h3 className="font-bold text-sm">Asistente Virtual Qvisos</h3>
+                    <p className="text-xs text-blue-100">Respondo dudas sobre este aviso</p>
+                </div>
+            </div>
+
+            {/* Área de Mensajes */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-50">
                 {messages.length === 0 && (
-                    <div className="text-center text-gray-500 text-sm mt-8 px-6">
+                    <div className="text-center text-gray-400 text-sm mt-10 px-6">
                         <p>👋 ¡Hola! Estoy analizando este anuncio.</p>
-                        <p className="mt-2">Pregúntame sobre el kilometraje, el estado del motor o el precio.</p>
+                        <p className="mt-2 text-xs">Pregúntame sobre el kilometraje, detalles mecánicos o el precio.</p>
                     </div>
                 )}
 
-                {messages.map((m: any) => (
+                {messages.map((m) => (
                     <div key={m.id} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                         <div className={`max-w-[85%] p-3 text-sm rounded-2xl ${m.role === 'user'
                                 ? 'bg-blue-600 text-white rounded-br-none'
@@ -58,7 +81,7 @@ export default function AdChat({ adData }: AdChatProps) {
 
                 {isLoading && (
                     <div className="flex justify-start">
-                        <div className="bg-gray-200 text-gray-500 text-xs py-2 px-4 rounded-full animate-pulse">
+                        <div className="bg-gray-200 text-gray-500 text-xs py-1 px-3 rounded-full animate-pulse ml-2">
                             Escribiendo...
                         </div>
                     </div>
@@ -66,24 +89,15 @@ export default function AdChat({ adData }: AdChatProps) {
                 <div ref={messagesEndRef} />
             </div>
 
-            {/* Input Area */}
-            <form onSubmit={handleSubmit} className="p-3 bg-white border-t flex gap-2">
+            {/* Input y Botón */}
+            <form onSubmit={handleSubmit} className="p-3 bg-white border-t flex gap-2 items-center">
                 <input
-                    className="flex-1 border border-gray-300 rounded-full px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+                    className="flex-1 border border-gray-300 rounded-full px-4 py-2 text-sm text-black focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
                     value={input}
-                    placeholder="Escribe tu pregunta aquí..."
+                    placeholder="Escribe tu pregunta..."
                     onChange={handleInputChange}
+                    onKeyDown={handleKeyDown}
                 />
                 <button
                     type="submit"
-                    disabled={isLoading || !input}
-                    className="bg-blue-600 text-white p-2.5 rounded-full hover:bg-blue-700 disabled:opacity-50 transition-colors shadow-sm"
-                >
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
-                    </svg>
-                </button>
-            </form>
-        </div>
-    );
-}
+                    disabled={

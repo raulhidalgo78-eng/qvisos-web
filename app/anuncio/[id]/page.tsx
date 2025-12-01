@@ -1,10 +1,9 @@
-// En: app/anuncio/[id]/page.tsx
-
 import { createClient } from '@/utils/supabase/server';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import React from 'react';
 import AdChat from '@/components/AdChat';
+import AdActions from '@/components/AdActions';
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -23,6 +22,10 @@ export default async function AdDetailPage({ params }: Props) {
   if (error || !ad) {
     notFound();
   }
+
+  // Verificar si el usuario actual es el dueño
+  const { data: { user } } = await supabase.auth.getUser();
+  const isOwner = user && user.id === ad.user_id;
 
   const colors = {
     primary: '#1a202c',
@@ -75,8 +78,21 @@ export default async function AdDetailPage({ params }: Props) {
           {/* --- ZONA DE ACCIÓN --- */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
 
-            {/* 1. CHATBOT IA */}
-            <AdChat adData={ad} />
+            {/* Lógica Condicional: Dueño vs Visitante */}
+            {isOwner ? (
+              <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
+                <h3 className="text-yellow-800 font-bold text-sm mb-2">👑 Eres el dueño de este aviso</h3>
+                <AdActions adId={ad.id} />
+                {/* Opcional: También puedes ver el chat para probarlo */}
+                <div className="mt-4 pt-4 border-t border-yellow-200">
+                  <p className="text-xs text-yellow-700 mb-2">Así ven el chat tus clientes:</p>
+                  <AdChat adData={ad} />
+                </div>
+              </div>
+            ) : (
+              /* Caso 2: Soy VISITANTE -> Muestro el Chat para comprar */
+              <AdChat adData={ad} />
+            )}
 
             {/* 2. WHATSAPP (Solo si hay teléfono) */}
             {ad.contact_phone ? (

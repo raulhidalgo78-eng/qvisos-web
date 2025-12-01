@@ -1,100 +1,47 @@
 'use client';
 
-import { useChat } from 'ai/react';
-import { useRef, useEffect } from 'react';
+import { createClient } from '@/utils/supabase/client';
+import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 
-interface AdChatProps {
-    adData: any;
-}
+export default function AdActions({ adId }: { adId: string }) {
+    const router = useRouter();
+    const [isDeleting, setIsDeleting] = useState(false);
 
-export default function AdChat({ adData }: AdChatProps) {
-    // 1. Contexto para la IA
-    const contextString = `
-    Título: ${adData.title}
-    Precio: $${adData.price}
-    Categoría: ${adData.category}
-    Descripción: ${adData.description}
-    Características: ${JSON.stringify(adData.features || {})}
-    Contacto: ${adData.contact_phone}
-  `;
+    const handleDelete = async () => {
+        if (!confirm('¿Estás seguro de eliminar este aviso?')) return;
 
-    // 2. Hook del Chat
-    const { messages, input, handleInputChange, handleSubmit, isLoading } = useChat({
-        api: '/api/chat',
-        body: { adContext: contextString },
-        onError: (err) => console.error("Error en el chat:", err) // Para ver si falla la conexión
-    });
+        setIsDeleting(true);
+        const supabase = createClient();
 
-    // 3. Scroll automático
-    const messagesEndRef = useRef<HTMLDivElement>(null);
-    const scrollToBottom = () => {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    };
-    useEffect(() => {
-        scrollToBottom();
-    }, [messages]);
+        // Eliminamos el anuncio (RLS se encargará de verificar si eres el dueño)
+        const { error } = await supabase.from('ads').delete().eq('id', adId);
 
-    // 4. Manejo manual del Enter (por si el form falla)
-    const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-        if (e.key === 'Enter' && !e.shiftKey) {
-            e.preventDefault(); // Evita saltos de línea
-            if (input.trim()) {
-                const fakeEvent = { preventDefault: () => { } } as any;
-                handleSubmit(fakeEvent);
-            }
+        if (error) {
+            alert('Error: ' + error.message);
+            setIsDeleting(false);
+        } else {
+            router.push('/mis-anuncios');
+            router.refresh();
         }
     };
 
     return (
-        <div className="flex flex-col h-[400px] border border-gray-300 rounded-lg bg-white shadow-sm overflow-hidden mt-6">
-            {/* Header */}
-            <div className="bg-blue-600 p-3 text-white flex items-center gap-2">
-                <span className="text-xl">🤖</span>
-                <span className="font-bold text-sm">Asistente Qvisos</span>
-            </div>
+        <div className="flex gap-3 mt-4 border-t pt-4">
+            <button
+                onClick={() => router.push(`/admin/editar/${adId}`)}
+                className="flex-1 bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 text-sm font-medium transition-colors"
+            >
+                ✏️ Editar
+            </button>
 
-            {/* Área de Mensajes */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-50">
-                {messages.length === 0 && (
-                    <div className="text-center text-gray-500 text-xs mt-4">
-                        <p>👋 ¡Hola! Pregúntame sobre el precio o detalles del auto.</p>
-                    </div>
-                )}
-
-                {messages.map((m) => (
-                    <div key={m.id} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                        <div className={`max-w-[85%] p-2 px-3 text-sm rounded-lg ${m.role === 'user'
-                                ? 'bg-blue-600 text-white'
-                                : 'bg-white border border-gray-200 text-gray-800'
-                            }`}>
-                            {m.content}
-                        </div>
-                    </div>
-                ))}
-
-                {isLoading && (
-                    <div className="text-xs text-gray-400 italic ml-2">Escribiendo...</div>
-                )}
-                <div ref={messagesEndRef} />
-            </div>
-
-            {/* Input y Botón (Diseño Robusto) */}
-            <form onSubmit={handleSubmit} className="p-2 bg-white border-t flex gap-2 items-center">
-                <input
-                    className="flex-1 border border-gray-300 rounded px-3 py-2 text-sm text-black focus:outline-none focus:border-blue-500"
-                    value={input}
-                    placeholder="Escribe aquí..."
-                    onChange={handleInputChange}
-                    onKeyDown={handleKeyDown} // Enter forzado
-                />
-                <button
-                    type="submit"
-                    disabled={isLoading || !input}
-                    className="bg-blue-600 text-white px-4 py-2 rounded text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
-                >
-                    Enviar
-                </button>
-            </form>
+            <button
+                onClick={handleDelete}
+                disabled={isDeleting}
+                className="flex-1 bg-red-50 text-red-600 px-4 py-2 rounded-lg hover:bg-red-100 text-sm font-medium transition-colors border border-red-100"
+            >
+                {isDeleting ? 'Borrando...' : '🗑️ Eliminar'}
+            </button>
         </div>
     );
 }

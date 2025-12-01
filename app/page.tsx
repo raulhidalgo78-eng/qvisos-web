@@ -56,7 +56,7 @@ export default async function HomePage() {
     },
     nav: {
       display: 'flex',
-      gap: '15px',
+      gap: '60px',
       alignItems: 'center',
     },
     link: {

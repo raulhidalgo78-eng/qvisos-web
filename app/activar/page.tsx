@@ -1,13 +1,13 @@
 'use client';
 import { createClient } from '@/utils/supabase/client';
-import { useRouter, useSearchParams } from 'next/navigation'; // <--- Import actualizado
-import React, { useState, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import React, { useState, useEffect, Suspense } from 'react';
 import { checkQrCategory } from '@/app/actions/check-qr';
 import { User } from '@supabase/supabase-js';
 
-export default function ActivarPage() {
+function ActivarContent() {
     const router = useRouter();
-    const searchParams = useSearchParams(); // <--- Hook para leer URL
+    const searchParams = useSearchParams();
 
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -37,16 +37,8 @@ export default function ActivarPage() {
         const tab = searchParams.get('tab');
         if (tab === 'login') {
             setAuthTab('login');
-            // Opcional: Si quisieras saltar el paso del QR para solo loguear, 
-            // necesitarías lógica extra, pero por ahora pre-seleccionamos la pestaña.
-            // Si el usuario ya verificado llega aquí, verá el login directo.
-            if (step === 1) {
-                // Si es solo login administrativo, podríamos forzar paso 2 con datos dummy 
-                // o simplemente dejarlo listo para cuando verifique.
-                // Por ahora, solo cambiamos el tab visualmente.
-            }
         }
-    }, [searchParams, step]);
+    }, [searchParams]);
 
     // Step 1: Verify QR Code
     const handleVerify = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -344,5 +336,13 @@ export default function ActivarPage() {
                 </div>
             </div>
         </div>
+    );
+}
+
+export default function ActivarPage() {
+    return (
+        <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Cargando...</div>}>
+            <ActivarContent />
+        </Suspense>
     );
 }

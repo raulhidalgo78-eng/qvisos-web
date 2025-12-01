@@ -118,6 +118,7 @@ export default async function MisAnunciosPage() {
                   <Link href={`/anuncio/${ad.id}`} style={styles.btnOutline}>
                     Ver Ficha
                   </Link>
+                  {/* Fix: Updated props to match AdActions component */}
                   <AdActions adId={ad.id} />
                 </div>
               </div>

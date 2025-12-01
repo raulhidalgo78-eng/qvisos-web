@@ -1,15 +1,14 @@
 'use client';
-
-
-
 import { createClient } from '@/utils/supabase/client';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation'; // <--- Import actualizado
 import React, { useState, useEffect } from 'react';
 import { checkQrCategory } from '@/app/actions/check-qr';
 import { User } from '@supabase/supabase-js';
 
 export default function ActivarPage() {
     const router = useRouter();
+    const searchParams = useSearchParams(); // <--- Hook para leer URL
+
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [user, setUser] = useState<User | null>(null);
@@ -23,6 +22,7 @@ export default function ActivarPage() {
 
     const supabase = createClient();
 
+    // 1. Check Session
     useEffect(() => {
         const checkSession = async () => {
             const { data: { user } } = await supabase.auth.getUser();
@@ -31,6 +31,22 @@ export default function ActivarPage() {
         };
         checkSession();
     }, []);
+
+    // 2. NUEVO: Detectar ?tab=login en la URL
+    useEffect(() => {
+        const tab = searchParams.get('tab');
+        if (tab === 'login') {
+            setAuthTab('login');
+            // Opcional: Si quisieras saltar el paso del QR para solo loguear, 
+            // necesitarías lógica extra, pero por ahora pre-seleccionamos la pestaña.
+            // Si el usuario ya verificado llega aquí, verá el login directo.
+            if (step === 1) {
+                // Si es solo login administrativo, podríamos forzar paso 2 con datos dummy 
+                // o simplemente dejarlo listo para cuando verifique.
+                // Por ahora, solo cambiamos el tab visualmente.
+            }
+        }
+    }, [searchParams, step]);
 
     // Step 1: Verify QR Code
     const handleVerify = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -75,7 +91,6 @@ export default function ActivarPage() {
             return;
         }
 
-        // If user is already logged in, just proceed to link (redirect)
         if (user) {
             proceedToLink(verifiedCode, verifiedCategory);
             return;
@@ -158,7 +173,7 @@ export default function ActivarPage() {
             }}>
                 <div style={{ textAlign: 'center', marginBottom: '30px' }}>
                     <h1 style={{ fontSize: '1.8rem', fontWeight: 'bold', color: '#1f2937', marginBottom: '10px' }}>
-                        ¡Activa tu Letrero!
+                        {authTab === 'login' && step === 2 ? 'Ingresar a tu Cuenta' : '¡Activa tu Letrero!'}
                     </h1>
                     <p style={{ color: '#6b7280' }}>
                         {step === 1 ? 'Paso 1: Verifica tu código' : 'Paso 2: Vincula tu cuenta'}

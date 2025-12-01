@@ -118,7 +118,7 @@ export default async function MisAnunciosPage() {
                   <Link href={`/anuncio/${ad.id}`} style={styles.btnOutline}>
                     Ver Ficha
                   </Link>
-                  <AdActions id={ad.id} status={ad.status} code={ad.code} />
+                  <AdActions adId={ad.id} />
                 </div>
               </div>
             </div>

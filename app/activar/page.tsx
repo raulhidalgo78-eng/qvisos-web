@@ -8,21 +8,23 @@ import { User } from '@supabase/supabase-js';
 function ActivarContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
+    const supabase = createClient();
 
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [user, setUser] = useState<User | null>(null);
     const [checkingSession, setCheckingSession] = useState(true);
 
-    // State for 2-Step Flow
+    // Estados de flujo
     const [step, setStep] = useState<1 | 2>(1);
     const [verifiedCode, setVerifiedCode] = useState<string | null>(null);
     const [verifiedCategory, setVerifiedCategory] = useState<string | null>(null);
     const [authTab, setAuthTab] = useState<'login' | 'register'>('register');
 
-    const supabase = createClient();
+    // Nuevo estado para saber si es "Solo Login"
+    const [isLoginMode, setIsLoginMode] = useState(false);
 
-    // 1. Check Session
+    // 1. Verificar Sesión al cargar
     useEffect(() => {
         const checkSession = async () => {
             const { data: { user } } = await supabase.auth.getUser();
@@ -32,15 +34,16 @@ function ActivarContent() {
         checkSession();
     }, []);
 
-    // 2. NUEVO: Detectar ?tab=login en la URL
+    // 2. Detectar modo LOGIN DIRECTO (?tab=login)
     useEffect(() => {
-        const tab = searchParams.get('tab');
-        if (tab === 'login') {
-            setAuthTab('login');
+        if (searchParams.get('tab') === 'login') {
+            setIsLoginMode(true);
+            setStep(2);          // Saltamos directo al formulario
+            setAuthTab('login'); // Pestaña de login activa
         }
     }, [searchParams]);
 
-    // Step 1: Verify QR Code
+    // Paso 1: Verificar QR (Solo si NO es login mode)
     const handleVerify = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         setLoading(true);
@@ -50,41 +53,35 @@ function ActivarContent() {
         const qrCode = formData.get('qr_code') as string;
 
         if (!qrCode) {
-            setError('Por favor ingresa el código QR.');
+            setError('Falta el código QR.');
             setLoading(false);
             return;
         }
 
         try {
             const category = await checkQrCategory(qrCode);
-            if (!category) {
-                throw new Error('El código QR no es válido o no está listo para activarse.');
-            }
+            if (!category) throw new Error('Código QR no válido.');
 
             setVerifiedCode(qrCode);
             setVerifiedCategory(category);
             setStep(2);
-            setLoading(false);
         } catch (err: any) {
-            setError(err.message || 'Error al verificar el código.');
+            setError(err.message || 'Error al verificar.');
+        } finally {
             setLoading(false);
         }
     };
 
-    // Step 2: Authenticate & Link
-    const handleAuthAndLink = async (e: React.FormEvent<HTMLFormElement>) => {
+    // Paso 2: Autenticación (Login o Registro)
+    const handleAuth = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         setLoading(true);
         setError(null);
 
-        if (!verifiedCode || !verifiedCategory) {
-            setError('Error de estado. Por favor recarga la página.');
+        // Si estamos en modo activación (no login mode), necesitamos el código
+        if (!isLoginMode && (!verifiedCode || !verifiedCategory)) {
+            setError('Error de flujo. Recarga la página.');
             setLoading(false);
-            return;
-        }
-
-        if (user) {
-            proceedToLink(verifiedCode, verifiedCategory);
             return;
         }
 
@@ -92,29 +89,38 @@ function ActivarContent() {
         const email = formData.get('email') as string;
         const password = formData.get('password') as string;
 
-        if (!email || !password) {
-            setError('Por favor completa todos los campos.');
-            setLoading(false);
-            return;
-        }
-
         try {
-            let authUser = null;
+            let authUser = user; // Si ya estaba logueado
 
-            if (authTab === 'register') {
-                const { data, error } = await supabase.auth.signUp({ email, password });
-                if (error) throw error;
-                authUser = data.user;
-            } else {
-                const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-                if (error) throw error;
-                authUser = data.user;
+            // Si no está logueado, intentamos auth
+            if (!authUser) {
+                if (authTab === 'register') {
+                    const { data, error } = await supabase.auth.signUp({ email, password });
+                    if (error) throw error;
+                    authUser = data.user;
+                } else {
+                    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+                    if (error) throw error;
+                    authUser = data.user;
+                }
             }
 
-            if (!authUser) throw new Error('No se pudo autenticar. Revisa tu correo.');
+            if (!authUser) throw new Error('Error de autenticación.');
 
-            // Success! Proceed to link
-            proceedToLink(verifiedCode, verifiedCategory);
+            // --- DECISIÓN DE RUTAS ---
+
+            if (isLoginMode) {
+                // A) MODO LOGIN PURO: Redirigir según rol
+                // Aquí puedes poner tu email de admin real
+                if (authUser.email === 'rhidalgo@radisson.cl') {
+                    router.push('/admin');
+                } else {
+                    router.push('/mis-anuncios');
+                }
+            } else {
+                // B) MODO ACTIVACIÓN: Vincular QR y redirigir al formulario
+                proceedToLink(verifiedCode!, verifiedCategory!);
+            }
 
         } catch (err: any) {
             setError(err.message || 'Error de autenticación.');
@@ -131,209 +137,96 @@ function ActivarContent() {
         router.push(targetUrl);
     };
 
-    // Auto-trigger link if user is logged in when entering Step 2
-    useEffect(() => {
-        if (step === 2 && user && verifiedCode && verifiedCategory) {
-            const timer = setTimeout(() => {
-                proceedToLink(verifiedCode, verifiedCategory);
-            }, 1500); // Small delay to show "Verified" message
-            return () => clearTimeout(timer);
-        }
-    }, [step, user, verifiedCode, verifiedCategory]);
-
-
-    if (checkingSession) {
-        return <div className="min-h-screen flex items-center justify-center">Cargando...</div>;
-    }
+    if (checkingSession) return <div className="min-h-screen flex items-center justify-center">Cargando...</div>;
 
     return (
-        <div style={{
-            minHeight: '100vh',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            backgroundColor: '#f3f4f6',
-            padding: '20px'
-        }}>
-            <div style={{
-                backgroundColor: 'white',
-                padding: '40px',
-                borderRadius: '12px',
-                boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1)',
-                maxWidth: '450px',
-                width: '100%'
-            }}>
-                <div style={{ textAlign: 'center', marginBottom: '30px' }}>
-                    <h1 style={{ fontSize: '1.8rem', fontWeight: 'bold', color: '#1f2937', marginBottom: '10px' }}>
-                        {authTab === 'login' && step === 2 ? 'Ingresar a tu Cuenta' : '¡Activa tu Letrero!'}
+        <div className="min-h-screen flex items-center justify-center bg-gray-100 p-4">
+            <div className="bg-white p-8 rounded-xl shadow-lg max-w-md w-full">
+
+                <div className="text-center mb-6">
+                    <h1 className="text-2xl font-bold text-gray-800 mb-2">
+                        {isLoginMode ? 'Bienvenido a QVisos' : '¡Activa tu Letrero!'}
                     </h1>
-                    <p style={{ color: '#6b7280' }}>
-                        {step === 1 ? 'Paso 1: Verifica tu código' : 'Paso 2: Vincula tu cuenta'}
+                    <p className="text-gray-500 text-sm">
+                        {isLoginMode
+                            ? 'Ingresa para gestionar tus anuncios'
+                            : (step === 1 ? 'Paso 1: Verifica tu código' : 'Paso 2: Vincula tu cuenta')
+                        }
                     </p>
                 </div>
 
-                {/* STEP 1: VERIFY */}
-                {step === 1 && (
-                    <form onSubmit={handleVerify} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                {/* STEP 1: QR (Solo si NO es login mode) */}
+                {step === 1 && !isLoginMode && (
+                    <form onSubmit={handleVerify} className="space-y-4">
                         <div>
-                            <label htmlFor="qr_code" style={{ display: 'block', marginBottom: '5px', fontWeight: '600', color: '#374151' }}>
-                                Código del Kit QR
-                            </label>
-                            <input
-                                id="qr_code"
-                                name="qr_code"
-                                type="text"
-                                placeholder="Ej: QV-001"
-                                required
-                                style={{
-                                    width: '100%',
-                                    padding: '12px',
-                                    border: '2px solid #2563eb',
-                                    borderRadius: '8px',
-                                    fontSize: '1rem',
-                                    backgroundColor: '#eff6ff'
-                                }}
-                            />
+                            <label className="block text-sm font-semibold text-gray-700 mb-1">Código del Kit QR</label>
+                            <input name="qr_code" placeholder="Ej: QV-001" required
+                                className="w-full p-3 border-2 border-blue-500 rounded-lg bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-300" />
                         </div>
-                        {error && (
-                            <div style={{ padding: '10px', backgroundColor: '#fee2e2', color: '#b91c1c', borderRadius: '6px', fontSize: '0.9rem' }}>
-                                {error}
-                            </div>
-                        )}
-                        <button
-                            type="submit"
-                            disabled={loading}
-                            style={{
-                                width: '100%',
-                                padding: '12px',
-                                backgroundColor: '#2563eb',
-                                color: 'white',
-                                border: 'none',
-                                borderRadius: '8px',
-                                fontSize: '1rem',
-                                fontWeight: 'bold',
-                                cursor: loading ? 'not-allowed' : 'pointer',
-                                opacity: loading ? 0.7 : 1
-                            }}
-                        >
+                        {error && <div className="p-3 bg-red-100 text-red-700 rounded text-sm">{error}</div>}
+                        <button type="submit" disabled={loading}
+                            className="w-full py-3 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 transition disabled:opacity-50">
                             {loading ? 'Verificando...' : 'Verificar Código'}
                         </button>
                     </form>
                 )}
 
-                {/* STEP 2: AUTH & LINK */}
+                {/* STEP 2: AUTH FORM */}
                 {step === 2 && (
                     <div>
-                        <div style={{ marginBottom: '20px', padding: '15px', backgroundColor: '#ecfdf5', borderRadius: '8px', border: '1px solid #10b981', color: '#065f46', textAlign: 'center' }}>
-                            <strong>✅ Código Verificado:</strong> {verifiedCode}
-                        </div>
-
-                        {user ? (
-                            <div style={{ textAlign: 'center' }}>
-                                <p style={{ marginBottom: '10px' }}>Hola <strong>{user.email}</strong></p>
-                                <p>Asignando código a tu cuenta...</p>
-                                <div style={{ marginTop: '15px' }} className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-                            </div>
-                        ) : (
-                            <div>
-                                {/* TABS */}
-                                <div style={{ display: 'flex', borderBottom: '1px solid #e5e7eb', marginBottom: '20px' }}>
-                                    <button
-                                        type="button"
-                                        onClick={() => setAuthTab('register')}
-                                        style={{
-                                            flex: 1,
-                                            padding: '10px',
-                                            borderBottom: authTab === 'register' ? '2px solid #2563eb' : 'none',
-                                            color: authTab === 'register' ? '#2563eb' : '#6b7280',
-                                            fontWeight: 'bold',
-                                            background: 'none',
-                                            border: 'none',
-                                            cursor: 'pointer'
-                                        }}
-                                    >
-                                        Soy Nuevo
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => setAuthTab('login')}
-                                        style={{
-                                            flex: 1,
-                                            padding: '10px',
-                                            borderBottom: authTab === 'login' ? '2px solid #2563eb' : 'none',
-                                            color: authTab === 'login' ? '#2563eb' : '#6b7280',
-                                            fontWeight: 'bold',
-                                            background: 'none',
-                                            border: 'none',
-                                            cursor: 'pointer'
-                                        }}
-                                    >
-                                        Ya tengo cuenta
-                                    </button>
-                                </div>
-
-                                <form onSubmit={handleAuthAndLink} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-                                    <div>
-                                        <label htmlFor="email" style={{ display: 'block', marginBottom: '5px', fontWeight: '600', color: '#374151' }}>
-                                            Correo Electrónico
-                                        </label>
-                                        <input
-                                            id="email"
-                                            name="email"
-                                            type="email"
-                                            placeholder="tu@email.com"
-                                            required
-                                            style={{ width: '100%', padding: '10px', border: '1px solid #d1d5db', borderRadius: '8px' }}
-                                        />
-                                    </div>
-                                    <div>
-                                        <label htmlFor="password" style={{ display: 'block', marginBottom: '5px', fontWeight: '600', color: '#374151' }}>
-                                            Contraseña
-                                        </label>
-                                        <input
-                                            id="password"
-                                            name="password"
-                                            type="password"
-                                            placeholder="********"
-                                            required
-                                            minLength={6}
-                                            style={{ width: '100%', padding: '10px', border: '1px solid #d1d5db', borderRadius: '8px' }}
-                                        />
-                                    </div>
-
-                                    {error && (
-                                        <div style={{ padding: '10px', backgroundColor: '#fee2e2', color: '#b91c1c', borderRadius: '6px', fontSize: '0.9rem' }}>
-                                            {error}
-                                        </div>
-                                    )}
-
-                                    <button
-                                        type="submit"
-                                        disabled={loading}
-                                        style={{
-                                            width: '100%',
-                                            padding: '12px',
-                                            backgroundColor: '#2563eb',
-                                            color: 'white',
-                                            border: 'none',
-                                            borderRadius: '8px',
-                                            fontSize: '1rem',
-                                            fontWeight: 'bold',
-                                            cursor: loading ? 'not-allowed' : 'pointer',
-                                            opacity: loading ? 0.7 : 1
-                                        }}
-                                    >
-                                        {loading ? 'Procesando...' : (authTab === 'register' ? 'Registrar y Activar' : 'Ingresar y Activar')}
-                                    </button>
-                                </form>
+                        {/* Solo mostrar badge verde si estamos activando un QR */}
+                        {!isLoginMode && verifiedCode && (
+                            <div className="mb-6 p-3 bg-green-50 border border-green-400 text-green-800 rounded text-center">
+                                ✅ Código Verificado: <strong>{verifiedCode}</strong>
                             </div>
                         )}
+
+                        {/* Tabs (Solo mostrar si NO es login mode, o login mode fuerza solo 'login') */}
+                        {!isLoginMode && !user && (
+                            <div className="flex border-b border-gray-200 mb-6">
+                                <button type="button" onClick={() => setAuthTab('register')}
+                                    className={`flex-1 py-2 font-bold ${authTab === 'register' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500'}`}>
+                                    Soy Nuevo
+                                </button>
+                                <button type="button" onClick={() => setAuthTab('login')}
+                                    className={`flex-1 py-2 font-bold ${authTab === 'login' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500'}`}>
+                                    Ya tengo cuenta
+                                </button>
+                            </div>
+                        )}
+
+                        <form onSubmit={handleAuth} className="space-y-4">
+                            {!user && (
+                                <>
+                                    <div>
+                                        <label className="block text-sm font-semibold text-gray-700 mb-1">Correo Electrónico</label>
+                                        <input name="email" type="email" placeholder="tu@email.com" required
+                                            className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500" />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-semibold text-gray-700 mb-1">Contraseña</label>
+                                        <input name="password" type="password" placeholder="********" required minLength={6}
+                                            className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500" />
+                                    </div>
+                                </>
+                            )}
+
+                            {/* Mensaje si ya está logueado */}
+                            {user && (
+                                <div className="text-center mb-4 text-gray-600">
+                                    Continuar como <strong>{user.email}</strong>
+                                </div>
+                            )}
+
+                            {error && <div className="p-3 bg-red-100 text-red-700 rounded text-sm">{error}</div>}
+
+                            <button type="submit" disabled={loading}
+                                className="w-full py-3 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 transition disabled:opacity-50">
+                                {loading ? 'Procesando...' : (isLoginMode ? 'Ingresar' : 'Vincular y Activar')}
+                            </button>
+                        </form>
                     </div>
                 )}
-
-                <div style={{ marginTop: '20px', textAlign: 'center', fontSize: '0.85rem', color: '#9ca3af' }}>
-                    Al continuar, aceptas nuestros términos y condiciones.
-                </div>
             </div>
         </div>
     );

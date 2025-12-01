@@ -16,6 +16,20 @@ export default function AdChat({ adData }: AdChatProps) {
     Descripción: ${adData.description}
     Características: ${JSON.stringify(adData.features || {})}
     Contacto: ${adData.contact_phone}
+  `;
+
+    // 2. Hook del Chat (Vercel AI SDK)
+    const { messages, input, handleInputChange, handleSubmit, isLoading } = useChat({
+        api: '/api/chat',
+        body: { adContext: contextString },
+        onError: (err: any) => console.error("Error en el chat:", err)
+    } as any) as any;
+
+    // 3. Scroll automático al fondo
+    const messagesEndRef = useRef<HTMLDivElement>(null);
+    const scrollToBottom = () => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    };
     useEffect(() => {
         scrollToBottom();
     }, [messages]);
@@ -54,14 +68,12 @@ export default function AdChat({ adData }: AdChatProps) {
                     </div>
                 )}
 
-                {messages.map((m) => (
-                    <div key={m.id} className={`flex ${ m.role === 'user' ? 'justify-end' : 'justify-start'
-} `}>
-                        <div className={`max - w - [85 %] p - 3 text - sm rounded - 2xl ${
-    m.role === 'user'
-    ? 'bg-blue-600 text-white rounded-br-none'
-    : 'bg-white border border-gray-200 text-gray-800 rounded-bl-none shadow-sm'
-} `}>
+                {messages.map((m: any) => (
+                    <div key={m.id} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                        <div className={`max-w-[85%] p-3 text-sm rounded-2xl ${m.role === 'user'
+                            ? 'bg-blue-600 text-white rounded-br-none'
+                            : 'bg-white border border-gray-200 text-gray-800 rounded-bl-none shadow-sm'
+                            }`}>
                             {m.content}
                         </div>
                     </div>

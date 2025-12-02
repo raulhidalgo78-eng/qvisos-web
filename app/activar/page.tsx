@@ -1,12 +1,10 @@
 'use client';
-
 import { createClient } from '@/utils/supabase/client';
 import { useRouter, useSearchParams } from 'next/navigation';
 import React, { useState, useEffect, Suspense } from 'react';
 import { checkQrCategory } from '@/app/actions/check-qr';
 import { User } from '@supabase/supabase-js';
 
-// Componente interno con la lógica
 function ActivarContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -24,7 +22,6 @@ function ActivarContent() {
     const [authTab, setAuthTab] = useState<'login' | 'register'>('register');
     const [isLoginMode, setIsLoginMode] = useState(false);
 
-    // 1. Verificar Sesión
     useEffect(() => {
         const checkSession = async () => {
             const { data: { user } } = await supabase.auth.getUser();
@@ -34,11 +31,9 @@ function ActivarContent() {
         checkSession();
     }, []);
 
-    // 2. DETECTOR DE URL (ESTO ES LO QUE TE FALTA)
     useEffect(() => {
         const tab = searchParams.get('tab');
         if (tab === 'login') {
-            console.log("Modo Login detectado!"); // Debug
             setIsLoginMode(true);
             setStep(2);
             setAuthTab('login');
@@ -48,7 +43,13 @@ function ActivarContent() {
         }
     }, [searchParams]);
 
-    // Lógica del Paso 1 (QR)
+    // NUEVA FUNCIÓN: LOGOUT
+    const handleLogout = async () => {
+        await supabase.auth.signOut();
+        setUser(null); // Limpiamos el usuario del estado local
+        setAuthTab('login'); // Volvemos a mostrar el form de login
+    };
+
     const handleVerify = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         setLoading(true);
@@ -69,19 +70,20 @@ function ActivarContent() {
         } finally { setLoading(false); }
     };
 
-    // Lógica del Paso 2 (Auth)
     const handleAuth = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         setLoading(true);
         setError(null);
-
         const formData = new FormData(e.currentTarget);
-        const email = formData.get('email') as string;
-        const password = formData.get('password') as string;
 
         try {
             let authUser = user;
+
+            // Si NO hay usuario logueado, intentamos login/registro
             if (!authUser) {
+                const email = formData.get('email') as string;
+                const password = formData.get('password') as string;
+
                 if (authTab === 'register') {
                     const { data, error } = await supabase.auth.signUp({ email, password });
                     if (error) throw error;
@@ -95,12 +97,10 @@ function ActivarContent() {
 
             if (!authUser) throw new Error('Error de autenticación');
 
-            // Redirección
             if (isLoginMode) {
                 if (authUser.email === 'rhidalgo@radisson.cl') router.push('/admin');
                 else router.push('/mis-anuncios');
             } else {
-                // Vincular QR
                 let targetUrl = `/anuncio?code=${verifiedCode}`;
                 if (verifiedCategory === 'venta_auto') targetUrl += '&tipo=auto';
                 else if (verifiedCategory === 'venta_propiedad') targetUrl += '&tipo=propiedad-venta';
@@ -127,7 +127,6 @@ function ActivarContent() {
                     </p>
                 </div>
 
-                {/* FORMULARIO QR (Solo si NO es login) */}
                 {step === 1 && !isLoginMode && (
                     <form onSubmit={handleVerify} className="space-y-4">
                         <input name="qr_code" placeholder="Ej: QV-001" required className="w-full p-3 border-2 border-blue-500 rounded bg-blue-50" />
@@ -138,7 +137,6 @@ function ActivarContent() {
                     </form>
                 )}
 
-                {/* FORMULARIO AUTH */}
                 {step === 2 && (
                     <div className="space-y-4">
                         {!isLoginMode && verifiedCode && (
@@ -147,6 +145,7 @@ function ActivarContent() {
                             </div>
                         )}
 
+                        {/* Tabs solo si NO hay usuario */}
                         {!isLoginMode && !user && (
                             <div className="flex border-b mb-4">
                                 <button type="button" onClick={() => setAuthTab('register')} className={`flex-1 py-2 ${authTab === 'register' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500'}`}>Soy Nuevo</button>
@@ -161,7 +160,20 @@ function ActivarContent() {
                                     <input name="password" type="password" placeholder="Contraseña" required className="w-full p-3 border rounded" />
                                 </>
                             )}
-                            {user && <p className="text-center text-gray-600">Continuar como <strong>{user.email}</strong></p>}
+
+                            {/* MENSAJE DE USUARIO LOGUEADO + BOTÓN LOGOUT */}
+                            {user && (
+                                <div className="text-center mb-4 p-4 bg-gray-50 rounded-lg">
+                                    <p className="text-gray-700 mb-2">Continuar como <strong>{user.email}</strong></p>
+                                    <button
+                                        type="button"
+                                        onClick={handleLogout}
+                                        className="text-xs text-red-500 hover:text-red-700 underline font-medium"
+                                    >
+                                        ¿No eres tú? Cerrar sesión
+                                    </button>
+                                </div>
+                            )}
 
                             {error && <p className="text-red-500 text-sm">{error}</p>}
 
@@ -176,7 +188,6 @@ function ActivarContent() {
     );
 }
 
-// Wrapper necesario para usar useSearchParams en Next.js
 export default function ActivarPage() {
     return (
         <Suspense fallback={<div>Cargando...</div>}>

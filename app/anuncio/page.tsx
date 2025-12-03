@@ -116,6 +116,11 @@ function AnuncioForm() {
       features.anio = formData.get('anio');
       features.kilometraje = formData.get('kilometraje');
       features.transmision = formData.get('transmision');
+      features.combustible = formData.get('combustible');
+      features.carroceria = formData.get('carroceria');
+      features.unico_dueno = formData.get('unico_dueno') === 'on';
+      features.papeles_al_dia = formData.get('papeles_al_dia') === 'on';
+      features.aire_acondicionado = formData.get('aire_acondicionado') === 'on';
     } else if (category === 'inmuebles') {
       features.m2 = formData.get('m2');
       features.habitaciones = formData.get('habitaciones');
@@ -225,33 +230,82 @@ function AnuncioForm() {
         {urlTipo && <input type="hidden" name="categoria" value={category} />}
 
         {/* CAMPOS ESPECÍFICOS: AUTO */}
+        {/* CAMPOS ESPECÍFICOS: AUTO */}
         {showAutoFields && (
-          <div style={{ padding: '15px', backgroundColor: '#f3f4f6', borderRadius: '8px', marginBottom: '15px', border: '1px solid #e5e7eb' }}>
-            <h3 style={{ marginTop: 0, fontSize: '1rem', color: '#1f2937', marginBottom: '10px' }}>Detalles del Vehículo</h3>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+          <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 space-y-4">
+            <h3 className="font-bold text-gray-700">Detalles del Vehículo</h3>
+
+            {/* Fila 1: Marca y Modelo */}
+            <div className="grid grid-cols-2 gap-4">
               <div>
-                <label style={{ display: 'block', fontSize: '0.9rem', marginBottom: '3px' }}>Marca</label>
-                <input name="marca" type="text" placeholder="Ej: Toyota" style={{ width: '100%', padding: '6px', border: '1px solid #d1d5db', borderRadius: '4px' }} />
+                <label className="block text-xs font-semibold text-gray-500 mb-1">Marca</label>
+                <input name="marca" placeholder="Ej: Toyota" className="w-full p-2 border rounded" required />
               </div>
               <div>
-                <label style={{ display: 'block', fontSize: '0.9rem', marginBottom: '3px' }}>Modelo</label>
-                <input name="modelo" type="text" placeholder="Ej: Yaris" style={{ width: '100%', padding: '6px', border: '1px solid #d1d5db', borderRadius: '4px' }} />
+                <label className="block text-xs font-semibold text-gray-500 mb-1">Modelo</label>
+                <input name="modelo" placeholder="Ej: Yaris" className="w-full p-2 border rounded" required />
+              </div>
+            </div>
+
+            {/* Fila 2: Año, KMS, Transmisión */}
+            <div className="grid grid-cols-3 gap-4">
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 mb-1">Año</label>
+                <input name="anio" type="number" placeholder="2018" className="w-full p-2 border rounded" required />
               </div>
               <div>
-                <label style={{ display: 'block', fontSize: '0.9rem', marginBottom: '3px' }}>Año</label>
-                <input name="anio" type="number" placeholder="2018" style={{ width: '100%', padding: '6px', border: '1px solid #d1d5db', borderRadius: '4px' }} />
+                <label className="block text-xs font-semibold text-gray-500 mb-1">Kms</label>
+                <input name="kilometraje" type="number" placeholder="50000" className="w-full p-2 border rounded" required />
               </div>
               <div>
-                <label style={{ display: 'block', fontSize: '0.9rem', marginBottom: '3px' }}>Kilometraje</label>
-                <input name="kilometraje" type="number" placeholder="50000" style={{ width: '100%', padding: '6px', border: '1px solid #d1d5db', borderRadius: '4px' }} />
-              </div>
-              <div style={{ gridColumn: '1 / -1' }}>
-                <label style={{ display: 'block', fontSize: '0.9rem', marginBottom: '3px' }}>Transmisión</label>
-                <select name="transmision" style={{ width: '100%', padding: '6px', border: '1px solid #d1d5db', borderRadius: '4px' }}>
+                <label className="block text-xs font-semibold text-gray-500 mb-1">Transmisión</label>
+                <select name="transmision" className="w-full p-2 border rounded">
                   <option value="manual">Manual</option>
                   <option value="automatica">Automática</option>
                 </select>
               </div>
+            </div>
+
+            {/* Fila 3: Combustible y Carrocería */}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 mb-1">Combustible</label>
+                <select name="combustible" className="w-full p-2 border rounded">
+                  <option value="bencina">Bencina</option>
+                  <option value="diesel">Diesel</option>
+                  <option value="hibrido">Híbrido</option>
+                  <option value="electrico">Eléctrico</option>
+                  <option value="gas">Gas (GLP/GNC)</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 mb-1">Carrocería</label>
+                <select name="carroceria" className="w-full p-2 border rounded">
+                  <option value="sedan">Sedán</option>
+                  <option value="hatchback">Hatchback</option>
+                  <option value="suv">SUV</option>
+                  <option value="camioneta">Camioneta</option>
+                  <option value="coupe">Coupé</option>
+                  <option value="convertible">Convertible</option>
+                  <option value="furgon">Furgón</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Fila 4: Checkboxes */}
+            <div className="flex gap-4 pt-2 flex-wrap">
+              <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+                <input type="checkbox" name="unico_dueno" className="w-4 h-4 text-blue-600 rounded" />
+                Único Dueño
+              </label>
+              <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+                <input type="checkbox" name="papeles_al_dia" className="w-4 h-4 text-blue-600 rounded" defaultChecked />
+                Papeles al día
+              </label>
+              <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+                <input type="checkbox" name="aire_acondicionado" className="w-4 h-4 text-blue-600 rounded" />
+                Aire Acondicionado
+              </label>
             </div>
           </div>
         )}

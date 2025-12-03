@@ -46,7 +46,8 @@ export default function AdChat({ adData }: AdChatProps) {
     const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault(); // Evita el salto de línea
-            if (input.trim()) {
+            // FIX: Usar optional chaining para evitar error si input es undefined
+            if (input?.trim()) {
                 // Simulamos el evento de envío
                 const fakeEvent = { preventDefault: () => { } } as any;
                 handleSubmit(fakeEvent);

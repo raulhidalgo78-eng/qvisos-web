@@ -3,31 +3,48 @@ import { generateText } from 'ai';
 import { NextResponse } from 'next/server';
 
 export async function POST(req: Request) {
-    // 1. Diagnóstico de seguridad (Solo logueamos si existe o no, NUNCA la llave)
-    console.log("🔍 API Check - OpenAI Key exists:", !!process.env.OPENAI_API_KEY);
+    // Debugging: Check if key is loaded
+    const apiKey = process.env.OPENAI_API_KEY;
+    console.log("🔍 Debug - OpenAI Key Loaded:", apiKey ? "YES (Length: " + apiKey.length + ")" : "NO");
 
-    if (!process.env.OPENAI_API_KEY) {
+    if (!apiKey) {
         return NextResponse.json(
-            { error: 'CONFIG_ERROR: Falta la OPENAI_API_KEY en Vercel (Environment Variables).' },
-            { status: 500 } // Cambiado a 500 para alertar configuración
+            { error: 'Server Error: OPENAI_API_KEY is missing in environment variables.' },
+            { status: 500 }
         );
     }
 
     try {
         const { category, features, extraNotes } = await req.json();
 
+        // Construct a safe prompt even if features are empty
+        const prompt = `
+      Act as an expert copywriter for real estate and automotive sales in Chile.
+      Write a professional, persuasive ad description based on the following:
+      - Category: ${category || 'General'}
+      - Details: ${JSON.stringify(features || {})}
+      - User Notes: ${extraNotes || 'None'}
+      
+      Requirements:
+      - Use Chilean terminology (e.g., 'Gastos comunes', 'Permiso de circulación').
+      - Highlight key selling points.
+      - Keep it under 200 words.
+      - End with a call to action.
+    `;
+
         const { text } = await generateText({
             model: openai('gpt-4o-mini'),
-            system: "Eres un redactor experto en ventas inmobiliarias y automotrices en Chile.",
-            prompt: `Escribe un aviso persuasivo para: ${category}. Detalles: ${JSON.stringify(features)}. Extras: ${extraNotes}`,
+            prompt: prompt,
             temperature: 0.7,
         });
 
         return NextResponse.json({ description: text });
 
     } catch (error: any) {
-        console.error("❌ Error OpenAI:", error);
-        // Devolver el mensaje exacto del error para poder depurar en el frontend
-        return NextResponse.json({ error: error.message || 'Error generando texto' }, { status: 500 });
+        console.error("❌ OpenAI API Error:", error);
+        return NextResponse.json(
+            { error: error.message || 'Failed to generate description.' },
+            { status: 500 }
+        );
     }
 }

@@ -39,29 +39,46 @@ function AnuncioForm() {
   const [isGenerating, setIsGenerating] = useState(false);
 
   const handleGenerateDescription = async () => {
-    setIsGenerating(true);
-    // Recolectamos los datos actuales del formulario
-    const form = document.querySelector('form');
-    if (!form) return;
+    const formElement = document.querySelector('form');
+    if (!formElement) return;
 
-    const formData = new FormData(form);
-    const features = Object.fromEntries(formData.entries());
+    setIsGenerating(true);
+
+    // Capture all form data effectively
+    const formData = new FormData(formElement);
+    const rawData = Object.fromEntries(formData.entries());
+
+    // Filter out empty values to send clean data to AI
+    const features = Object.entries(rawData).reduce((acc, [key, value]) => {
+      if (value && key !== 'description' && key !== 'extraNotes') {
+        acc[key] = value;
+      }
+      return acc;
+    }, {} as any);
 
     try {
       const res = await fetch('/api/generate-description', {
         method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          category: category === 'autos' ? 'Autos' : 'Propiedades',
+          category: category,
           features: features,
           extraNotes: extraNotes
         })
       });
+
       const data = await res.json();
-      if (data.description) {
-        setDescription(data.description); // <--- ESTO ES CRÍTICO
+
+      if (!res.ok) {
+        throw new Error(data.error || 'Server error');
       }
-    } catch (e) {
-      alert('Error al generar descripción');
+
+      if (data.description) {
+        setDescription(data.description); // Update UI state
+      }
+    } catch (e: any) {
+      console.error("Generation failed:", e);
+      alert(`Error: ${e.message}`);
     } finally {
       setIsGenerating(false);
     }

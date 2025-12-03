@@ -34,6 +34,40 @@ function AnuncioForm() {
   const [lat, setLat] = useState<number | null>(null);
   const [lng, setLng] = useState<number | null>(null);
 
+  // Estados para Generador IA
+  const [description, setDescription] = useState('');
+  const [extraNotes, setExtraNotes] = useState('');
+  const [isGenerating, setIsGenerating] = useState(false);
+
+  const handleGenerateDescription = async () => {
+    setIsGenerating(true);
+    // Recolectamos los datos actuales del formulario
+    const form = document.querySelector('form');
+    if (!form) return;
+
+    const formData = new FormData(form);
+    const features = Object.fromEntries(formData.entries());
+
+    try {
+      const res = await fetch('/api/generate-description', {
+        method: 'POST',
+        body: JSON.stringify({
+          category: category === 'autos' ? 'Autos' : 'Propiedades',
+          features: features,
+          extraNotes: extraNotes
+        })
+      });
+      const data = await res.json();
+      if (data.description) {
+        setDescription(data.description);
+      }
+    } catch (e) {
+      alert('Error al generar descripción');
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
   // --- ¡AQUÍ ESTÁ LA SEGURIDAD! ---
   useEffect(() => {
     const checkUser = async () => {
@@ -101,7 +135,10 @@ function AnuncioForm() {
     setError(null);
 
     const formData = new FormData(e.currentTarget);
+    const formData = new FormData(e.currentTarget);
     formData.append('file', file);
+    // Usamos la descripción del estado si existe, sino lo que esté en el textarea (que debería estar sincronizado)
+    formData.set('descripcion', description);
 
     // Aseguramos que la categoría se envíe correctamente
     if (!formData.get('categoria')) {
@@ -214,14 +251,54 @@ function AnuncioForm() {
           />
         </div>
 
-        {/* Campo Descripción */}
-        <div style={{ marginBottom: '15px' }}>
-          <label htmlFor="description" style={{ display: 'block', marginBottom: '5px' }}>Descripción</label>
+        {/* Campo Descripción con IA */}
+        <div className="bg-blue-50 p-4 rounded-lg border border-blue-200 space-y-3 mb-4">
+          <div className="flex justify-between items-center">
+            <h3 className="font-bold text-blue-800">📝 Descripción del Anuncio</h3>
+            <span className="text-xs text-blue-600 bg-white px-2 py-1 rounded-full border border-blue-200">
+              Potenciado por IA ✨
+            </span>
+          </div>
+
+          {/* Campo de notas rápidas */}
+          <div>
+            <label className="block text-xs font-semibold text-blue-700 mb-1">
+              Notas para la IA (Opcional)
+            </label>
+            <input
+              type="text"
+              value={extraNotes}
+              onChange={(e) => setExtraNotes(e.target.value)}
+              placeholder="Ej: Ideal para familias, precio conversable, vista al mar..."
+              className="w-full p-2 text-sm border border-blue-200 rounded focus:ring-2 focus:ring-blue-500 outline-none"
+            />
+          </div>
+
+          {/* Botón Mágico */}
+          <button
+            type="button"
+            onClick={handleGenerateDescription}
+            disabled={isGenerating}
+            className="w-full py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg font-bold text-sm shadow-sm hover:shadow-md transition-all flex justify-center items-center gap-2 disabled:opacity-70"
+          >
+            {isGenerating ? (
+              <span>🧠 Redactando...</span>
+            ) : (
+              <>
+                <span>✨ Generar Descripción Profesional</span>
+              </>
+            )}
+          </button>
+
+          {/* El Textarea Final (Editable) */}
           <textarea
             id="description"
             name="descripcion"
-            rows={5}
-            style={{ width: '100%', padding: '8px', color: '#333' }}
+            rows={8}
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="La descripción generada aparecerá aquí..."
+            className="w-full p-3 border rounded-md focus:ring-2 focus:ring-blue-500 outline-none"
           />
         </div>
 

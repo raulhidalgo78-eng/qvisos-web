@@ -156,6 +156,7 @@ function AnuncioForm() {
       features.carroceria = formData.get('carroceria');
       features.unico_dueno = formData.get('unico_dueno') === 'on';
       features.papeles_al_dia = formData.get('papeles_al_dia') === 'on';
+      features.sin_multas = formData.get('sin_multas') === 'on';
       features.aire_acondicionado = formData.get('aire_acondicionado') === 'on';
     } else if (category === 'inmuebles') {
       features.type = formData.get('tipo_propiedad');
@@ -366,41 +367,49 @@ function AnuncioForm() {
               <div>
                 <label className="block text-xs font-semibold text-gray-500 mb-1">Combustible</label>
                 <select name="combustible" className="w-full p-2 border rounded">
-                  <option value="bencina">Bencina</option>
-                  <option value="diesel">Diesel</option>
-                  <option value="hibrido">Híbrido</option>
-                  <option value="electrico">Eléctrico</option>
-                  <option value="gas">Gas (GLP/GNC)</option>
+                  <option value="Bencina">Bencina</option>
+                  <option value="Diesel">Diesel</option>
+                  <option value="Hibrido">Híbrido</option>
+                  <option value="Electrico">Eléctrico</option>
+                  <option value="Gas">Gas (GLP/GNC)</option>
                 </select>
               </div>
               <div>
                 <label className="block text-xs font-semibold text-gray-500 mb-1">Carrocería</label>
                 <select name="carroceria" className="w-full p-2 border rounded">
-                  <option value="sedan">Sedán</option>
-                  <option value="hatchback">Hatchback</option>
-                  <option value="suv">SUV</option>
-                  <option value="camioneta">Camioneta</option>
-                  <option value="coupe">Coupé</option>
-                  <option value="convertible">Convertible</option>
-                  <option value="furgon">Furgón</option>
+                  <option value="SUV">SUV</option>
+                  <option value="Sedan">Sedán</option>
+                  <option value="Hatchback">Hatchback</option>
+                  <option value="Camioneta">Camioneta</option>
+                  <option value="Citycar">Citycar</option>
+                  <option value="Coupe">Coupé</option>
+                  <option value="Convertible">Convertible</option>
+                  <option value="Furgon">Furgón</option>
                 </select>
               </div>
             </div>
 
-            {/* Fila 4: Checkboxes */}
-            <div className="flex gap-4 pt-2 flex-wrap">
-              <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
-                <input type="checkbox" name="unico_dueno" className="w-4 h-4 text-blue-600 rounded" />
-                Único Dueño
-              </label>
-              <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
-                <input type="checkbox" name="papeles_al_dia" className="w-4 h-4 text-blue-600 rounded" defaultChecked />
-                Papeles al día
-              </label>
-              <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
-                <input type="checkbox" name="aire_acondicionado" className="w-4 h-4 text-blue-600 rounded" />
-                Aire Acondicionado
-              </label>
+            {/* Fila 4: Checkboxes Legales */}
+            <div className="pt-4 border-t border-gray-200">
+              <span className="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-3">Documentación y Estado</span>
+              <div className="grid grid-cols-2 gap-4">
+                <label className="flex items-center space-x-3 p-3 bg-white rounded-lg border border-gray-100 hover:border-blue-300 cursor-pointer transition-all">
+                  <input type="checkbox" name="unico_dueno" className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500" />
+                  <span className="text-sm text-gray-700">👑 Único Dueño</span>
+                </label>
+                <label className="flex items-center space-x-3 p-3 bg-white rounded-lg border border-gray-100 hover:border-green-300 cursor-pointer transition-all">
+                  <input type="checkbox" name="papeles_al_dia" defaultChecked className="w-5 h-5 text-green-600 rounded focus:ring-green-500" />
+                  <span className="text-sm text-gray-700">📄 Papeles al día</span>
+                </label>
+                <label className="flex items-center space-x-3 p-3 bg-white rounded-lg border border-gray-100 hover:border-blue-300 cursor-pointer transition-all">
+                  <input type="checkbox" name="sin_multas" defaultChecked className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500" />
+                  <span className="text-sm text-gray-700">✅ Sin Multas</span>
+                </label>
+                <label className="flex items-center space-x-3 p-3 bg-white rounded-lg border border-gray-100 hover:border-blue-300 cursor-pointer transition-all">
+                  <input type="checkbox" name="aire_acondicionado" className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500" />
+                  <span className="text-sm text-gray-700">❄️ Aire Acondicionado</span>
+                </label>
+              </div>
             </div>
           </div>
         )}
@@ -519,6 +528,57 @@ function AnuncioForm() {
             </div>
           </div>
         )}
+
+        {/* Campo Descripción con IA */}
+        <div className="bg-blue-50 p-4 rounded-lg border border-blue-200 space-y-3 mb-4">
+          <div className="flex justify-between items-center">
+            <h3 className="font-bold text-blue-800">📝 Descripción del Anuncio</h3>
+            <span className="text-xs text-blue-600 bg-white px-2 py-1 rounded-full border border-blue-200">
+              Potenciado por IA ✨
+            </span>
+          </div>
+
+          {/* Campo de notas rápidas */}
+          <div>
+            <label className="block text-xs font-semibold text-blue-700 mb-1">
+              Notas para la IA (Opcional)
+            </label>
+            <input
+              type="text"
+              value={extraNotes}
+              onChange={(e) => setExtraNotes(e.target.value)}
+              placeholder="Ej: Ideal para familias, precio conversable, vista al mar..."
+              className="w-full p-2 text-sm border border-blue-200 rounded focus:ring-2 focus:ring-blue-500 outline-none"
+            />
+          </div>
+
+          {/* Botón Mágico */}
+          <button
+            type="button"
+            onClick={handleGenerateDescription}
+            disabled={isGenerating}
+            className="w-full py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg font-bold text-sm shadow-sm hover:shadow-md transition-all flex justify-center items-center gap-2 disabled:opacity-70"
+          >
+            {isGenerating ? (
+              <span>🧠 Redactando...</span>
+            ) : (
+              <>
+                <span>✨ Generar Descripción Profesional</span>
+              </>
+            )}
+          </button>
+
+          {/* El Textarea Final (Editable) */}
+          <textarea
+            id="description"
+            name="descripcion"
+            rows={8}
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="La descripción generada aparecerá aquí..."
+            className="w-full p-3 border rounded-md focus:ring-2 focus:ring-blue-500 outline-none"
+          />
+        </div>
 
         {/* Campo WhatsApp de Contacto */}
         <div style={{ marginBottom: '15px' }}>

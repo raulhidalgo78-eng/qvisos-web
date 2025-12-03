@@ -24,6 +24,7 @@ function AnuncioForm() {
 
   // Estado para la categoría (se llena con el URL param si existe)
   const [category, setCategory] = useState('');
+  const [operacion, setOperacion] = useState('Venta');
 
   // Estado para detectar la categoría real del QR (desde la BD)
   const [qrCategory, setQrCategory] = useState<string | null>(null);
@@ -85,7 +86,11 @@ function AnuncioForm() {
   // Efecto para inicializar categoría desde URL
   useEffect(() => {
     if (urlTipo === 'auto') setCategory('autos');
-    else if (urlTipo.includes('propiedad')) setCategory('inmuebles');
+    else if (urlTipo.includes('propiedad')) {
+      setCategory('inmuebles');
+      if (urlTipo.includes('arriendo')) setOperacion('Arriendo');
+      else setOperacion('Venta');
+    }
     else if (urlTipo) setCategory('otros');
   }, [urlTipo]);
 
@@ -256,56 +261,7 @@ function AnuncioForm() {
           />
         </div>
 
-        {/* Campo Descripción con IA */}
-        <div className="bg-blue-50 p-4 rounded-lg border border-blue-200 space-y-3 mb-4">
-          <div className="flex justify-between items-center">
-            <h3 className="font-bold text-blue-800">📝 Descripción del Anuncio</h3>
-            <span className="text-xs text-blue-600 bg-white px-2 py-1 rounded-full border border-blue-200">
-              Potenciado por IA ✨
-            </span>
-          </div>
 
-          {/* Campo de notas rápidas */}
-          <div>
-            <label className="block text-xs font-semibold text-blue-700 mb-1">
-              Notas para la IA (Opcional)
-            </label>
-            <input
-              type="text"
-              value={extraNotes}
-              onChange={(e) => setExtraNotes(e.target.value)}
-              placeholder="Ej: Ideal para familias, precio conversable, vista al mar..."
-              className="w-full p-2 text-sm border border-blue-200 rounded focus:ring-2 focus:ring-blue-500 outline-none"
-            />
-          </div>
-
-          {/* Botón Mágico */}
-          <button
-            type="button"
-            onClick={handleGenerateDescription}
-            disabled={isGenerating}
-            className="w-full py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg font-bold text-sm shadow-sm hover:shadow-md transition-all flex justify-center items-center gap-2 disabled:opacity-70"
-          >
-            {isGenerating ? (
-              <span>🧠 Redactando...</span>
-            ) : (
-              <>
-                <span>✨ Generar Descripción Profesional</span>
-              </>
-            )}
-          </button>
-
-          {/* El Textarea Final (Editable) */}
-          <textarea
-            id="description"
-            name="descripcion"
-            rows={8}
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            placeholder="La descripción generada aparecerá aquí..."
-            className="w-full p-3 border rounded-md focus:ring-2 focus:ring-blue-500 outline-none"
-          />
-        </div>
 
         {/* Campo Categoría - Ocultar si viene predefinida */}
         {!urlTipo && (
@@ -428,7 +384,12 @@ function AnuncioForm() {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs font-semibold text-gray-500 mb-1">Operación</label>
-                <select name="operacion" className="w-full p-3 border rounded-lg bg-white focus:ring-2 focus:ring-blue-500">
+                <select
+                  name="operacion"
+                  value={operacion}
+                  onChange={(e) => setOperacion(e.target.value)}
+                  className="w-full p-3 border rounded-lg bg-white focus:ring-2 focus:ring-blue-500"
+                >
                   <option value="Venta">Venta</option>
                   <option value="Arriendo">Arriendo</option>
                   <option value="Arriendo_Temporal">Arriendo de Temporada</option>
@@ -540,6 +501,57 @@ function AnuncioForm() {
             </div>
           </div>
         )}
+
+        {/* Campo Descripción con IA */}
+        <div className="bg-blue-50 p-4 rounded-lg border border-blue-200 space-y-3 mb-4">
+          <div className="flex justify-between items-center">
+            <h3 className="font-bold text-blue-800">📝 Descripción del Anuncio</h3>
+            <span className="text-xs text-blue-600 bg-white px-2 py-1 rounded-full border border-blue-200">
+              Potenciado por IA ✨
+            </span>
+          </div>
+
+          {/* Campo de notas rápidas */}
+          <div>
+            <label className="block text-xs font-semibold text-blue-700 mb-1">
+              Notas para la IA (Opcional)
+            </label>
+            <input
+              type="text"
+              value={extraNotes}
+              onChange={(e) => setExtraNotes(e.target.value)}
+              placeholder="Ej: Ideal para familias, precio conversable, vista al mar..."
+              className="w-full p-2 text-sm border border-blue-200 rounded focus:ring-2 focus:ring-blue-500 outline-none"
+            />
+          </div>
+
+          {/* Botón Mágico */}
+          <button
+            type="button"
+            onClick={handleGenerateDescription}
+            disabled={isGenerating}
+            className="w-full py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg font-bold text-sm shadow-sm hover:shadow-md transition-all flex justify-center items-center gap-2 disabled:opacity-70"
+          >
+            {isGenerating ? (
+              <span>🧠 Redactando...</span>
+            ) : (
+              <>
+                <span>✨ Generar Descripción Profesional</span>
+              </>
+            )}
+          </button>
+
+          {/* El Textarea Final (Editable) */}
+          <textarea
+            id="description"
+            name="descripcion"
+            rows={8}
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="La descripción generada aparecerá aquí..."
+            className="w-full p-3 border rounded-md focus:ring-2 focus:ring-blue-500 outline-none"
+          />
+        </div>
 
         {/* Campo WhatsApp de Contacto */}
         <div style={{ marginBottom: '15px' }}>

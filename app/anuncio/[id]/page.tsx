@@ -117,7 +117,10 @@ export default async function AdDetailPage({ params }: Props) {
               ) : (
                 <div className="bg-blue-50 border border-blue-200 p-4 rounded-lg text-center">
                   <p className="text-blue-800 font-medium text-sm">
-                    🔒 Para ver el contacto, por favor conversa primero con nuestro <strong>Asistente Virtual</strong> arriba 👆
+                    🔒 Contacto gestionado por Agente IA
+                  </p>
+                  <p className="text-xs text-blue-600 mt-1">
+                    Habla con el asistente arriba para agendar una visita.
                   </p>
                 </div>
               )

@@ -544,7 +544,7 @@ function AnuncioForm() {
           {/* El Textarea Final (Editable) */}
           <textarea
             id="description"
-            name="descripcion"
+            name="description" // IMPORTANTE: El nombre debe coincidir con la columna DB
             rows={8}
             value={description}
             onChange={(e) => setDescription(e.target.value)}

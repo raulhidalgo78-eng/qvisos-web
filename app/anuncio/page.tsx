@@ -58,7 +58,7 @@ function AnuncioForm() {
       });
       const data = await res.json();
       if (data.description) {
-        setDescription(data.description);
+        setDescription(data.description); // <--- ESTO ES CRÍTICO
       }
     } catch (e) {
       alert('Error al generar descripción');

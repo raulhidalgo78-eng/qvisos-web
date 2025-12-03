@@ -27,6 +27,10 @@ export default async function AdDetailPage({ params }: Props) {
   const { data: { user } } = await supabase.auth.getUser();
   const isOwner = user && user.id === ad.user_id;
 
+  // Determinar preferencia de contacto (default: whatsapp_directo para anuncios antiguos)
+  const contactPreference = ad.features?.contact_preference || 'whatsapp_directo';
+  const showWhatsAppButton = contactPreference === 'whatsapp_directo' || isOwner; // El dueño siempre ve el botón
+
   const colors = {
     primary: '#1a202c',
     success: '#10b981',
@@ -94,22 +98,32 @@ export default async function AdDetailPage({ params }: Props) {
               <AdChat adData={ad} />
             )}
 
-            {/* 2. WHATSAPP (Solo si hay teléfono) */}
-            {ad.contact_phone ? (
-              <a
-                href={`https://wa.me/${ad.contact_phone.replace(/\D/g, '')}?text=Hola, vi tu anuncio ${encodeURIComponent(ad.title)} en Qvisos.cl`}
-                target="_blank"
-                rel="noopener noreferrer"
-                style={{
-                  display: 'block', width: '100%', padding: '15px', textAlign: 'center',
-                  backgroundColor: '#25D366', color: 'white', textDecoration: 'none',
-                  borderRadius: '8px', fontSize: '1.1rem', fontWeight: 'bold',
-                  boxShadow: '0 4px 6px -1px rgba(37, 211, 102, 0.3)'
-                }}
-              >
-                Contactar por WhatsApp
-              </a>
-            ) : (
+            {/* 2. WHATSAPP (Condicional) */}
+            {ad.contact_phone && (
+              showWhatsAppButton ? (
+                <a
+                  href={`https://wa.me/${ad.contact_phone.replace(/\D/g, '')}?text=Hola, vi tu anuncio ${encodeURIComponent(ad.title)} en Qvisos.cl`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    display: 'block', width: '100%', padding: '15px', textAlign: 'center',
+                    backgroundColor: '#25D366', color: 'white', textDecoration: 'none',
+                    borderRadius: '8px', fontSize: '1.1rem', fontWeight: 'bold',
+                    boxShadow: '0 4px 6px -1px rgba(37, 211, 102, 0.3)'
+                  }}
+                >
+                  Contactar por WhatsApp
+                </a>
+              ) : (
+                <div className="bg-blue-50 border border-blue-200 p-4 rounded-lg text-center">
+                  <p className="text-blue-800 font-medium text-sm">
+                    🔒 Para ver el contacto, por favor conversa primero con nuestro <strong>Asistente Virtual</strong> arriba 👆
+                  </p>
+                </div>
+              )
+            )}
+
+            {!ad.contact_phone && (
               <button disabled style={{ width: '100%', padding: '15px', backgroundColor: '#9ca3af', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'not-allowed' }}>
                 Contacto no disponible
               </button>

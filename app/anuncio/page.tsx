@@ -1,5 +1,3 @@
-// En: app/anuncio/page.tsx
-
 'use client'; // Este formulario debe ser un Client Component
 
 import { createClient } from '@/utils/supabase/client'; // ¡Importante! Usamos el cliente del NAVEGADOR
@@ -422,170 +420,126 @@ function AnuncioForm() {
         )}
 
         {/* CAMPOS ESPECÍFICOS: PROPIEDAD */}
-        {/* CAMPOS ESPECÍFICOS: PROPIEDAD */}
         {showPropertyFields && (
-          <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 space-y-4">
-            <h3 className="font-bold text-gray-700">Detalles de la Propiedad</h3>
+          <div className="bg-gray-50 p-6 rounded-xl border border-gray-200 space-y-6 mb-6">
+            <h3 className="font-bold text-gray-800 text-lg border-b pb-2">🏡 Detalles de la Propiedad</h3>
 
-            {/* Fila 1: Tipo y Orientación */}
+            {/* Fila 1: Operación y Tipo */}
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-semibold text-gray-500 mb-1">Tipo de Propiedad</label>
-                <select name="tipo_propiedad" className="w-full p-2 border rounded bg-white">
+                <label className="block text-xs font-semibold text-gray-500 mb-1">Operación</label>
+                <select name="operacion" className="w-full p-3 border rounded-lg bg-white focus:ring-2 focus:ring-blue-500">
+                  <option value="Venta">Venta</option>
+                  <option value="Arriendo">Arriendo</option>
+                  <option value="Arriendo_Temporal">Arriendo de Temporada</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 mb-1">Tipo Propiedad</label>
+                <select name="tipo_propiedad" className="w-full p-3 border rounded-lg bg-white focus:ring-2 focus:ring-blue-500">
                   <option value="Departamento">Departamento</option>
                   <option value="Casa">Casa</option>
                   <option value="Parcela">Parcela</option>
                   <option value="Oficina">Oficina</option>
-                  <option value="Local">Local Comercial</option>
-                  <option value="Terreno">Terreno Urbano</option>
+                  <option value="Terreno">Terreno</option>
                 </select>
               </div>
+            </div>
+
+            {/* Fila 2: Superficies y Orientación */}
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
               <div>
-                <label className="block text-xs font-semibold text-gray-500 mb-1">Orientación (Sol)</label>
-                <select name="orientacion" className="w-full p-2 border rounded bg-white">
+                <label className="block text-xs font-semibold text-gray-500 mb-1">M² Útiles (Interior)</label>
+                <input name="m2_utiles" type="number" placeholder="Ej: 80" className="w-full p-3 border rounded-lg" required />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 mb-1">M² Totales (Con Terraza)</label>
+                <input name="m2_totales" type="number" placeholder="Ej: 95" className="w-full p-3 border rounded-lg" required />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 mb-1">Orientación</label>
+                <select name="orientacion" className="w-full p-3 border rounded-lg bg-white">
                   <option value="">Seleccione...</option>
-                  <option value="Norte">Norte (Sol todo el día)</option>
-                  <option value="Nor-Oriente">Nor-Oriente (Sol mañana)</option>
-                  <option value="Nor-Poniente">Nor-Poniente (Sol tarde)</option>
-                  <option value="Sur">Sur (Fresco)</option>
+                  <option value="Norte">Norte (Sol)</option>
+                  <option value="Nor-Oriente">Nor-Oriente (Mañana)</option>
+                  <option value="Nor-Poniente">Nor-Poniente (Tarde)</option>
+                  <option value="Sur">Sur</option>
                   <option value="Oriente">Oriente</option>
                   <option value="Poniente">Poniente</option>
                 </select>
               </div>
             </div>
 
-            {/* Fila 2: Superficies y Habitaciones */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="block text-xs font-semibold text-gray-500 mb-1">m² Útiles</label>
-                  <input name="m2_utiles" type="number" className="w-full p-2 border rounded" />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-gray-500 mb-1">m² Totales</label>
-                  <input name="m2_totales" type="number" className="w-full p-2 border rounded" />
+            {/* Fila 3: Distribución */}
+            <div className="grid grid-cols-4 gap-2 md:gap-4">
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 mb-1">Dorms</label>
+                <input name="dormitorios" type="number" className="w-full p-3 border rounded-lg text-center" placeholder="3" />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 mb-1">Baños</label>
+                <input name="banos" type="number" className="w-full p-3 border rounded-lg text-center" placeholder="2" />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 mb-1">Estac.</label>
+                <input name="estacionamientos" type="number" className="w-full p-3 border rounded-lg text-center" defaultValue="0" />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 mb-1">Bodega</label>
+                <input name="bodegas" type="number" className="w-full p-3 border rounded-lg text-center" defaultValue="0" />
+              </div>
+            </div>
+
+            {/* Fila 4: Bolsillo (Gastos Comunes y Contribuciones) */}
+            <div className="grid grid-cols-2 gap-4 pt-2 border-t border-gray-100">
+              <div>
+                <label className="block text-xs font-bold text-gray-700 mb-1">Gastos Comunes (Aprox)</label>
+                <div className="relative">
+                  <span className="absolute left-3 top-3 text-gray-400">$</span>
+                  <input name="gastos_comunes" type="number" placeholder="120000" className="w-full p-3 pl-7 border rounded-lg" />
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="block text-xs font-semibold text-gray-500 mb-1">Dormitorios</label>
-                  <input name="dormitorios" type="number" className="w-full p-2 border rounded" />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-gray-500 mb-1">Baños</label>
-                  <input name="banos" type="number" className="w-full p-2 border rounded" />
+              <div>
+                <label className="block text-xs font-bold text-gray-700 mb-1">Contribuciones (Trimestral)</label>
+                <div className="relative">
+                  <span className="absolute left-3 top-3 text-gray-400">$</span>
+                  <input name="contribuciones" type="number" placeholder="85000" className="w-full p-3 pl-7 border rounded-lg" />
                 </div>
               </div>
             </div>
 
-            {/* Fila 3: Extras */}
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-semibold text-gray-500 mb-1">Estacionamientos</label>
-                <input name="estacionamientos" type="number" className="w-full p-2 border rounded" />
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-gray-500 mb-1">Bodegas</label>
-                <input name="bodegas" type="number" className="w-full p-2 border rounded" />
-              </div>
-            </div>
-
-            {/* Fila 4: Costos Mensuales */}
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-semibold text-gray-500 mb-1">Gastos Comunes ($)</label>
-                <input name="gastos_comunes" type="number" className="w-full p-2 border rounded" />
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-gray-500 mb-1">Contribuciones ($)</label>
-                <input name="contribuciones" type="number" className="w-full p-2 border rounded" />
-              </div>
-            </div>
-
-            {/* Fila 5: Checkboxes y Amenities */}
-            <div className="space-y-2 pt-2">
-              <div className="flex gap-4 flex-wrap">
-                <label className="flex items-center space-x-2 cursor-pointer">
-                  <input type="checkbox" name="recepcion_final" className="rounded text-gray-600" />
-                  <span className="text-sm text-gray-600">Recepción Final</span>
+            {/* Fila 5: Checkboxes Legales y Lifestyle */}
+            <div className="pt-2 border-t border-gray-100">
+              <span className="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-3">Características y Estado</span>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-y-3">
+                <label className="flex items-center space-x-2 cursor-pointer bg-white p-2 rounded border hover:border-blue-300">
+                  <input type="checkbox" name="recepcion_final" className="rounded text-green-600 focus:ring-green-500" />
+                  <span className="text-xs md:text-sm text-gray-700 font-medium">✅ Recepción Final</span>
                 </label>
-                <label className="flex items-center space-x-2 cursor-pointer">
-                  <input type="checkbox" name="mascotas" className="rounded text-gray-600" />
-                  <span className="text-sm text-gray-600">Mascotas Permitidas</span>
+                <label className="flex items-center space-x-2 cursor-pointer bg-white p-2 rounded border hover:border-blue-300">
+                  <input type="checkbox" name="mascotas" className="rounded text-blue-600 focus:ring-blue-500" />
+                  <span className="text-xs md:text-sm text-gray-700">🐶 Mascotas OK</span>
                 </label>
-                <label className="flex items-center space-x-2 cursor-pointer">
-                  <input type="checkbox" name="amoblado" className="rounded text-gray-600" />
-                  <span className="text-sm text-gray-600">Amoblado</span>
+                <label className="flex items-center space-x-2 cursor-pointer bg-white p-2 rounded border hover:border-blue-300">
+                  <input type="checkbox" name="amoblado" className="rounded text-blue-600 focus:ring-blue-500" />
+                  <span className="text-xs md:text-sm text-gray-700">🛋️ Amoblado</span>
                 </label>
-              </div>
-              <div className="flex gap-4 flex-wrap border-t pt-2 mt-2">
-                <label className="flex items-center space-x-2 cursor-pointer">
+                <label className="flex items-center space-x-2 cursor-pointer bg-white p-2 rounded border hover:border-blue-300">
                   <input type="checkbox" name="conserjeria" className="rounded text-gray-600" />
-                  <span className="text-sm text-gray-600">Conserjería 24/7</span>
+                  <span className="text-xs md:text-sm text-gray-700">👮‍♂️ Conserjería 24/7</span>
                 </label>
-                <label className="flex items-center space-x-2 cursor-pointer">
+                <label className="flex items-center space-x-2 cursor-pointer bg-white p-2 rounded border hover:border-blue-300">
                   <input type="checkbox" name="quincho" className="rounded text-gray-600" />
-                  <span className="text-sm text-gray-600">Quincho / Asados</span>
+                  <span className="text-xs md:text-sm text-gray-700">🍖 Quincho</span>
                 </label>
-                <label className="flex items-center space-x-2 cursor-pointer">
+                <label className="flex items-center space-x-2 cursor-pointer bg-white p-2 rounded border hover:border-blue-300">
                   <input type="checkbox" name="piscina" className="rounded text-gray-600" />
-                  <span className="text-sm text-gray-600">Piscina</span>
+                  <span className="text-xs md:text-sm text-gray-700">🏊‍♂️ Piscina</span>
                 </label>
               </div>
             </div>
           </div>
         )}
-
-        {/* Campo Descripción con IA */}
-        <div className="bg-blue-50 p-4 rounded-lg border border-blue-200 space-y-3 mb-4">
-          <div className="flex justify-between items-center">
-            <h3 className="font-bold text-blue-800">📝 Descripción del Anuncio</h3>
-            <span className="text-xs text-blue-600 bg-white px-2 py-1 rounded-full border border-blue-200">
-              Potenciado por IA ✨
-            </span>
-          </div>
-
-          {/* Campo de notas rápidas */}
-          <div>
-            <label className="block text-xs font-semibold text-blue-700 mb-1">
-              Notas para la IA (Opcional)
-            </label>
-            <input
-              type="text"
-              value={extraNotes}
-              onChange={(e) => setExtraNotes(e.target.value)}
-              placeholder="Ej: Ideal para familias, precio conversable, vista al mar..."
-              className="w-full p-2 text-sm border border-blue-200 rounded focus:ring-2 focus:ring-blue-500 outline-none"
-            />
-          </div>
-
-          {/* Botón Mágico */}
-          <button
-            type="button"
-            onClick={handleGenerateDescription}
-            disabled={isGenerating}
-            className="w-full py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg font-bold text-sm shadow-sm hover:shadow-md transition-all flex justify-center items-center gap-2 disabled:opacity-70"
-          >
-            {isGenerating ? (
-              <span>🧠 Redactando...</span>
-            ) : (
-              <>
-                <span>✨ Generar Descripción Profesional</span>
-              </>
-            )}
-          </button>
-
-          {/* El Textarea Final (Editable) */}
-          <textarea
-            id="description"
-            name="descripcion"
-            rows={8}
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            placeholder="La descripción generada aparecerá aquí..."
-            className="w-full p-3 border rounded-md focus:ring-2 focus:ring-blue-500 outline-none"
-          />
-        </div>
 
         {/* Campo WhatsApp de Contacto */}
         <div style={{ marginBottom: '15px' }}>

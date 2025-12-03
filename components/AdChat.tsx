@@ -18,10 +18,18 @@ export default function AdChat({ adData }: AdChatProps) {
     Contacto: ${adData.contact_phone}
   `;
 
+    // Extract contact preference from features
+    const contactPreference = adData.features?.contact_preference || 'whatsapp_directo';
+    const sellerName = 'el vendedor'; // Placeholder until we fetch user profile
+
     // 2. Hook del Chat (Vercel AI SDK)
     const { messages, input, handleInputChange, handleSubmit, isLoading } = useChat({
         api: '/api/chat',
-        body: { adContext: contextString },
+        body: {
+            adContext: contextString,
+            contactPreference,
+            sellerName
+        },
         onError: (err: any) => console.error("Error en el chat:", err)
     } as any) as any;
 

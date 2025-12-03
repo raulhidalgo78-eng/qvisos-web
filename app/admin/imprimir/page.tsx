@@ -25,7 +25,7 @@ export default function ProductionStation() {
   // MAPA DE PLANTILLAS
   const TEMPLATES: Record<string, { url: string, orientation: 'portrait' | 'landscape' }> = {
     venta_propiedad: {
-      url: 'https://wcczvedassfquzdrmwko.supabase.co/storage/v1/object/public/media/Se%20Vende.png',
+      url: 'https://wcczvedassfquzdrmwko.supabase.co/storage/v1/object/public/media/SE%20VENDE.png',
       orientation: 'portrait'
     },
     arriendo_propiedad: {

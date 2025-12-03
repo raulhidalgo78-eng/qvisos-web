@@ -3,11 +3,14 @@ import { generateText } from 'ai';
 import { NextResponse } from 'next/server';
 
 export async function POST(req: Request) {
-    // Debug: Ver si la llave existe (sin mostrarla completa por seguridad)
-    console.log("🔑 API Key Configurada:", process.env.OPENAI_API_KEY ? "SÍ" : "NO");
+    // 1. Diagnóstico de seguridad (Solo logueamos si existe o no, NUNCA la llave)
+    console.log("🔍 API Check - OpenAI Key exists:", !!process.env.OPENAI_API_KEY);
 
     if (!process.env.OPENAI_API_KEY) {
-        return NextResponse.json({ error: 'Server: Falta OPENAI_API_KEY' }, { status: 500 });
+        return NextResponse.json(
+            { error: 'CONFIG_ERROR: Falta la OPENAI_API_KEY en Vercel (Environment Variables).' },
+            { status: 500 } // Cambiado a 500 para alertar configuración
+        );
     }
 
     try {
@@ -24,6 +27,7 @@ export async function POST(req: Request) {
 
     } catch (error: any) {
         console.error("❌ Error OpenAI:", error);
+        // Devolver el mensaje exacto del error para poder depurar en el frontend
         return NextResponse.json({ error: error.message || 'Error generando texto' }, { status: 500 });
     }
 }

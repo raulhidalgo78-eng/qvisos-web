@@ -7,9 +7,15 @@ interface LocationPickerProps {
 }
 
 export default function LocationPicker({ onLocationSelect }: LocationPickerProps) {
-    const { isLoaded } = useLoadScript({
+    const { isLoaded, loadError } = useLoadScript({
         googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY as string,
     });
+
+    console.log("🗺️ Google Maps Key Check:", process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ? "Loaded" : "Missing");
+
+    if (loadError) {
+        return <div>Error cargando Google Maps. Verifique la API Key.</div>;
+    }
 
     // Centro por defecto (Santiago de Chile)
     const defaultCenter = useMemo(() => ({ lat: -33.4489, lng: -70.6693 }), []);

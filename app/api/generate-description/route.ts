@@ -27,19 +27,20 @@ export async function POST(req: Request) {
 
         // Construct a safe prompt even if features are empty
         const prompt = `
-      Act as an expert copywriter for real estate and automotive sales in Chile.
-      Write a professional, persuasive ad description based on the following:
-      - Category: ${category || 'General'}
-      - Price: ${priceText}
-      - Location: ${locationText}
-      - Details: ${JSON.stringify(otherFeatures || {})}
-      - User Notes: ${extraNotes || 'None'}
-      
-      Requirements:
-      - Use Chilean terminology (e.g., 'Gastos comunes', 'Permiso de circulación').
-      - Highlight key selling points.
-      - Keep it under 200 words.
-      - End with a call to action.
+      Eres un redactor experto en avisos clasificados.
+      Tu objetivo es escribir una descripción atractiva y breve (máximo 4 párrafos cortos) basada en lo siguiente:
+      - Categoría: ${category || 'General'}
+      - Precio: ${priceText}
+      - Ubicación: ${locationText}
+      - Detalles: ${JSON.stringify(otherFeatures || {})}
+      - Notas del Usuario: ${extraNotes || 'Ninguna'}
+
+      REGLAS ESTRICTAS DE FORMATO:
+      - NO uses símbolos de Markdown como '##', '###' o '**'. Escribe texto plano limpio.
+      - NO incluyas el número de teléfono ni contacto en el texto. El sitio web ya tiene un botón para eso.
+      - Sé directo y vendedor. Evita introducciones largas como "¡Tu nueva casa te espera!". Ve al grano con los beneficios.
+      - Usa terminología chilena adecuada (ej: "Gastos comunes", "Contribuciones", "Piezas", "Living comedor").
+      - Si es arriendo, destaca los requisitos si los hay.
     `;
 
         const { text } = await generateText({

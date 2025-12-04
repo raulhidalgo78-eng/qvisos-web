@@ -25,6 +25,7 @@ function AnuncioForm() {
   // Estado para la categoría (se llena con el URL param si existe)
   const [category, setCategory] = useState('');
   const [operacion, setOperacion] = useState('Venta');
+  const [moneda, setMoneda] = useState('CLP');
 
   // Estado para detectar la categoría real del QR (desde la BD)
   const [qrCategory, setQrCategory] = useState<string | null>(null);
@@ -55,6 +56,9 @@ function AnuncioForm() {
       }
       return acc;
     }, {} as any);
+
+    // Asegurar que la moneda y precio se incluyan
+    features.moneda = moneda;
 
     try {
       const res = await fetch('/api/generate-description', {
@@ -288,8 +292,6 @@ function AnuncioForm() {
           />
         </div>
 
-
-
         {/* Campo Categoría - Ocultar si viene predefinida */}
         {!urlTipo && (
           <div style={{ marginBottom: '15px' }}>
@@ -313,8 +315,7 @@ function AnuncioForm() {
         {/* Si viene predefinida, enviamos el valor oculto */}
         {urlTipo && <input type="hidden" name="categoria" value={category} />}
 
-        {/* CAMPOS ESPECÍFICOS: AUTO */}
-        {/* CAMPOS ESPECÍFICOS: AUTO */}
+        {/* 1. DETALLES (Bloques condicionales existentes) */}
         {showAutoFields && (
           <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 space-y-4">
             <h3 className="font-bold text-gray-700">Detalles del Vehículo</h3>
@@ -402,7 +403,6 @@ function AnuncioForm() {
           </div>
         )}
 
-        {/* CAMPOS ESPECÍFICOS: PROPIEDAD */}
         {showPropertyFields && (
           <div className="bg-gray-50 p-6 rounded-xl border border-gray-200 space-y-6 mb-6">
             <h3 className="font-bold text-gray-800 text-lg border-b pb-2">🏡 Detalles de la Propiedad</h3>
@@ -529,7 +529,41 @@ function AnuncioForm() {
           </div>
         )}
 
-        {/* Campo Descripción con IA */}
+        {/* 2. UBICACIÓN (LocationPicker) */}
+        <div style={{ marginBottom: '15px' }}>
+          <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Ubicación</label>
+          <LocationPicker onLocationSelect={(la, lo) => { setLat(la); setLng(lo); }} />
+          <input type="hidden" name="latitude" value={lat || ''} />
+          <input type="hidden" name="longitude" value={lng || ''} />
+        </div>
+
+        {/* 3. PRECIO (Nuevo diseño con Moneda) */}
+        <div style={{ marginBottom: '15px' }}>
+          <label htmlFor="price" style={{ display: 'block', marginBottom: '5px' }}>Precio</label>
+          <div className="flex gap-2">
+            <select
+              name="moneda"
+              value={moneda}
+              onChange={(e) => setMoneda(e.target.value)}
+              className="p-2 border rounded bg-white"
+              style={{ width: '100px' }}
+            >
+              <option value="CLP">CLP</option>
+              <option value="UF">UF</option>
+              <option value="USD">USD</option>
+            </select>
+            <input
+              id="price"
+              name="precio"
+              type="number"
+              placeholder="Ej: 9500000"
+              className="flex-1 p-2 border rounded"
+              style={{ color: '#333' }}
+            />
+          </div>
+        </div>
+
+        {/* 4. DESCRIPCIÓN CON IA (Ahora lee todo lo de arriba) */}
         <div className="bg-blue-50 p-4 rounded-lg border border-blue-200 space-y-3 mb-4">
           <div className="flex justify-between items-center">
             <h3 className="font-bold text-blue-800">📝 Descripción del Anuncio</h3>
@@ -580,7 +614,7 @@ function AnuncioForm() {
           />
         </div>
 
-        {/* Campo WhatsApp de Contacto */}
+        {/* 5. CONTACTO */}
         <div style={{ marginBottom: '15px' }}>
           <label htmlFor="contact_phone" style={{ display: 'block', marginBottom: '5px' }}>WhatsApp de Contacto (+569...)</label>
           <input
@@ -593,26 +627,7 @@ function AnuncioForm() {
           />
         </div>
 
-        {/* Campo Precio */}
-        <div style={{ marginBottom: '15px' }}>
-          <label htmlFor="price" style={{ display: 'block', marginBottom: '5px' }}>Precio (CLP)</label>
-          <input
-            id="price"
-            name="precio"
-            type="number"
-            style={{ width: '100%', padding: '8px', color: '#333' }}
-          />
-        </div>
-
-        {/* Campo Ubicación (Mapa) */}
-        <div style={{ marginBottom: '15px' }}>
-          <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Ubicación</label>
-          <LocationPicker onLocationSelect={(la, lo) => { setLat(la); setLng(lo); }} />
-          <input type="hidden" name="latitude" value={lat || ''} />
-          <input type="hidden" name="longitude" value={lng || ''} />
-        </div>
-
-        {/* Campo de Archivo (Imagen/Video) */}
+        {/* 6. IMÁGENES */}
         <div style={{ marginBottom: '15px' }}>
           <label htmlFor="file" style={{ display: 'block', marginBottom: '5px' }}>Imagen Principal</label>
           <input

@@ -529,14 +529,6 @@ function AnuncioForm() {
           </div>
         )}
 
-        {/* 2. UBICACIÓN (LocationPicker) */}
-        <div style={{ marginBottom: '15px' }}>
-          <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Ubicación</label>
-          <LocationPicker onLocationSelect={(la, lo) => { setLat(la); setLng(lo); }} />
-          <input type="hidden" name="latitude" value={lat || ''} />
-          <input type="hidden" name="longitude" value={lng || ''} />
-        </div>
-
         {/* 3. PRECIO (Nuevo diseño con Moneda) */}
         <div style={{ marginBottom: '15px' }}>
           <label htmlFor="price" style={{ display: 'block', marginBottom: '5px' }}>Precio</label>
@@ -561,6 +553,52 @@ function AnuncioForm() {
               style={{ color: '#333' }}
             />
           </div>
+        </div>
+
+        <div className="bg-indigo-50 p-6 rounded-xl border border-indigo-200 mt-6 mb-6">
+          <h3 className="font-bold text-indigo-900 mb-3 flex items-center gap-2">
+            🛡️ ¿Cómo quieres que te contacten?
+          </h3>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* OPCIÓN 1: Agente Inteligente (Recomendado) */}
+            <label className="relative flex p-4 cursor-pointer rounded-lg border-2 bg-white transition-all hover:shadow-md border-indigo-500 ring-1 ring-indigo-500">
+              <input type="radio" name="contact_preference" value="agente_ia" defaultChecked className="mt-1 mr-3 text-indigo-600 focus:ring-indigo-500" />
+              <div>
+                <span className="block font-bold text-gray-900">Agente IA (Filtro) ✨</span>
+                <span className="block text-xs text-gray-500 mt-1">
+                  El asistente responde dudas, pregunta por financiamiento y filtra curiosos. Solo te notifica prospectos reales.
+                </span>
+              </div>
+              <span className="absolute top-0 right-0 bg-indigo-600 text-white text-[10px] px-2 py-0.5 rounded-bl-lg rounded-tr-md font-bold">
+                RECOMENDADO
+              </span>
+            </label>
+
+            {/* OPCIÓN 2: WhatsApp Directo */}
+            <label className="relative flex p-4 cursor-pointer rounded-lg border-2 border-gray-200 bg-white transition-all hover:border-gray-400">
+              <input type="radio" name="contact_preference" value="whatsapp_directo" className="mt-1 mr-3 text-gray-600 focus:ring-gray-500" />
+              <div>
+                <span className="block font-bold text-gray-900">WhatsApp Directo</span>
+                <span className="block text-xs text-gray-500 mt-1">
+                  Los interesados verán tu botón de WhatsApp de inmediato. Recibirás todos los mensajes sin filtro.
+                </span>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        {/* 5. CONTACTO */}
+        <div style={{ marginBottom: '15px' }}>
+          <label htmlFor="contact_phone" style={{ display: 'block', marginBottom: '5px' }}>WhatsApp de Contacto (+569...)</label>
+          <input
+            id="contact_phone"
+            name="contact_phone"
+            type="tel"
+            placeholder="+56912345678"
+            required
+            style={{ width: '100%', padding: '8px', color: '#333' }}
+          />
         </div>
 
         {/* 4. DESCRIPCIÓN CON IA (Ahora lee todo lo de arriba) */}
@@ -614,17 +652,12 @@ function AnuncioForm() {
           />
         </div>
 
-        {/* 5. CONTACTO */}
+        {/* 2. UBICACIÓN (LocationPicker) */}
         <div style={{ marginBottom: '15px' }}>
-          <label htmlFor="contact_phone" style={{ display: 'block', marginBottom: '5px' }}>WhatsApp de Contacto (+569...)</label>
-          <input
-            id="contact_phone"
-            name="contact_phone"
-            type="tel"
-            placeholder="+56912345678"
-            required
-            style={{ width: '100%', padding: '8px', color: '#333' }}
-          />
+          <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Ubicación</label>
+          <LocationPicker onLocationSelect={(la, lo) => { setLat(la); setLng(lo); }} />
+          <input type="hidden" name="latitude" value={lat || ''} />
+          <input type="hidden" name="longitude" value={lng || ''} />
         </div>
 
         {/* 6. IMÁGENES */}
@@ -638,44 +671,6 @@ function AnuncioForm() {
             required
             style={{ width: '100%', padding: '8px', color: '#333' }}
           />
-        </div>
-
-        <hr style={{ margin: '20px 0' }} />
-
-        {/* Muestra errores si existen */}
-        {error && <p style={{ color: 'red', marginBottom: '10px' }}>Error: {error}</p>}
-
-        <div className="bg-indigo-50 p-6 rounded-xl border border-indigo-200 mt-6 mb-6">
-          <h3 className="font-bold text-indigo-900 mb-3 flex items-center gap-2">
-            🛡️ ¿Cómo quieres que te contacten?
-          </h3>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* OPCIÓN 1: Agente Inteligente (Recomendado) */}
-            <label className="relative flex p-4 cursor-pointer rounded-lg border-2 bg-white transition-all hover:shadow-md border-indigo-500 ring-1 ring-indigo-500">
-              <input type="radio" name="contact_preference" value="agente_ia" defaultChecked className="mt-1 mr-3 text-indigo-600 focus:ring-indigo-500" />
-              <div>
-                <span className="block font-bold text-gray-900">Agente IA (Filtro) ✨</span>
-                <span className="block text-xs text-gray-500 mt-1">
-                  El asistente responde dudas, pregunta por financiamiento y filtra curiosos. Solo te notifica prospectos reales.
-                </span>
-              </div>
-              <span className="absolute top-0 right-0 bg-indigo-600 text-white text-[10px] px-2 py-0.5 rounded-bl-lg rounded-tr-md font-bold">
-                RECOMENDADO
-              </span>
-            </label>
-
-            {/* OPCIÓN 2: WhatsApp Directo */}
-            <label className="relative flex p-4 cursor-pointer rounded-lg border-2 border-gray-200 bg-white transition-all hover:border-gray-400">
-              <input type="radio" name="contact_preference" value="whatsapp_directo" className="mt-1 mr-3 text-gray-600 focus:ring-gray-500" />
-              <div>
-                <span className="block font-bold text-gray-900">WhatsApp Directo</span>
-                <span className="block text-xs text-gray-500 mt-1">
-                  Los interesados verán tu botón de WhatsApp de inmediato. Recibirás todos los mensajes sin filtro.
-                </span>
-              </div>
-            </label>
-          </div>
         </div>
 
         <button

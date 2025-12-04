@@ -2,8 +2,6 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { GoogleMap, useLoadScript } from '@react-google-maps/api';
 import usePlacesAutocomplete, { getGeocode, getLatLng } from 'use-places-autocomplete';
-import { Combobox, ComboboxInput, ComboboxPopover, ComboboxList, ComboboxOption } from '@reach/combobox';
-import '@reach/combobox/styles.css';
 
 interface LocationPickerProps {
     onLocationSelect: (lat: number, lng: number) => void;
@@ -58,23 +56,26 @@ export default function LocationPicker({ onLocationSelect }: LocationPickerProps
 
         return (
             <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-10 w-[90%] max-w-md">
-                <Combobox onSelect={handleSelect}>
-                    <ComboboxInput
-                        value={value}
-                        onChange={(e) => setValue(e.target.value)}
-                        disabled={!ready}
-                        className="w-full p-3 rounded-lg shadow-lg border-0 text-gray-800 focus:ring-2 focus:ring-blue-500"
-                        placeholder="🔍 Buscar calle o dirección..."
-                    />
-                    <ComboboxPopover className="z-20 mt-1 rounded-lg shadow-xl bg-white overflow-hidden">
-                        <ComboboxList>
-                            {status === "OK" &&
-                                data.map(({ place_id, description }) => (
-                                    <ComboboxOption key={place_id} value={description} className="p-2 hover:bg-gray-100 cursor-pointer" />
-                                ))}
-                        </ComboboxList>
-                    </ComboboxPopover>
-                </Combobox>
+                <input
+                    value={value}
+                    onChange={(e) => setValue(e.target.value)}
+                    disabled={!ready}
+                    className="w-full p-3 rounded-lg shadow-lg border-0 text-gray-800 focus:ring-2 focus:ring-blue-500"
+                    placeholder="🔍 Buscar dirección..."
+                />
+                {status === "OK" && (
+                    <ul className="bg-white rounded-lg shadow-xl mt-1 overflow-hidden max-h-60 overflow-y-auto">
+                        {data.map(({ place_id, description }) => (
+                            <li
+                                key={place_id}
+                                onClick={() => handleSelect(description)}
+                                className="p-3 hover:bg-gray-100 cursor-pointer text-sm border-b last:border-b-0"
+                            >
+                                {description}
+                            </li>
+                        ))}
+                    </ul>
+                )}
             </div>
         );
     };

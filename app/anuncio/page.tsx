@@ -77,8 +77,18 @@ function AnuncioForm() {
         setDescription(data.description); // Update UI state
       }
     } catch (e: any) {
-      console.error("Generation failed:", e);
-      alert(`Error: ${e.message}`);
+      console.error("Error generación:", e);
+
+      // Detección de errores comunes para mostrar mensaje amigable
+      let mensaje = "Hubo un problema al generar la descripción.";
+
+      if (e.message.includes("quota") || e.message.includes("billing")) {
+        mensaje = "⚠️ Error de Saldo OpenAI: Se ha excedido la cuota de la API Key. Por favor revisa tu facturación en OpenAI.";
+      } else if (e.message.includes("API Key")) {
+        mensaje = "⚠️ Error de Configuración: No se detecta la API Key de OpenAI.";
+      }
+
+      alert(mensaje);
     } finally {
       setIsGenerating(false);
     }

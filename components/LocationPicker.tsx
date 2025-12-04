@@ -14,7 +14,14 @@ export default function LocationPicker({ onLocationSelect }: LocationPickerProps
     console.log("🗺️ Google Maps Key Check:", process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ? "Loaded" : "Missing");
 
     if (loadError) {
-        return <div>Error cargando Google Maps. Verifique la API Key.</div>;
+        return (
+            <div className="w-full h-[400px] bg-red-50 border border-red-200 rounded-lg flex flex-col items-center justify-center text-center p-4">
+                <p className="text-red-600 font-bold mb-2">❌ Error cargando el Mapa</p>
+                <p className="text-sm text-red-500">
+                    Verifica que la API Key de Google Maps sea válida y tenga permisos.
+                </p>
+            </div>
+        );
     }
 
     // Centro por defecto (Santiago de Chile)

@@ -1,12 +1,14 @@
 'use client';
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { GoogleMap, useLoadScript } from '@react-google-maps/api';
+import usePlacesAutocomplete, { getGeocode, getLatLng } from 'use-places-autocomplete';
+import { Combobox, ComboboxInput, ComboboxPopover, ComboboxList, ComboboxOption } from '@reach/combobox';
+import '@reach/combobox/styles.css';
 
 interface LocationPickerProps {
     onLocationSelect: (lat: number, lng: number) => void;
 }
 
-// Librerías necesarias (incluyendo 'marker' para la nueva versión)
 const libraries: ("places" | "marker")[] = ["places", "marker"];
 
 export default function LocationPicker({ onLocationSelect }: LocationPickerProps) {
@@ -15,87 +17,130 @@ export default function LocationPicker({ onLocationSelect }: LocationPickerProps
         libraries: libraries,
     });
 
-    // Centro por defecto (Santiago)
     const defaultCenter = useMemo(() => ({ lat: -33.4489, lng: -70.6693 }), []);
 
-    // Referencia al mapa y al marcador
+    // Use 'selected' to track the current position (replaces markerPosition)
+    const [selected, setSelected] = useState(defaultCenter);
+
     const mapRef = useRef<google.maps.Map | null>(null);
     const markerRef = useRef<google.maps.marker.AdvancedMarkerElement | null>(null);
 
-    const [markerPosition, setMarkerPosition] = useState(defaultCenter);
+    // --- COMPONENTE DE BÚSQUEDA INTERNO ---
+    const SearchBox = () => {
+        const {
+            ready,
+            value,
+            setValue,
+            suggestions: { status, data },
+            clearSuggestions,
+        } = usePlacesAutocomplete({
+            requestOptions: {
+                componentRestrictions: { country: 'cl' }, // Restringir a Chile
+            },
+        });
 
-    // Al cargar el mapa
+        const handleSelect = async (address: string) => {
+            setValue(address, false);
+            clearSuggestions();
+            try {
+                const results = await getGeocode({ address });
+                const { lat, lng } = await getLatLng(results[0]);
+                const newPos = { lat, lng };
+
+                setSelected(newPos);
+                onLocationSelect(lat, lng);
+                mapRef.current?.panTo(newPos);
+                mapRef.current?.setZoom(15);
+            } catch (error) {
+                console.error("Error buscando dirección:", error);
+            }
+        };
+
+        return (
+            <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-10 w-[90%] max-w-md">
+                <Combobox onSelect={handleSelect}>
+                    <ComboboxInput
+                        value={value}
+                        onChange={(e) => setValue(e.target.value)}
+                        disabled={!ready}
+                        className="w-full p-3 rounded-lg shadow-lg border-0 text-gray-800 focus:ring-2 focus:ring-blue-500"
+                        placeholder="🔍 Buscar calle o dirección..."
+                    />
+                    <ComboboxPopover className="z-20 mt-1 rounded-lg shadow-xl bg-white overflow-hidden">
+                        <ComboboxList>
+                            {status === "OK" &&
+                                data.map(({ place_id, description }) => (
+                                    <ComboboxOption key={place_id} value={description} className="p-2 hover:bg-gray-100 cursor-pointer" />
+                                ))}
+                        </ComboboxList>
+                    </ComboboxPopover>
+                </Combobox>
+            </div>
+        );
+    };
+    // -------------------------------------
+
     const onMapLoad = useCallback((map: google.maps.Map) => {
         mapRef.current = map;
     }, []);
 
-    // Efecto para manejar el AdvancedMarkerElement
+    // Efecto para manejar el AdvancedMarkerElement (Manteniendo la modernización)
     useEffect(() => {
         if (mapRef.current && isLoaded) {
-            // Si ya existe un marcador, actualizamos su posición
             if (markerRef.current) {
-                markerRef.current.position = markerPosition;
+                markerRef.current.position = selected;
             } else {
-                // Si no, creamos uno nuevo (La nueva forma de Google)
                 markerRef.current = new google.maps.marker.AdvancedMarkerElement({
                     map: mapRef.current,
-                    position: markerPosition,
+                    position: selected,
                     title: "Ubicación Seleccionada",
-                    gmpDraggable: true, // Permitir arrastrar si se desea
+                    gmpDraggable: true,
                 });
 
-                // Evento al terminar de arrastrar (opcional, para UX avanzada)
                 markerRef.current.addListener('dragend', (event: any) => {
                     const newLat = event.latLng.lat;
                     const newLng = event.latLng.lng;
-                    setMarkerPosition({ lat: newLat, lng: newLng });
+                    setSelected({ lat: newLat, lng: newLng });
                     onLocationSelect(newLat, newLng);
                 });
             }
         }
-    }, [mapRef.current, isLoaded, markerPosition, onLocationSelect]);
+    }, [mapRef.current, isLoaded, selected, onLocationSelect]);
 
-    // Manejar clic en el mapa
     const onMapClick = useCallback((e: google.maps.MapMouseEvent) => {
         if (e.latLng) {
             const lat = e.latLng.lat();
             const lng = e.latLng.lng();
-            setMarkerPosition({ lat, lng });
+            setSelected({ lat, lng });
             onLocationSelect(lat, lng);
         }
     }, [onLocationSelect]);
 
-    console.log("🗺️ Google Maps Key Check:", process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ? "Loaded" : "Missing");
-
-    if (loadError) {
-        return (
-            <div className="w-full h-[400px] bg-red-50 border border-red-200 rounded-lg flex flex-col items-center justify-center text-center p-4">
-                <p className="text-red-600 font-bold mb-2">❌ Error cargando el Mapa</p>
-                <p className="text-sm text-red-500">
-                    Verifica que la API Key de Google Maps sea válida y tenga permisos.
-                </p>
-            </div>
-        );
-    }
-
-    if (!isLoaded) return <div className="w-full h-[400px] bg-gray-100 animate-pulse rounded-lg flex items-center justify-center">Cargando Mapa...</div>;
+    if (loadError) return <div>Error cargando mapa</div>;
+    if (!isLoaded) return <div>Cargando Mapa...</div>;
 
     return (
-        <div className="w-full h-[400px] rounded-lg overflow-hidden border border-gray-300">
+        <div className="w-full h-[400px] rounded-lg overflow-hidden border border-gray-300 relative">
+            <SearchBox />
             <GoogleMap
-                mapContainerStyle={{ width: '100%', height: '100%' }}
-                center={defaultCenter}
                 zoom={13}
-                onLoad={onMapLoad}
+                center={selected}
+                mapContainerClassName="w-full h-full"
                 onClick={onMapClick}
+                onLoad={onMapLoad}
                 options={{
                     mapId: "DEMO_MAP_ID", // Required for AdvancedMarkerElement
+                    disableDefaultUI: false,
+                    zoomControl: true,
                     streetViewControl: false,
-                    mapTypeControl: false,
+                    mapTypeControl: false
                 }}
             >
-                {/* No <Marker /> component here, it's handled via useEffect and AdvancedMarkerElement */}
+                {/* AdvancedMarkerElement is handled by useEffect */}
             </GoogleMap>
+            <div className="absolute bottom-2 left-2 bg-white px-2 py-1 rounded shadow text-xs text-gray-500">
+                📍 Lat: {selected.lat.toFixed(5)}, Lng: {selected.lng.toFixed(5)}
+            </div>
         </div>
     );
 }

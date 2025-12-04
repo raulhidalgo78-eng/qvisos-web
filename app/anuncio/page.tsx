@@ -260,7 +260,7 @@ function AnuncioForm() {
       <h1>Activar QR / Crear Anuncio</h1>
       <p style={{ marginBottom: '20px' }}>Bienvenido, {user?.email}. Completa los datos de tu anuncio.</p>
 
-      <form onSubmit={handleSubmit} method="POST">
+      <form onSubmit={handleSubmit} method="POST" className="space-y-8">
 
         <div style={{ marginBottom: '15px' }}>
           <label htmlFor="qr_code" style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold', color: '#2563eb' }}>

@@ -17,12 +17,22 @@ export async function POST(req: Request) {
     try {
         const { category, features, extraNotes } = await req.json();
 
+        // Extract specific fields for better prompting
+        const { moneda, precio, latitude, longitude, ...otherFeatures } = features || {};
+
+        const priceText = precio ? `${moneda || 'CLP'} $${precio}` : 'No especificado';
+        const locationText = (latitude && longitude)
+            ? `Ubicación seleccionada en mapa (Lat: ${latitude}, Lng: ${longitude})`
+            : 'No especificada';
+
         // Construct a safe prompt even if features are empty
         const prompt = `
       Act as an expert copywriter for real estate and automotive sales in Chile.
       Write a professional, persuasive ad description based on the following:
       - Category: ${category || 'General'}
-      - Details: ${JSON.stringify(features || {})}
+      - Price: ${priceText}
+      - Location: ${locationText}
+      - Details: ${JSON.stringify(otherFeatures || {})}
       - User Notes: ${extraNotes || 'None'}
       
       Requirements:

@@ -39,15 +39,21 @@ export async function updateSession(request: NextRequest) {
         data: { user },
     } = await supabase.auth.getUser();
 
-    // Rutas protegidas que requieren autenticación
-    const protectedRoutes = ['/anuncio', '/mis-anuncios', '/dashboard'];
-    const isProtectedRoute = protectedRoutes.some(route => request.nextUrl.pathname.startsWith(route));
+    // Lógica de Protección de Rutas
+    const path = request.nextUrl.pathname;
 
-    if (!user && isProtectedRoute && !request.nextUrl.pathname.startsWith('/activar')) {
-        // Si no hay usuario y trata de entrar a ruta protegida, redirigir a login
-        // PERO si va a /anuncio con params (ej: code=...), guardamos la intención o dejamos pasar a /activar?
-        // En este caso, el requerimiento es redirigir a /login, pero ahora queremos usar /activar.
-        // Sin embargo, /anuncio sigue siendo protegido.
+    // 1. Rutas que SIEMPRE requieren login
+    const isProtected =
+        path === '/anuncio' || // Crear anuncio (exacto)
+        path.includes('/editar') || // Editar cualquier cosa
+        path.startsWith('/mis-anuncios') || // Panel de usuario
+        path.startsWith('/dashboard') || // Dashboard admin
+        path.startsWith('/admin'); // Rutas admin
+
+    // 2. Excepción: Ver anuncio (/anuncio/123) es PÚBLICO
+    // La lógica de arriba ya lo cubre: '/anuncio/123' no es '/anuncio' exacto, ni tiene 'editar'.
+
+    if (!user && isProtected) {
         const url = request.nextUrl.clone();
         url.pathname = '/login';
         return NextResponse.redirect(url);

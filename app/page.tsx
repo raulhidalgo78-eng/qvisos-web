@@ -4,6 +4,7 @@ import { createClient } from '@/utils/supabase/server';
 import Link from 'next/link';
 import React from 'react';
 import AdCard from '@/components/AdCard';
+import HomeSearchWidget from '@/components/HomeSearchWidget';
 
 // Esta es una página pública
 export default async function HomePage() {
@@ -61,11 +62,11 @@ export default async function HomePage() {
       fontFamily: 'system-ui, sans-serif',
     },
     heroSection: {
-      padding: '6rem 0',
+      padding: '6rem 0 8rem 0', // Added bottom padding for the widget overlap
       textAlign: 'center' as const,
       backgroundColor: colors.backgroundLight,
       borderRadius: '12px',
-      margin: '20px 0 40px 0',
+      margin: '20px 0 0 0', // Removed bottom margin to connect with widget
       boxShadow: '0 1px 3px 0 rgb(0 0 0 / 0.05), 0 1px 2px -1px rgb(0 0 0 / 0.05)',
     },
     heroTitle: {
@@ -164,20 +165,13 @@ export default async function HomePage() {
           </a>
         </div>
 
-        {/* --- BUSCADOR VISUAL --- */}
-        <div className="mt-8 w-full max-w-2xl mx-auto">
-          <div className="relative">
-            <input
-              type="text"
-              placeholder="🔍 Busca por comuna, modelo o tipo..."
-              className="w-full p-4 pl-12 rounded-full border-2 border-blue-100 shadow-sm focus:border-blue-500 focus:outline-none"
-            />
-            <button className="absolute right-2 top-2 bg-blue-600 text-white px-6 py-2 rounded-full font-bold hover:bg-blue-700 transition">
-              Buscar
-            </button>
-          </div>
-        </div>
+        {/* --- BUSCADOR VISUAL ELIMINADO (Reemplazado por Widget) --- */}
       </section>
+
+      {/* --- WIDGET DE BÚSQUEDA --- */}
+      <div className="mb-12 px-4">
+        <HomeSearchWidget />
+      </div>
 
       {/* --- Secciones Dinámicas --- */}
       <main className="space-y-4">

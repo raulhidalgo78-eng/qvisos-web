@@ -51,9 +51,15 @@ export default function AdCard({ ad }: AdCardProps) {
             className="block group"
             style={{ textDecoration: 'none', color: 'inherit' }}
         >
-            <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-200 h-full flex flex-col">
+            <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm hover:-translate-y-1 hover:shadow-xl transition-all duration-300 h-full flex flex-col relative">
+
                 {/* Image */}
                 <div className="relative h-48 bg-gray-100 overflow-hidden">
+                    {/* Badge Category */}
+                    <div className="absolute top-2 left-2 bg-blue-600 text-white text-xs font-bold px-2 py-1 rounded shadow z-10">
+                        {ad.category}
+                    </div>
+
                     {ad.media_url ? (
                         <img
                             src={ad.media_url}
@@ -65,10 +71,6 @@ export default function AdCard({ ad }: AdCardProps) {
                             Sin imagen
                         </div>
                     )}
-                    {/* Badge Category */}
-                    <div className="absolute top-2 right-2 bg-black/50 text-white text-[10px] px-2 py-1 rounded-full backdrop-blur-sm">
-                        {ad.category}
-                    </div>
                 </div>
 
                 {/* Content */}
@@ -79,7 +81,7 @@ export default function AdCard({ ad }: AdCardProps) {
 
                     <div className="mt-auto">
                         <p className="text-xl font-bold text-green-600">
-                            {formatPrice(ad.price, currency)}
+                            {ad.price > 0 ? formatPrice(ad.price, currency) : "Precio a conversar"}
                         </p>
                         {getDetails()}
                     </div>

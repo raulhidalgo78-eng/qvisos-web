@@ -163,6 +163,20 @@ export default async function HomePage() {
             🛒 Comprar Kit en MercadoLibre
           </a>
         </div>
+
+        {/* --- BUSCADOR VISUAL --- */}
+        <div className="mt-8 w-full max-w-2xl mx-auto">
+          <div className="relative">
+            <input
+              type="text"
+              placeholder="🔍 Busca por comuna, modelo o tipo..."
+              className="w-full p-4 pl-12 rounded-full border-2 border-blue-100 shadow-sm focus:border-blue-500 focus:outline-none"
+            />
+            <button className="absolute right-2 top-2 bg-blue-600 text-white px-6 py-2 rounded-full font-bold hover:bg-blue-700 transition">
+              Buscar
+            </button>
+          </div>
+        </div>
       </section>
 
       {/* --- Secciones Dinámicas --- */}

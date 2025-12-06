@@ -37,6 +37,7 @@ function AnuncioForm() {
   // Estados para Generador IA
   const [description, setDescription] = useState('');
   const [extraNotes, setExtraNotes] = useState('');
+  const [aiTone, setAiTone] = useState('random');
   const [isGenerating, setIsGenerating] = useState(false);
 
   const handleGenerateDescription = async () => {
@@ -67,7 +68,8 @@ function AnuncioForm() {
         body: JSON.stringify({
           category: category,
           features: features,
-          extraNotes: extraNotes
+          extraNotes: extraNotes,
+          aiTone: aiTone
         })
       });
 
@@ -589,6 +591,22 @@ function AnuncioForm() {
                 ? "Ej: Único dueño, mantenciones en la marca, nunca chocado, tapiz impecable, solo uso de fin de semana, neumáticos nuevos..."
                 : "Ej: Vista despejada, recién remodelado, barrio muy tranquilo, sol de mañana, a pasos del Metro, piso flotante nuevo..."}
             ></textarea>
+          </div>
+
+          {/* Selector de Tono */}
+          <div className="flex items-center gap-3 mb-2">
+            <label className="text-xs font-bold text-blue-700">Estilo de Redacción:</label>
+            <select
+              value={aiTone}
+              onChange={(e) => setAiTone(e.target.value)}
+              className="text-sm p-1 border border-blue-200 rounded bg-white focus:ring-2 focus:ring-blue-500 outline-none"
+            >
+              <option value="random">🎲 Sorpréndeme (Aleatorio)</option>
+              <option value="ejecutivo">👔 Ejecutivo (Sobrio)</option>
+              <option value="entusiasta">🤩 Entusiasta (Emocional)</option>
+              <option value="cercano">🤝 Cercano (Amigable)</option>
+              <option value="oportunista">🔥 Oportunidad (Urgencia)</option>
+            </select>
           </div>
 
           {/* Botón Mágico */}

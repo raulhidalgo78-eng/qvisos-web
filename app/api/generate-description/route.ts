@@ -15,7 +15,7 @@ export async function POST(req: Request) {
     }
 
     try {
-        const { category, features, extraNotes } = await req.json();
+        const { category, features, extraNotes, aiTone } = await req.json();
 
         // Extract specific fields for better prompting
         const { moneda, precio, latitude, longitude, ...otherFeatures } = features || {};
@@ -25,7 +25,28 @@ export async function POST(req: Request) {
             ? `Ubicación seleccionada en mapa (Lat: ${latitude}, Lng: ${longitude})`
             : 'No especificada';
 
+        // Lógica de Estilos
+        const estilos: Record<string, string> = {
+            ejecutivo: "Usa un tono sobrio, directo y elegante. Enfócate en la eficiencia y calidad.",
+            entusiasta: "Usa un tono enérgico y positivo. Enfócate en la emoción y la experiencia.",
+            cercano: "Usa un tono de tú a tú, como un amigo recomendando algo. Transmite confianza.",
+            oportunista: "Enfócate en la exclusividad y que es una oportunidad única/urgente."
+        };
+
+        let instruccionEstilo = "";
+
+        if (aiTone && aiTone !== 'random' && estilos[aiTone]) {
+            instruccionEstilo = estilos[aiTone];
+        } else {
+            // Si es random, elegimos uno al azar
+            const keys = Object.keys(estilos);
+            const randomKey = keys[Math.floor(Math.random() * keys.length)];
+            instruccionEstilo = estilos[randomKey];
+        }
+
         const systemPrompt = `Eres un redactor experto en marketing para Clasificados (Autos y Propiedades) en Chile.
+ESTILO DE REDACCIÓN APLICAR: ${instruccionEstilo}
+
 CONTEXTO: El usuario ya está viendo una tabla visual con los datos técnicos (Año, KM, Dormitorios, Baños, M2).
 
 TU MISIÓN: Escribir una descripción breve (2-3 párrafos) que complemente esa información técnica, NO que la repita como lista.

@@ -574,16 +574,21 @@ function AnuncioForm() {
 
           {/* Campo de notas rápidas */}
           <div>
-            <label className="block text-xs font-semibold text-blue-700 mb-1">
-              Notas para la IA (Opcional)
-            </label>
-            <input
-              type="text"
+            {/* Consejo Educativo */}
+            <p className="text-xs text-gray-500 mb-2">
+              <span className="font-bold text-blue-600">Tip de Experto:</span> La IA ya sabe los datos técnicos (Año, KM, M2).
+              Usa este espacio para contar lo que no se ve en la ficha: estado de conservación, entorno o beneficios únicos.
+            </p>
+            <textarea
+              name="extraNotes"
               value={extraNotes}
               onChange={(e) => setExtraNotes(e.target.value)}
-              placeholder="Ej: Ideal para familias, precio conversable, vista al mar..."
-              className="w-full p-2 text-sm border border-blue-200 rounded focus:ring-2 focus:ring-blue-500 outline-none"
-            />
+              rows={3}
+              className="w-full p-4 border border-blue-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white placeholder-gray-400 text-sm transition-all"
+              placeholder={category === 'autos'
+                ? "Ej: Único dueño, mantenciones en la marca, nunca chocado, tapiz impecable, solo uso de fin de semana, neumáticos nuevos..."
+                : "Ej: Vista despejada, recién remodelado, barrio muy tranquilo, sol de mañana, a pasos del Metro, piso flotante nuevo..."}
+            ></textarea>
           </div>
 
           {/* Botón Mágico */}
@@ -591,10 +596,12 @@ function AnuncioForm() {
             type="button"
             onClick={handleGenerateDescription}
             disabled={isGenerating}
-            className="w-full py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg font-bold text-sm shadow-sm hover:shadow-md transition-all flex justify-center items-center gap-2 disabled:opacity-70"
+            className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-sm shadow-md hover:shadow-lg transition-all flex justify-center items-center gap-2"
           >
             {isGenerating ? (
-              <span>🧠 Redactando...</span>
+              <>
+                <span className="animate-spin">🔄</span> Redactando anuncio vendedor...
+              </>
             ) : (
               <>
                 <span>✨ Generar Descripción Profesional</span>

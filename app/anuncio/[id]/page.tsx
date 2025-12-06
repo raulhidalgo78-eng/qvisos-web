@@ -5,6 +5,8 @@ import React from 'react';
 import AdChat from '@/components/AdChat';
 import AdActions from '@/components/AdActions';
 
+import KeyFeaturesGrid from '@/components/KeyFeaturesGrid';
+
 interface Props {
   params: Promise<{ id: string }>;
 }
@@ -73,6 +75,9 @@ export default async function AdDetailPage({ params }: Props) {
           <p style={{ fontSize: '2rem', fontWeight: 'bold', color: colors.success, marginBottom: '30px' }}>
             ${ad.price ? ad.price.toLocaleString('es-CL') : 'A convenir'}
           </p>
+
+          {/* --- CARACTERÍSTICAS CLAVE --- */}
+          <KeyFeaturesGrid category={ad.category} features={ad.features} />
 
           <div style={{ borderTop: `1px solid ${colors.border}`, paddingTop: '20px', marginBottom: '30px', flex: 1 }}>
             <h3 style={{ fontSize: '1.1rem', fontWeight: '600', color: colors.primary, marginBottom: '10px' }}>Descripción</h3>

@@ -25,22 +25,38 @@ export async function POST(req: Request) {
             ? `Ubicación seleccionada en mapa (Lat: ${latitude}, Lng: ${longitude})`
             : 'No especificada';
 
-        // Construct a safe prompt even if features are empty
+        const systemPrompt = `Eres un redactor experto en marketing para Clasificados (Autos y Propiedades) en Chile.
+CONTEXTO: El usuario ya está viendo una tabla visual con los datos técnicos (Año, KM, Dormitorios, Baños, M2).
+
+TU MISIÓN: Escribir una descripción breve (2-3 párrafos) que complemente esa información técnica, NO que la repita como lista.
+
+REGLAS DE ORO:
+
+🚫 NO repitas datos técnicos obvios (ej: No empieces diciendo "Tiene 3 dormitorios", eso ya se ve. Di "Amplios dormitorios con luz natural").
+
+⭐ ENFÓCATE EN LO ÚNICO: Dale prioridad absoluta a las "Notas del Dueño" (extraNotes). Si dice "único dueño" o "vista al mar", ese es tu titular.
+
+🇨🇱 TONO CHILENO: Usa un lenguaje cercano y vendedor. (Ej: "Impecable", "Llegar y habitar", "Joya", "Oportunidad").
+
+🎯 OBJETIVO: Vender el estado del producto y la oportunidad, no la ficha técnica.
+
+📵 PRIVACIDAD: JAMÁS inventes ni incluyas números de teléfono o correos.
+
+FORMATO: Texto plano, párrafos cortos. Sin Markdown (##, **).
+
+Ejemplo Bueno: "Espectacular oportunidad en sector exclusivo. La propiedad destaca por su luminosidad y una vista inigualable. Ha sido remodelada recientemente con terminaciones de lujo. Ideal para familias que buscan tranquilidad y seguridad."
+
+Ejemplo Malo: "Se vende casa. Tiene 3 dormitorios, 2 baños, 100m2. Tiene estacionamiento." (Esto es aburrido y redundante). `;
+
         const prompt = `
-      Eres un redactor experto en avisos clasificados.
-      Tu objetivo es escribir una descripción atractiva y breve (máximo 4 párrafos cortos) basada en lo siguiente:
+      ${systemPrompt}
+
+      DATOS DEL AVISO:
       - Categoría: ${category || 'General'}
       - Precio: ${priceText}
       - Ubicación: ${locationText}
-      - Detalles: ${JSON.stringify(otherFeatures || {})}
-      - Notas del Usuario: ${extraNotes || 'Ninguna'}
-
-      REGLAS ESTRICTAS DE FORMATO:
-      - NO uses símbolos de Markdown como '##', '###' o '**'. Escribe texto plano limpio.
-      - NO incluyas el número de teléfono ni contacto en el texto. El sitio web ya tiene un botón para eso.
-      - Sé directo y vendedor. Evita introducciones largas como "¡Tu nueva casa te espera!". Ve al grano con los beneficios.
-      - Usa terminología chilena adecuada (ej: "Gastos comunes", "Contribuciones", "Piezas", "Living comedor").
-      - Si es arriendo, destaca los requisitos si los hay.
+      - Detalles Técnicos (YA VISIBLES): ${JSON.stringify(otherFeatures || {})}
+      - NOTAS DEL DUEÑO (LO MÁS IMPORTANTE): ${extraNotes || 'Ninguna'}
     `;
 
         const { text } = await generateText({

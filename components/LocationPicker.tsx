@@ -34,7 +34,8 @@ export default function LocationPicker({ onLocationSelect }: LocationPickerProps
             // Create the Autocomplete widget
             const autocomplete = new google.maps.places.Autocomplete(inputRef.current, {
                 componentRestrictions: { country: 'cl' },
-                fields: ['geometry', 'name', 'formatted_address'], // Explicitly request fields to avoid errors/costs
+                fields: ['geometry', 'name', 'formatted_address', 'address_components'], // Added address_components
+                strictBounds: false,
             });
 
             autocompleteRef.current = autocomplete;

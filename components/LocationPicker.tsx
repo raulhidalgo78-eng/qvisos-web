@@ -39,7 +39,7 @@ export default function LocationPicker({ onLocationSelect }: LocationPickerProps
             const initAutocomplete = async () => {
                 try {
                     // Import the library dynamically
-                    const { PlaceAutocompleteElement } = await google.maps.importLibrary("places") as google.maps.PlacesLibrary;
+                    const { PlaceAutocompleteElement } = await google.maps.importLibrary("places") as any;
 
                     // Create the element
                     const autocomplete = new PlaceAutocompleteElement();

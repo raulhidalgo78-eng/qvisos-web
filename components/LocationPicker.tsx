@@ -6,12 +6,15 @@ interface LocationPickerProps {
     onLocationSelect: (lat: number, lng: number) => void;
 }
 
+// We don't need to load 'places' in libraries array if we use importLibrary, 
+// but keeping it for safety for other components.
 const libraries: ("places" | "marker")[] = ["places", "marker"];
 
 export default function LocationPicker({ onLocationSelect }: LocationPickerProps) {
     const { isLoaded, loadError } = useLoadScript({
         googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY as string,
         libraries: libraries,
+        version: 'weekly', // Ensure we get the latest version with PlaceAutocompleteElement support
     });
 
     const defaultCenter = useMemo(() => ({ lat: -33.4489, lng: -70.6693 }), []);
@@ -21,88 +24,110 @@ export default function LocationPicker({ onLocationSelect }: LocationPickerProps
 
     const mapRef = useRef<google.maps.Map | null>(null);
     const markerRef = useRef<google.maps.marker.AdvancedMarkerElement | null>(null);
-    const autocompleteRef = useRef<HTMLDivElement>(null);
+    const autocompleteContainerRef = useRef<HTMLDivElement>(null);
 
     const onMapLoad = useCallback((map: google.maps.Map) => {
         mapRef.current = map;
     }, []);
 
-    // Initialize PlaceAutocompleteElement (New API)
+    // Initialize PlaceAutocompleteElement using importLibrary
     useEffect(() => {
-        if (isLoaded && autocompleteRef.current) {
-            // Check if element already exists to avoid duplicates
-            if (autocompleteRef.current.firstChild) return;
+        if (isLoaded && autocompleteContainerRef.current) {
+            // Check if element already exists
+            if (autocompleteContainerRef.current.firstChild) return;
 
-            // @ts-ignore - PlaceAutocompleteElement might not be in types yet
-            const autocomplete = new google.maps.places.PlaceAutocompleteElement();
+            const initAutocomplete = async () => {
+                try {
+                    // Import the library dynamically
+                    const { PlaceAutocompleteElement } = await google.maps.importLibrary("places") as google.maps.PlacesLibrary;
 
-            // Configure autocomplete
-            // @ts-ignore
-            autocomplete.componentRestrictions = { country: ['cl'] };
-            autocomplete.classList.add('w-full', 'shadow-lg', 'rounded-lg', 'h-12', 'px-4'); // Added height and padding for better UI
+                    // Create the element
+                    const autocomplete = new PlaceAutocompleteElement();
 
-            // Append to container
-            autocompleteRef.current.appendChild(autocomplete);
+                    // Configure
+                    // @ts-ignore
+                    autocomplete.componentRestrictions = { country: ['cl'] };
+                    autocomplete.classList.add('w-full', 'shadow-lg', 'rounded-lg', 'h-12', 'px-4', 'bg-white');
 
-            // Add event listener
-            autocomplete.addEventListener('gmp-places-select', async (event: any) => {
-                const place = event.place;
-                if (!place) return;
+                    // Append
+                    autocompleteContainerRef.current?.appendChild(autocomplete);
 
-                // Fetch location details using the NEW API field names
-                // Note: The new Place class uses camelCase for fields
-                await place.fetchFields({
-                    fields: ['location', 'displayName', 'formattedAddress', 'addressComponents']
-                });
+                    // Listener
+                    autocomplete.addEventListener('gmp-places-select', async (event: any) => {
+                        const place = event.place;
+                        if (!place) return;
 
-                if (place.location) {
-                    const lat = place.location.lat();
-                    const lng = place.location.lng();
-                    const newPos = { lat, lng };
+                        try {
+                            // Fetch ONLY the fields we strictly need first to avoid errors
+                            await place.fetchFields({
+                                fields: ['location']
+                            });
 
-                    setSelected(newPos);
-                    onLocationSelect(lat, lng);
+                            if (place.location) {
+                                const lat = place.location.lat();
+                                const lng = place.location.lng();
+                                const newPos = { lat, lng };
 
-                    if (mapRef.current) {
-                        mapRef.current.panTo(newPos);
-                        mapRef.current.setZoom(15);
-                    }
+                                setSelected(newPos);
+                                onLocationSelect(lat, lng);
+
+                                if (mapRef.current) {
+                                    mapRef.current.panTo(newPos);
+                                    mapRef.current.setZoom(15);
+                                }
+                            }
+                        } catch (err) {
+                            console.error("Error fetching place fields:", err);
+                        }
+                    });
+                } catch (error) {
+                    console.error("Error initializing PlaceAutocompleteElement:", error);
                 }
-            });
+            };
+
+            initAutocomplete();
         }
     }, [isLoaded, onLocationSelect]);
 
     // Efecto para manejar el AdvancedMarkerElement
     useEffect(() => {
         if (mapRef.current && isLoaded) {
-            if (markerRef.current) {
-                markerRef.current.position = selected;
-            } else {
-                markerRef.current = new google.maps.marker.AdvancedMarkerElement({
-                    map: mapRef.current,
-                    position: selected,
-                    title: "Ubicación Seleccionada",
-                    gmpDraggable: true,
-                });
+            const initMarker = async () => {
+                try {
+                    const { AdvancedMarkerElement } = await google.maps.importLibrary("marker") as google.maps.MarkerLibrary;
 
-                markerRef.current.addListener('dragend', (event: any) => {
-                    const rawLat = event.latLng.lat;
-                    const rawLng = event.latLng.lng;
+                    if (markerRef.current) {
+                        markerRef.current.position = selected;
+                    } else {
+                        markerRef.current = new AdvancedMarkerElement({
+                            map: mapRef.current,
+                            position: selected,
+                            title: "Ubicación Seleccionada",
+                            gmpDraggable: true,
+                        });
 
-                    // Defensive validation for drag events too
-                    const newLat = typeof rawLat === 'function' ? Number(rawLat()) : Number(rawLat);
-                    const newLng = typeof rawLng === 'function' ? Number(rawLng()) : Number(rawLng);
+                        markerRef.current.addListener('dragend', (event: any) => {
+                            const rawLat = event.latLng.lat;
+                            const rawLng = event.latLng.lng;
 
-                    setSelected({ lat: newLat, lng: newLng });
-                    onLocationSelect(newLat, newLng);
-                });
-            }
+                            // Defensive validation
+                            const newLat = typeof rawLat === 'function' ? Number(rawLat()) : Number(rawLat);
+                            const newLng = typeof rawLng === 'function' ? Number(rawLng()) : Number(rawLng);
+
+                            setSelected({ lat: newLat, lng: newLng });
+                            onLocationSelect(newLat, newLng);
+                        });
+                    }
+                } catch (e) {
+                    console.error("Error loading marker library:", e);
+                }
+            };
+            initMarker();
         }
     }, [mapRef.current, isLoaded, selected, onLocationSelect]);
 
     const onMapClick = useCallback((e: google.maps.MapMouseEvent) => {
         if (e.latLng) {
-            // Defensive validation for click events
             const rawLat = e.latLng.lat;
             const rawLng = e.latLng.lng;
 
@@ -121,7 +146,7 @@ export default function LocationPicker({ onLocationSelect }: LocationPickerProps
         <div className="w-full h-[400px] rounded-lg overflow-hidden border border-gray-300 relative">
             {/* Container for PlaceAutocompleteElement */}
             <div
-                ref={autocompleteRef}
+                ref={autocompleteContainerRef}
                 className="absolute top-4 left-1/2 transform -translate-x-1/2 z-10 w-[90%] max-w-md bg-white rounded-lg shadow-xl"
             ></div>
 
@@ -132,7 +157,7 @@ export default function LocationPicker({ onLocationSelect }: LocationPickerProps
                 onClick={onMapClick}
                 onLoad={onMapLoad}
                 options={{
-                    mapId: "DEMO_MAP_ID", // Required for AdvancedMarkerElement
+                    mapId: "DEMO_MAP_ID",
                     disableDefaultUI: false,
                     zoomControl: true,
                     streetViewControl: false,

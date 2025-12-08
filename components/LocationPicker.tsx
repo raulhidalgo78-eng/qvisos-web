@@ -21,49 +21,52 @@ export default function LocationPicker({ onLocationSelect }: LocationPickerProps
 
     const mapRef = useRef<google.maps.Map | null>(null);
     const markerRef = useRef<google.maps.marker.AdvancedMarkerElement | null>(null);
-    const inputRef = useRef<HTMLInputElement>(null);
-    const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
+    const autocompleteRef = useRef<HTMLDivElement>(null);
 
     const onMapLoad = useCallback((map: google.maps.Map) => {
         mapRef.current = map;
     }, []);
 
-    // Initialize Google Maps Autocomplete Widget
+    // Initialize PlaceAutocompleteElement (New API)
     useEffect(() => {
-        if (isLoaded && inputRef.current && !autocompleteRef.current) {
-            // Create the Autocomplete widget
-            const autocomplete = new google.maps.places.Autocomplete(inputRef.current, {
-                componentRestrictions: { country: 'cl' },
-                fields: ['geometry', 'name', 'formatted_address', 'address_components'], // Added address_components
-                strictBounds: false,
-            });
+        if (isLoaded && autocompleteRef.current) {
+            // Check if element already exists to avoid duplicates
+            if (autocompleteRef.current.firstChild) return;
 
-            autocompleteRef.current = autocomplete;
+            // @ts-ignore - PlaceAutocompleteElement might not be in types yet
+            const autocomplete = new google.maps.places.PlaceAutocompleteElement();
+
+            // Configure autocomplete
+            // @ts-ignore
+            autocomplete.componentRestrictions = { country: ['cl'] };
+            autocomplete.classList.add('w-full', 'shadow-lg', 'rounded-lg', 'h-12', 'px-4'); // Added height and padding for better UI
+
+            // Append to container
+            autocompleteRef.current.appendChild(autocomplete);
 
             // Add event listener
-            autocomplete.addListener('place_changed', () => {
-                const place = autocomplete.getPlace();
+            autocomplete.addEventListener('gmp-places-select', async (event: any) => {
+                const place = event.place;
+                if (!place) return;
 
-                if (!place.geometry || !place.geometry.location) {
-                    console.warn("No details available for input: '" + place.name + "'");
-                    return;
-                }
+                // Fetch location details using the NEW API field names
+                // Note: The new Place class uses camelCase for fields
+                await place.fetchFields({
+                    fields: ['location', 'displayName', 'formattedAddress', 'addressComponents']
+                });
 
-                // Defensive validation for coordinates
-                const rawLat = place.geometry.location.lat();
-                const rawLng = place.geometry.location.lng();
+                if (place.location) {
+                    const lat = place.location.lat();
+                    const lng = place.location.lng();
+                    const newPos = { lat, lng };
 
-                const lat = typeof rawLat === 'function' ? Number((rawLat as any)()) : Number(rawLat);
-                const lng = typeof rawLng === 'function' ? Number((rawLng as any)()) : Number(rawLng);
+                    setSelected(newPos);
+                    onLocationSelect(lat, lng);
 
-                const newPos = { lat, lng };
-
-                setSelected(newPos);
-                onLocationSelect(lat, lng);
-
-                if (mapRef.current) {
-                    mapRef.current.panTo(newPos);
-                    mapRef.current.setZoom(15);
+                    if (mapRef.current) {
+                        mapRef.current.panTo(newPos);
+                        mapRef.current.setZoom(15);
+                    }
                 }
             });
         }
@@ -116,15 +119,11 @@ export default function LocationPicker({ onLocationSelect }: LocationPickerProps
 
     return (
         <div className="w-full h-[400px] rounded-lg overflow-hidden border border-gray-300 relative">
-            {/* Input for Autocomplete */}
-            <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-10 w-[90%] max-w-md">
-                <input
-                    ref={inputRef}
-                    type="text"
-                    placeholder="🔍 Buscar dirección..."
-                    className="w-full p-3 rounded-lg shadow-lg border-0 text-gray-800 focus:ring-2 focus:ring-blue-500 outline-none"
-                />
-            </div>
+            {/* Container for PlaceAutocompleteElement */}
+            <div
+                ref={autocompleteRef}
+                className="absolute top-4 left-1/2 transform -translate-x-1/2 z-10 w-[90%] max-w-md bg-white rounded-lg shadow-xl"
+            ></div>
 
             <GoogleMap
                 zoom={13}

@@ -42,7 +42,12 @@ export default function LocationPicker({ onLocationSelect }: LocationPickerProps
             clearSuggestions();
             try {
                 const results = await getGeocode({ address });
-                const { lat, lng } = await getLatLng(results[0]);
+                const { lat: rawLat, lng: rawLng } = await getLatLng(results[0]);
+
+                // Defensive validation: Ensure it's a number
+                const lat = typeof rawLat === 'function' ? (rawLat as any)() : Number(rawLat);
+                const lng = typeof rawLng === 'function' ? (rawLng as any)() : Number(rawLng);
+
                 const newPos = { lat, lng };
 
                 setSelected(newPos);
@@ -99,8 +104,13 @@ export default function LocationPicker({ onLocationSelect }: LocationPickerProps
                 });
 
                 markerRef.current.addListener('dragend', (event: any) => {
-                    const newLat = event.latLng.lat;
-                    const newLng = event.latLng.lng;
+                    const rawLat = event.latLng.lat;
+                    const rawLng = event.latLng.lng;
+
+                    // Defensive validation for drag events too
+                    const newLat = typeof rawLat === 'function' ? rawLat() : Number(rawLat);
+                    const newLng = typeof rawLng === 'function' ? rawLng() : Number(rawLng);
+
                     setSelected({ lat: newLat, lng: newLng });
                     onLocationSelect(newLat, newLng);
                 });

@@ -25,7 +25,7 @@ export default function ProductionStation() {
   // MAPA DE PLANTILLAS
   const TEMPLATES: Record<string, { url: string, orientation: 'portrait' | 'landscape' }> = {
     venta_propiedad: {
-      url: 'https://wcczvedassfquzdrmwko.supabase.co/storage/v1/object/public/media/SE%20VENDE.png',
+      url: 'https://wcczvedassfquzdrmwko.supabase.co/storage/v1/object/public/media/vendop.png',
       orientation: 'portrait'
     },
     arriendo_propiedad: {
@@ -33,7 +33,7 @@ export default function ProductionStation() {
       orientation: 'portrait'
     },
     venta_auto: {
-      url: 'https://wcczvedassfquzdrmwko.supabase.co/storage/v1/object/public/media/vende%20auto.png', // <--- PEGA AQUÍ TU NUEVA URL
+      url: 'https://wcczvedassfquzdrmwko.supabase.co/storage/v1/object/public/media/vendoa.png', // <--- PEGA AQUÍ TU NUEVA URL
       orientation: 'landscape'
     },
     generico: {
@@ -98,19 +98,19 @@ export default function ProductionStation() {
     const LAYOUTS = {
       portrait: {
         // Venta/Arriendo Propiedad (Vertical)
-        qr: { size: 170, y: 85 },
-        text: { size: 22, x: 180, y: 285, color: [0, 0, 0] }
+        qr: { size: 180, y: 85 },
+        text: { size: 22, x: 170, y: 280, color: [0, 0, 0] }
       },
       landscape: {
         // Venta Auto (Horizontal - Diseño SCAN)
         qr: {
-          size: 110,     // Tamaño ajustado para no chocar con la flecha
+          size: 160,     // Tamaño ajustado para no chocar con la flecha
           y: 60         // Centrado vertical
         },
         text: {
           size: 24,
-          x: 265,       // Alineado a la derecha (cajita blanca)
-          y: 198,       // Abajo en el footer
+          x: 250,       // Alineado a la derecha (cajita blanca)
+          y: 190,       // Abajo en el footer
           color: [0, 0, 0] // NEGRO (¡Muy importante!)
         }
       }

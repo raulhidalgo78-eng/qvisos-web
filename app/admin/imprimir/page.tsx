@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Oswald } from 'next/font/google'; // Importar fuente
+import { Oswald } from 'next/font/google';
 import { registerCodes } from './actions';
 import { QRCodeCanvas } from 'qrcode.react';
 import jsPDF from 'jspdf';
@@ -17,31 +17,33 @@ const oswald = Oswald({
 export default function ProductionStation() {
   const [startNum, setStartNum] = useState<number | null>(null);
   const [quantity, setQuantity] = useState(1);
-  const [category, setCategory] = useState('venta_propiedad'); // Usamos esto para determinar VENDO/ARRIENDO
-  const [isGenerating, setIsGenerating] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [isGenerating, setIsGenerating] = useState(false);
 
-  // Determinar Título según categoría
-  const getTitle = (cat: string) => {
-    if (cat.includes('arriendo')) return 'ARRIENDO';
-    return 'VENDO';
+  // --- 1. CONFIGURACIÓN DEL FLUJO (3 Pasos) ---
+  const [category, setCategory] = useState('propiedad'); // 'auto' | 'propiedad'
+  const [action, setAction] = useState('venta');         // 'venta' | 'arriendo'
+  const [size, setSize] = useState('30x45');             // '20x30' | '30x45' | '50x75' | '100x150'
+
+  // --- 2. LÓGICA DE DISEÑO ---
+  const getTitle = () => {
+    return action === 'arriendo' ? 'ARRIENDO' : 'VENDO';
+  };
+  const title = getTitle();
+
+  // Mapa de Tamaños (cm -> mm para PDF)
+  const SIZES = {
+    '20x30': { width: 200, height: 300, label: 'Pequeño (Moto/Lobby) - 20x30cm' },
+    '30x45': { width: 300, height: 450, label: 'Estándar (Autos/Ventanas) - 30x45cm' },
+    '50x75': { width: 500, height: 750, label: 'Grande (Casas/Locales) - 50x75cm' },
+    '100x150': { width: 1000, height: 1500, label: 'Gigante (Terrenos/Industrial) - 100x150cm' },
   };
 
-  const title = getTitle(category);
-
-  // Generador de códigos
-  const generateCodes = () => {
-    if (startNum === null) return [];
-    return Array.from({ length: quantity }, (_, i) => `QV-${String(startNum + i).padStart(3, '0')}`);
-  };
-  const codesList = generateCodes();
-
-  // Inicializar secuencia desde BD
+  // Inicializar secuencia
   useEffect(() => {
     const init = async () => {
       const { getLastQrCode } = await import('@/app/actions/get-last-qr');
       const lastCode = await getLastQrCode();
-
       let next = 1;
       if (lastCode) {
         const parts = lastCode.split('-');
@@ -56,198 +58,271 @@ export default function ProductionStation() {
     init();
   }, []);
 
+  const generateCodes = () => {
+    if (startNum === null) return [];
+    return Array.from({ length: quantity }, (_, i) => `QV-${String(startNum + i).padStart(3, '0')}`);
+  };
+  const codesList = generateCodes();
+
   const handleGeneratePDF = async () => {
     setIsGenerating(true);
 
-    // Configuración A4 Portrait
-    const pageWidth = 210;
-    const pageHeight = 297;
+    // Obtener dimensiones seleccionadas
+    // @ts-ignore
+    const selectedSize = SIZES[size];
+    const pageWidth = selectedSize.width;
+    const pageHeight = selectedSize.height;
 
     const pdf = new jsPDF({
       orientation: 'portrait',
       unit: 'mm',
-      format: 'a4'
+      format: [pageWidth, pageHeight] // Tamaño personalizado dinámico
     });
 
-    // Registrar códigos en BD
+    // Registrar en BD
     const records = codesList.map(code => ({
       code,
       status: 'printed',
-      category: category
+      category: `${action}_${category}` // ej: venta_propiedad
     }));
-
     await registerCodes(records);
 
     // Generar Páginas
     for (let i = 0; i < codesList.length; i++) {
       if (i > 0) pdf.addPage([pageWidth, pageHeight], 'portrait');
-
       const currentCode = codesList[i];
 
       // --- ZONA A: CABECERA (Azul) ---
-      // Altura ~20% = 60mm
-      pdf.setFillColor(29, 78, 216); // Blue-700 (Tailwind approx)
-      pdf.rect(0, 0, pageWidth, 60, 'F');
+      // Altura ~22%
+      const headerHeight = pageHeight * 0.22;
+      pdf.setFillColor(29, 78, 216); // Blue-700
+      pdf.rect(0, 0, pageWidth, headerHeight, 'F');
 
-      // Texto "VENDO" / "ARRIENDO"
+      // Texto HEADER (Fit to width)
       pdf.setTextColor(255, 255, 255);
-      pdf.setFont("helvetica", "bold"); // Fallback a Helvetica Bold (Oswald es difícil sin embed)
-      // Ajustar tamaño según longitud para "fit-to-width"
-      const fontSize = title === 'ARRIENDO' ? 90 : 110;
+      pdf.setFont("helvetica", "bold");
+
+      // Cálculo manual de tamaño de fuente para llenar el ancho
+      // Base: En 300mm ancho, font size 280 llena aprox "VENDO"
+      // Factor: pageWidth / 300 * base
+      let fontSizeBase = title === 'VENDO' ? 280 : 220; // ARRIENDO es más largo, fuente menor
+      const fontSize = (pageWidth / 300) * fontSizeBase;
+
       pdf.setFontSize(fontSize);
-      pdf.text(title, pageWidth / 2, 42, { align: 'center' });
+      // Ajuste fino de posición Y para centrar verticalmente en el header
+      const textY = (headerHeight / 2) + (fontSize * 0.35);
+      pdf.text(title, pageWidth / 2, textY, { align: 'center' });
 
       // --- ZONA B: CUERPO (Blanco) ---
-      // Fondo blanco implícito (o explícito si se quiere)
-      pdf.setFillColor(255, 255, 255);
-      pdf.rect(0, 60, pageWidth, 200, 'F');
+      const bodyY = headerHeight;
+      const footerHeight = pageHeight * 0.12;
+      const bodyHeight = pageHeight - headerHeight - footerHeight;
 
-      // QR Code
+      pdf.setFillColor(255, 255, 255);
+      pdf.rect(0, bodyY, pageWidth, bodyHeight, 'F');
+
+      // QR Code "A Sangre" (85-90% del ancho)
       const canvas = document.getElementById(`qr-canvas-${currentCode}`) as HTMLCanvasElement;
       if (canvas) {
         const qrData = canvas.toDataURL('image/png');
-        const qrSize = 140; // Gigante
+        const qrSize = pageWidth * 0.85; // 85% del ancho total
         const qrX = (pageWidth - qrSize) / 2;
-        const qrY = 85; // Centrado verticalmente en el espacio disponible
+        // Centrar verticalmente en el cuerpo
+        const qrY = bodyY + (bodyHeight - qrSize) / 2 - (pageHeight * 0.02); // Un poco más arriba para el texto
         pdf.addImage(qrData, 'PNG', qrX, qrY, qrSize, qrSize);
       }
 
       // Texto "Escanea para ver precio"
       pdf.setTextColor(0, 0, 0);
-      pdf.setFontSize(24);
+      const subTextSize = pageWidth * 0.06; // Relativo al ancho
+      pdf.setFontSize(subTextSize);
       pdf.setFont("helvetica", "bold");
-      pdf.text("Escanea para ver precio", pageWidth / 2, 240, { align: 'center' });
+      // Posición: Abajo del QR
+      const subTextY = bodyY + bodyHeight - (pageHeight * 0.03);
+      pdf.text("Escanea para ver precio", pageWidth / 2, subTextY, { align: 'center' });
 
       // --- ZONA C: PIE (Negro) ---
-      // Altura ~12% = 37mm (Start at 260)
+      const footerY = pageHeight - footerHeight;
       pdf.setFillColor(0, 0, 0);
-      pdf.rect(0, 260, pageWidth, 37, 'F');
+      pdf.rect(0, footerY, pageWidth, footerHeight, 'F');
 
-      // Logo "QVisos.cl" (Izquierda)
+      // Logo "QVisos .cl"
+      const logoSize = footerHeight * 0.5; // Tamaño fuente relativo al footer
+      pdf.setFontSize(logoSize);
       pdf.setTextColor(255, 255, 255);
-      pdf.setFontSize(40);
-      pdf.setFont("helvetica", "bold");
-      pdf.text("QVisos", 20, 285);
-      pdf.setTextColor(59, 130, 246); // Blue-500 for .cl
-      pdf.text(".cl", 82, 285); // Ajuste manual simple
+      pdf.text("QVisos", pageWidth * 0.05, footerY + (footerHeight * 0.7));
+
+      // .cl separado
+      const qvisosWidth = pdf.getTextWidth("QVisos");
+      pdf.setTextColor(6, 182, 212); // Cyan-500 (Diferenciado)
+      pdf.text(".cl", (pageWidth * 0.05) + qvisosWidth + (pageWidth * 0.02), footerY + (footerHeight * 0.7));
 
       // Caja ID (Derecha)
+      const boxWidth = pageWidth * 0.25;
+      const boxHeight = footerHeight * 0.6;
+      const boxX = pageWidth - boxWidth - (pageWidth * 0.05);
+      const boxY = footerY + (footerHeight - boxHeight) / 2;
+
       pdf.setFillColor(255, 255, 255);
-      pdf.roundedRect(140, 270, 50, 20, 2, 2, 'F'); // Caja blanca redondeada
+      pdf.roundedRect(boxX, boxY, boxWidth, boxHeight, boxHeight * 0.2, boxHeight * 0.2, 'F');
 
       pdf.setTextColor(0, 0, 0);
-      pdf.setFontSize(20);
-      pdf.text(currentCode, 165, 282, { align: 'center' });
+      pdf.setFontSize(logoSize * 0.6);
+      // Centrar texto en caja
+      pdf.text(currentCode, boxX + (boxWidth / 2), boxY + (boxHeight * 0.7), { align: 'center' });
     }
 
     if (startNum !== null) setStartNum(startNum + quantity);
-    pdf.save(`qvisos-vertical-${category}-${codesList[0]}.pdf`);
+    pdf.save(`qvisos-${action}-${size}-${codesList[0]}.pdf`);
     setIsGenerating(false);
   };
 
   if (loading) return <div className="h-screen flex items-center justify-center">Cargando...</div>;
-
   const LOGO_URL = "https://wcczvedassfquzdrmwko.supabase.co/storage/v1/object/public/media/logo-qvisos.jpg";
 
   return (
-    <div className={`min-h-screen bg-gray-100 flex flex-col items-center p-10 font-sans ${oswald.variable}`}>
-      <div className="w-full max-w-6xl bg-white p-8 rounded-xl shadow-xl flex flex-col lg:flex-row gap-10">
+    <div className={`min-h-screen bg-gray-100 flex flex-col items-center p-6 md:p-10 font-sans ${oswald.variable}`}>
+      <div className="w-full max-w-7xl bg-white p-6 md:p-8 rounded-xl shadow-xl flex flex-col lg:flex-row gap-8 lg:gap-12">
 
-        {/* PANEL DE CONTROL */}
-        <div className="flex-1">
-          <div className="mb-6">
-            <Link
-              href="/mis-anuncios"
-              className="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded inline-flex items-center"
-            >
+        {/* --- PANEL DE CONFIGURACIÓN --- */}
+        <div className="flex-1 space-y-8">
+          <div>
+            <Link href="/mis-anuncios" className="text-gray-500 hover:text-gray-800 font-bold inline-flex items-center mb-4">
               <span>&larr; Volver a Mis Anuncios</span>
             </Link>
+            <h1 className="text-4xl font-black text-gray-900 tracking-tight">🖨️ Generador de Letreros</h1>
+            <p className="text-gray-500 text-lg">Configura tu letrero en 3 pasos.</p>
           </div>
-          <h1 className="text-3xl font-black text-gray-800 mb-6">🖨️ Estación de Impresión</h1>
-          <p className="mb-6 text-gray-600">Nuevo Estándar Vertical (30x45cm / 50x75cm)</p>
 
-          <div className="space-y-6">
-            <div>
-              <label className="block text-sm font-bold text-gray-500 mb-2">CANTIDAD</label>
+          {/* PASO 1: CATEGORÍA */}
+          <div className="space-y-3">
+            <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">1. Categoría (Contexto)</label>
+            <div className="grid grid-cols-2 gap-4">
+              <button
+                onClick={() => setCategory('auto')}
+                className={`p-4 rounded-xl border-2 font-bold text-lg transition-all ${category === 'auto' ? 'border-blue-600 bg-blue-50 text-blue-700' : 'border-gray-200 hover:border-gray-300 text-gray-600'}`}
+              >
+                🚗 Autos
+              </button>
+              <button
+                onClick={() => setCategory('propiedad')}
+                className={`p-4 rounded-xl border-2 font-bold text-lg transition-all ${category === 'propiedad' ? 'border-blue-600 bg-blue-50 text-blue-700' : 'border-gray-200 hover:border-gray-300 text-gray-600'}`}
+              >
+                🏡 Propiedades
+              </button>
+            </div>
+          </div>
+
+          {/* PASO 2: ACCIÓN */}
+          <div className="space-y-3">
+            <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">2. Acción (Título)</label>
+            <div className="grid grid-cols-2 gap-4">
+              <button
+                onClick={() => setAction('venta')}
+                className={`p-4 rounded-xl border-2 font-bold text-lg transition-all ${action === 'venta' ? 'border-green-600 bg-green-50 text-green-700' : 'border-gray-200 hover:border-gray-300 text-gray-600'}`}
+              >
+                VENDO
+              </button>
+              <button
+                onClick={() => setAction('arriendo')}
+                className={`p-4 rounded-xl border-2 font-bold text-lg transition-all ${action === 'arriendo' ? 'border-orange-500 bg-orange-50 text-orange-700' : 'border-gray-200 hover:border-gray-300 text-gray-600'}`}
+              >
+                ARRIENDO
+              </button>
+            </div>
+          </div>
+
+          {/* PASO 3: TAMAÑO */}
+          <div className="space-y-3">
+            <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">3. Tamaño de Impresión</label>
+            <select
+              value={size}
+              onChange={(e) => setSize(e.target.value)}
+              className="w-full p-4 border-2 border-gray-300 rounded-xl text-lg font-medium bg-white focus:ring-2 focus:ring-blue-500 outline-none"
+            >
+              {Object.entries(SIZES).map(([key, val]) => (
+                // @ts-ignore
+                <option key={key} value={key}>{val.label}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* CANTIDAD Y BOTÓN */}
+          <div className="pt-4 border-t border-gray-100 flex gap-4 items-end">
+            <div className="w-24">
+              <label className="block text-xs font-bold text-gray-400 mb-1">CANTIDAD</label>
               <input
                 type="number" min="1" max="50"
                 value={quantity}
                 onChange={e => setQuantity(Number(e.target.value))}
-                className="w-full p-4 border-2 border-gray-300 rounded-lg text-2xl font-bold text-center"
+                className="w-full p-3 border-2 border-gray-300 rounded-lg text-xl font-bold text-center"
               />
             </div>
-
-            <div>
-              <label className="block text-sm font-bold text-gray-500 mb-2">TIPO DE LETRERO</label>
-              <select
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
-                className="w-full p-4 border-2 border-gray-300 rounded-lg text-lg font-medium bg-white"
-              >
-                <option value="venta_propiedad">VENDO (Propiedad/Auto/Genérico)</option>
-                <option value="arriendo_propiedad">ARRIENDO (Propiedad/Genérico)</option>
-              </select>
-            </div>
-
-            <div className="bg-blue-50 p-4 rounded-lg text-blue-800 text-sm">
-              <strong>Generando:</strong> {codesList[0]} al {codesList[codesList.length - 1]}
-            </div>
-
             <button
               onClick={handleGeneratePDF}
               disabled={isGenerating}
-              className="w-full bg-blue-700 text-white px-8 py-4 rounded-lg font-bold text-xl shadow-lg hover:bg-blue-800 disabled:opacity-50 transition-all"
+              className="flex-1 bg-gray-900 text-white px-6 py-4 rounded-xl font-bold text-xl shadow-xl hover:bg-black disabled:opacity-50 transition-all transform hover:-translate-y-1"
             >
-              {isGenerating ? 'GENERANDO PDF...' : 'DESCARGAR PDF VERTICAL'}
+              {isGenerating ? '🖨️ Generando PDF...' : '📥 Descargar PDF Vectorial'}
             </button>
           </div>
         </div>
 
-        {/* VISTA PREVIA (CSS PURO - WYSIWYG) */}
-        <div className="flex-1 flex justify-center bg-gray-200 p-8 rounded-xl items-center">
+        {/* --- VISTA PREVIA (CSS REFLEJA PDF) --- */}
+        <div className="flex-1 bg-gray-100 rounded-2xl p-8 flex items-center justify-center min-h-[600px]">
           <div
-            className="relative bg-white shadow-2xl flex flex-col overflow-hidden"
-            style={{ width: '300px', height: '450px' }} // Aspect Ratio 2:3 (Simula 30x45cm)
+            className="relative bg-white shadow-2xl flex flex-col overflow-hidden transition-all duration-500"
+            style={{
+              width: '360px', // Ancho fijo para preview
+              aspectRatio: '2/3',
+            }}
           >
             {/* ZONA A: CABECERA */}
-            <div className="h-[20%] bg-blue-700 flex items-center justify-center">
-              <h2 className={`text-white font-bold leading-none tracking-tighter ${title === 'ARRIENDO' ? 'text-5xl' : 'text-7xl'}`} style={{ fontFamily: 'var(--font-oswald)' }}>
+            <div className="h-[22%] bg-blue-700 flex items-center justify-center px-2">
+              <h2
+                className="text-white font-bold leading-none tracking-tighter text-center w-full"
+                style={{
+                  fontFamily: 'var(--font-oswald)',
+                  fontSize: action === 'venta' ? '100px' : '75px' // Ajuste visual aproximado para preview
+                }}
+              >
                 {title}
               </h2>
             </div>
 
             {/* ZONA B: CUERPO */}
-            <div className="flex-grow bg-white flex flex-col items-center justify-center p-4 relative">
-              {/* Margen de aire simulado */}
-              <div className="bg-white p-2">
+            <div className="flex-grow bg-white flex flex-col items-center justify-center relative">
+              {/* QR A SANGRE (85% width) */}
+              <div style={{ width: '85%' }}>
                 <QRCodeCanvas
                   value={`https://qvisos.cl/q/${codesList[0]}`}
-                  size={180}
+                  size={400} // Renderizado grande
+                  style={{ width: '100%', height: 'auto' }}
                   level="H"
                   fgColor="#000000"
                   bgColor="#ffffff"
                   includeMargin={false}
                   imageSettings={{
                     src: LOGO_URL,
-                    height: 40, width: 40,
+                    height: 60, width: 60,
                     excavate: true,
                     crossOrigin: 'anonymous',
                   }}
                 />
               </div>
-              <p className="mt-4 text-black font-bold text-lg text-center uppercase tracking-tight" style={{ fontFamily: 'var(--font-oswald)' }}>
+              <p className="mt-2 text-black font-bold text-xl text-center uppercase tracking-tight" style={{ fontFamily: 'var(--font-oswald)' }}>
                 Escanea para ver precio
               </p>
             </div>
 
             {/* ZONA C: PIE */}
-            <div className="h-[12%] bg-black flex items-center justify-between px-4">
-              <div className="flex items-center">
-                <span className="text-white font-bold text-2xl tracking-tighter" style={{ fontFamily: 'var(--font-oswald)' }}>QVisos</span>
-                <span className="text-blue-500 font-bold text-2xl tracking-tighter" style={{ fontFamily: 'var(--font-oswald)' }}>.cl</span>
+            <div className="h-[12%] bg-black flex items-center justify-between px-6">
+              <div className="flex items-center gap-2">
+                <span className="text-white font-bold text-3xl tracking-tighter" style={{ fontFamily: 'var(--font-oswald)' }}>QVisos</span>
+                <span className="text-cyan-400 font-bold text-3xl tracking-tighter" style={{ fontFamily: 'var(--font-oswald)' }}>.cl</span>
               </div>
-              <div className="bg-white px-2 py-1 rounded">
-                <span className="text-black font-bold text-lg leading-none" style={{ fontFamily: 'var(--font-oswald)' }}>
+              <div className="bg-white px-3 py-1 rounded-md min-w-[80px] text-center">
+                <span className="text-black font-bold text-xl leading-none" style={{ fontFamily: 'var(--font-oswald)' }}>
                   {codesList[0]}
                 </span>
               </div>
@@ -265,14 +340,14 @@ export default function ProductionStation() {
             key={code}
             id={`qr-canvas-${code}`}
             value={`https://qvisos.cl/q/${code}`}
-            size={1000} // Alta calidad para impresión
+            size={2000} // Ultra Alta calidad para impresión gigante
             level="H"
             fgColor="#000000"
             bgColor="#ffffff"
             includeMargin={false}
             imageSettings={{
               src: LOGO_URL,
-              height: 300, width: 300,
+              height: 500, width: 500,
               excavate: true,
               crossOrigin: 'anonymous',
             }}

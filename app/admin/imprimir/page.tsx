@@ -37,7 +37,7 @@ export default function ProductionStation() {
       orientation: 'landscape'
     },
     generico: {
-      url: 'https://wcczvedassfquzdrmwko.supabase.co/storage/v1/object/public/media/venta_prop_qvisos.png', // Fallback
+      url: 'https://wcczvedassfquzdrmwko.supabase.co/storage/v1/object/public/media/ventop.png', // Fallback
       orientation: 'portrait'
     }
   };

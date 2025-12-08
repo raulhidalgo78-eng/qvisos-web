@@ -45,8 +45,8 @@ export default function LocationPicker({ onLocationSelect }: LocationPickerProps
                 const { lat: rawLat, lng: rawLng } = await getLatLng(results[0]);
 
                 // Defensive validation: Ensure it's a number
-                const lat = typeof rawLat === 'function' ? (rawLat as any)() : Number(rawLat);
-                const lng = typeof rawLng === 'function' ? (rawLng as any)() : Number(rawLng);
+                const lat = typeof rawLat === 'function' ? Number((rawLat as any)()) : Number(rawLat);
+                const lng = typeof rawLng === 'function' ? Number((rawLng as any)()) : Number(rawLng);
 
                 const newPos = { lat, lng };
 
@@ -108,8 +108,8 @@ export default function LocationPicker({ onLocationSelect }: LocationPickerProps
                     const rawLng = event.latLng.lng;
 
                     // Defensive validation for drag events too
-                    const newLat = typeof rawLat === 'function' ? rawLat() : Number(rawLat);
-                    const newLng = typeof rawLng === 'function' ? rawLng() : Number(rawLng);
+                    const newLat = typeof rawLat === 'function' ? Number(rawLat()) : Number(rawLat);
+                    const newLng = typeof rawLng === 'function' ? Number(rawLng()) : Number(rawLng);
 
                     setSelected({ lat: newLat, lng: newLng });
                     onLocationSelect(newLat, newLng);
@@ -120,8 +120,13 @@ export default function LocationPicker({ onLocationSelect }: LocationPickerProps
 
     const onMapClick = useCallback((e: google.maps.MapMouseEvent) => {
         if (e.latLng) {
-            const lat = e.latLng.lat();
-            const lng = e.latLng.lng();
+            // Defensive validation for click events
+            const rawLat = e.latLng.lat;
+            const rawLng = e.latLng.lng;
+
+            const lat = typeof rawLat === 'function' ? Number(rawLat.call(e.latLng)) : Number(rawLat);
+            const lng = typeof rawLng === 'function' ? Number(rawLng.call(e.latLng)) : Number(rawLng);
+
             setSelected({ lat, lng });
             onLocationSelect(lat, lng);
         }

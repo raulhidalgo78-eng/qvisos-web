@@ -1,7 +1,6 @@
 'use client';
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { GoogleMap, useLoadScript } from '@react-google-maps/api';
-import usePlacesAutocomplete, { getGeocode, getLatLng } from 'use-places-autocomplete';
 
 interface LocationPickerProps {
     onLocationSelect: (lat: number, lng: number) => void;
@@ -22,73 +21,53 @@ export default function LocationPicker({ onLocationSelect }: LocationPickerProps
 
     const mapRef = useRef<google.maps.Map | null>(null);
     const markerRef = useRef<google.maps.marker.AdvancedMarkerElement | null>(null);
-
-    // --- COMPONENTE DE BÚSQUEDA INTERNO ---
-    const SearchBox = () => {
-        const {
-            ready,
-            value,
-            setValue,
-            suggestions: { status, data },
-            clearSuggestions,
-        } = usePlacesAutocomplete({
-            requestOptions: {
-                componentRestrictions: { country: 'cl' }, // Restringir a Chile
-            },
-        });
-
-        const handleSelect = async (address: string) => {
-            setValue(address, false);
-            clearSuggestions();
-            try {
-                const results = await getGeocode({ address });
-                const { lat: rawLat, lng: rawLng } = await getLatLng(results[0]);
-
-                // Defensive validation: Ensure it's a number
-                const lat = typeof rawLat === 'function' ? Number((rawLat as any)()) : Number(rawLat);
-                const lng = typeof rawLng === 'function' ? Number((rawLng as any)()) : Number(rawLng);
-
-                const newPos = { lat, lng };
-
-                setSelected(newPos);
-                onLocationSelect(lat, lng);
-                mapRef.current?.panTo(newPos);
-                mapRef.current?.setZoom(15);
-            } catch (error) {
-                console.error("Error buscando dirección:", error);
-            }
-        };
-
-        return (
-            <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-10 w-[90%] max-w-md">
-                <input
-                    value={value}
-                    onChange={(e) => setValue(e.target.value)}
-                    disabled={!ready}
-                    className="w-full p-3 rounded-lg shadow-lg border-0 text-gray-800 focus:ring-2 focus:ring-blue-500"
-                    placeholder="🔍 Buscar dirección..."
-                />
-                {status === "OK" && (
-                    <ul className="bg-white rounded-lg shadow-xl mt-1 overflow-hidden max-h-60 overflow-y-auto">
-                        {data.map(({ place_id, description }) => (
-                            <li
-                                key={place_id}
-                                onClick={() => handleSelect(description)}
-                                className="p-3 hover:bg-gray-100 cursor-pointer text-sm border-b last:border-b-0"
-                            >
-                                {description}
-                            </li>
-                        ))}
-                    </ul>
-                )}
-            </div>
-        );
-    };
-    // -------------------------------------
+    const autocompleteRef = useRef<HTMLDivElement>(null);
 
     const onMapLoad = useCallback((map: google.maps.Map) => {
         mapRef.current = map;
     }, []);
+
+    // Initialize PlaceAutocompleteElement
+    useEffect(() => {
+        if (isLoaded && autocompleteRef.current) {
+            // Check if element already exists to avoid duplicates
+            if (autocompleteRef.current.firstChild) return;
+
+            // @ts-ignore - PlaceAutocompleteElement might not be in types yet
+            const autocomplete = new google.maps.places.PlaceAutocompleteElement();
+
+            // Configure autocomplete
+            // @ts-ignore
+            autocomplete.componentRestrictions = { country: ['cl'] };
+            autocomplete.classList.add('w-full', 'shadow-lg', 'rounded-lg');
+
+            // Append to container
+            autocompleteRef.current.appendChild(autocomplete);
+
+            // Add event listener
+            autocomplete.addEventListener('gmp-places-select', async (event: any) => {
+                const place = event.place;
+                if (!place) return;
+
+                // Fetch location details
+                await place.fetchFields({ fields: ['location', 'displayName'] });
+
+                if (place.location) {
+                    const lat = place.location.lat();
+                    const lng = place.location.lng();
+                    const newPos = { lat, lng };
+
+                    setSelected(newPos);
+                    onLocationSelect(lat, lng);
+
+                    if (mapRef.current) {
+                        mapRef.current.panTo(newPos);
+                        mapRef.current.setZoom(15);
+                    }
+                }
+            });
+        }
+    }, [isLoaded, onLocationSelect]);
 
     // Efecto para manejar el AdvancedMarkerElement (Manteniendo la modernización)
     useEffect(() => {
@@ -137,7 +116,12 @@ export default function LocationPicker({ onLocationSelect }: LocationPickerProps
 
     return (
         <div className="w-full h-[400px] rounded-lg overflow-hidden border border-gray-300 relative">
-            <SearchBox />
+            {/* Container for PlaceAutocompleteElement */}
+            <div
+                ref={autocompleteRef}
+                className="absolute top-4 left-1/2 transform -translate-x-1/2 z-10 w-[90%] max-w-md bg-white rounded-lg shadow-xl"
+            ></div>
+
             <GoogleMap
                 zoom={13}
                 center={selected}

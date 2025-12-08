@@ -44,10 +44,15 @@ export default async function AdDetailPage({ params }: Props) {
 
   return (
     <div style={{ backgroundColor: colors.bg, minHeight: '100vh', padding: '20px' }}>
-      <div style={{ maxWidth: '1024px', margin: '0 auto 20px auto' }}>
+      <div style={{ maxWidth: '1024px', margin: '0 auto 20px auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <Link href="/" style={{ color: '#3b82f6', textDecoration: 'none', fontWeight: '500' }}>
           ← Volver al Inicio
         </Link>
+        {isOwner && (
+          <Link href="/mis-anuncios" style={{ color: '#2563eb', textDecoration: 'none', fontWeight: 'bold', backgroundColor: '#eff6ff', padding: '8px 16px', borderRadius: '8px' }}>
+            ← Volver a Mis Anuncios
+          </Link>
+        )}
       </div>
 
       <div style={{

@@ -121,25 +121,44 @@ export default function ProductionStation() {
       pdf.setFillColor(255, 255, 255);
       pdf.rect(0, bodyY, pageWidth, bodyHeight, 'F');
 
-      // QR Code "A Sangre" (85-90% del ancho)
-      const canvas = document.getElementById(`qr-canvas-${currentCode}`) as HTMLCanvasElement;
-      if (canvas) {
-        const qrData = canvas.toDataURL('image/png');
-        const qrSize = pageWidth * 0.85; // 85% del ancho total
-        const qrX = (pageWidth - qrSize) / 2;
-        // Centrar verticalmente en el cuerpo
-        const qrY = bodyY + (bodyHeight - qrSize) / 2 - (pageHeight * 0.02); // Un poco más arriba para el texto
-        pdf.addImage(qrData, 'PNG', qrX, qrY, qrSize, qrSize);
-      }
-
-      // Texto "Escanea para ver precio"
+      // Texto "Escanea para ver precio" (Calculamos su tamaño primero para reservar espacio)
       pdf.setTextColor(0, 0, 0);
       const subTextSize = pageWidth * 0.06; // Relativo al ancho
       pdf.setFontSize(subTextSize);
       pdf.setFont("helvetica", "bold");
-      // Posición: Abajo del QR
-      const subTextY = bodyY + bodyHeight - (pageHeight * 0.03);
-      pdf.text("Escanea para ver precio", pageWidth / 2, subTextY, { align: 'center' });
+      const subTextMargin = pageHeight * 0.03;
+      // Altura aproximada del texto (estimación conservadora)
+      const subTextHeight = subTextSize * 0.4;
+
+      // QR Code "Contain" Logic (El QR debe caber en el cuerpo sin tocar header ni footer)
+      const canvas = document.getElementById(`qr-canvas-${currentCode}`) as HTMLCanvasElement;
+      if (canvas) {
+        const qrData = canvas.toDataURL('image/png');
+
+        // Espacio disponible para el QR
+        const availableWidth = pageWidth;
+        const availableHeight = bodyHeight - subTextHeight - (subTextMargin * 2); // Restamos espacio para el texto y márgenes
+
+        // El tamaño es el menor de los dos espacios disponibles * 0.85 (Margen de seguridad)
+        const qrSize = Math.min(availableWidth, availableHeight) * 0.85;
+
+        const qrX = (pageWidth - qrSize) / 2;
+
+        // Centrar verticalmente en el espacio disponible (bodyHeight)
+        // Pero considerando que el texto va abajo, lo subimos un poco visualmente
+        // Coordenada Y base = inicio del cuerpo + mitad del cuerpo - mitad del QR
+        // Ajuste: Lo subimos la mitad de la altura del texto para equilibrar
+        let qrY = bodyY + (bodyHeight - qrSize) / 2 - (subTextHeight / 2);
+
+        // VALIDACIÓN CRÍTICA: Nunca tocar el header
+        if (qrY < headerHeight) qrY = headerHeight + (pageHeight * 0.01);
+
+        pdf.addImage(qrData, 'PNG', qrX, qrY, qrSize, qrSize);
+
+        // Posición del texto: Abajo del QR con un pequeño margen
+        const subTextY = qrY + qrSize + subTextMargin;
+        pdf.text("Escanea para ver precio", pageWidth / 2, subTextY, { align: 'center' });
+      }
 
       // --- ZONA C: PIE (Negro) ---
       const footerY = pageHeight - footerHeight;

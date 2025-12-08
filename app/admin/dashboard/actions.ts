@@ -1,4 +1,3 @@
-// En: app/admin/dashboard/actions.ts
 'use server';
 
 import { createClient } from '@/utils/supabase/server';
@@ -6,37 +5,86 @@ import { revalidatePath } from 'next/cache';
 
 const ADMIN_USER_ID = '6411ba0e-5e36-4e4e-aa1f-4183a2f88d45';
 
-export async function approveAd(adId: string) {
+async function checkAdmin() {
   const supabase = await createClient();
+  const { data: { user }, error } = await supabase.auth.getUser();
 
-  // --- ¡ARREGLO DE SEGURIDAD! ---
-  // Esta es la forma segura de obtener el usuario
-  const { data, error: authError } = await supabase.auth.getUser();
-
-  if (authError || !data?.user) {
-    return { error: 'No autorizado (Error de autenticación).' };
+  if (error || !user || user.id !== ADMIN_USER_ID) {
+    throw new Error('No autorizado');
   }
-  
-  const user = data.user;
-  // --- Fin del arreglo ---
+  return supabase;
+}
 
-  if (user.id !== ADMIN_USER_ID) {
-    return { error: 'No autorizado. Se requiere ser administrador.' };
+export async function approveAd(adId: string) {
+  try {
+    const supabase = await checkAdmin();
+    const { error } = await supabase
+      .from('ads')
+      .update({ status: 'verified' }) // Changed to 'verified'
+      .eq('id', adId);
+
+    if (error) throw error;
+    revalidatePath('/admin/dashboard');
+    return { success: true };
+  } catch (error: any) {
+    return { error: error.message };
   }
+}
 
-  const { error: updateError } = await supabase
-    .from('ads')
-    // --- ¡LA CORRECCIÓN ESTÁ AQUÍ! ---
-    .update({ status: 'aprobado' })
-    // ---------------------------------
-    .eq('id', adId);
+export async function toggleAdStatus(adId: string, currentStatus: string) {
+  try {
+    const supabase = await checkAdmin();
+    const newStatus = currentStatus === 'verified' ? 'paused' : 'verified';
 
-  if (updateError) {
-    console.error('Error approving ad:', updateError);
-    return { error: 'Error al aprobar el anuncio.' };
+    const { error } = await supabase
+      .from('ads')
+      .update({ status: newStatus })
+      .eq('id', adId);
+
+    if (error) throw error;
+    revalidatePath('/admin/dashboard');
+    return { success: true };
+  } catch (error: any) {
+    return { error: error.message };
   }
+}
 
-  revalidatePath('/admin/dashboard');
+export async function unlinkQr(adId: string) {
+  try {
+    const supabase = await checkAdmin();
+    const { error } = await supabase
+      .from('qr_codes')
+      .update({ ad_id: null, status: 'printed' })
+      .eq('ad_id', adId);
 
-  return { success: true };
+    if (error) throw error;
+    revalidatePath('/admin/dashboard');
+    return { success: true };
+  } catch (error: any) {
+    return { error: error.message };
+  }
+}
+
+export async function deleteAd(adId: string) {
+  try {
+    const supabase = await checkAdmin();
+
+    // 1. Unlink QR first
+    await supabase
+      .from('qr_codes')
+      .update({ ad_id: null, status: 'printed' })
+      .eq('ad_id', adId);
+
+    // 2. Delete Ad
+    const { error } = await supabase
+      .from('ads')
+      .delete()
+      .eq('id', adId);
+
+    if (error) throw error;
+    revalidatePath('/admin/dashboard');
+    return { success: true };
+  } catch (error: any) {
+    return { error: error.message };
+  }
 }

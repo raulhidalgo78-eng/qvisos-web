@@ -4,20 +4,25 @@ import { GoogleMap, useLoadScript } from '@react-google-maps/api';
 
 interface LocationPickerProps {
     onLocationSelect: (lat: number, lng: number) => void;
+    initialLat?: number;
+    initialLng?: number;
 }
 
 // We don't need to load 'places' in libraries array if we use importLibrary, 
 // but keeping it for safety for other components.
 const libraries: ("places" | "marker")[] = ["places", "marker"];
 
-export default function LocationPicker({ onLocationSelect }: LocationPickerProps) {
+export default function LocationPicker({ onLocationSelect, initialLat, initialLng }: LocationPickerProps) {
     const { isLoaded, loadError } = useLoadScript({
         googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY as string,
         libraries: libraries,
         version: 'weekly', // Ensure we get the latest version with PlaceAutocompleteElement support
     });
 
-    const defaultCenter = useMemo(() => ({ lat: -33.4489, lng: -70.6693 }), []);
+    const defaultCenter = useMemo(() => ({
+        lat: initialLat || -33.4489,
+        lng: initialLng || -70.6693
+    }), [initialLat, initialLng]);
 
     // Use 'selected' to track the current position
     const [selected, setSelected] = useState(defaultCenter);

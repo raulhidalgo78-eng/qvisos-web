@@ -46,7 +46,7 @@ export default function LocationPicker({ onLocationSelect }: LocationPickerProps
 
                     // Configure
                     // @ts-ignore
-                    autocomplete.componentRestrictions = { country: ['cl'] };
+                    // autocomplete.componentRestrictions = { country: ['cl'] }; // Removed to fix "Property not available" error
                     autocomplete.classList.add('w-full', 'shadow-lg', 'rounded-lg', 'h-12', 'px-4', 'bg-white');
 
                     // Append

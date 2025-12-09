@@ -79,6 +79,17 @@ export default function ProductionStation() {
       format: [pageWidth, pageHeight] // Tamaño personalizado dinámico
     });
 
+    // --- INYECCIÓN DE FUENTE OSWALD (Base64) ---
+    try {
+      const { oswaldBoldBase64 } = await import('./oswaldFont');
+      pdf.addFileToVFS("Oswald-Bold.ttf", oswaldBoldBase64);
+      pdf.addFont("Oswald-Bold.ttf", "Oswald", "bold");
+      pdf.setFont("Oswald", "bold");
+    } catch (e) {
+      console.error("Error cargando fuente Oswald:", e);
+      pdf.setFont("helvetica", "bold"); // Fallback
+    }
+
     // Registrar en BD
     const records = codesList.map(code => ({
       code,
@@ -100,7 +111,6 @@ export default function ProductionStation() {
 
       // Texto HEADER (Fit to width)
       pdf.setTextColor(255, 255, 255);
-      pdf.setFont("helvetica", "bold");
 
       // Cálculo manual de tamaño de fuente para llenar el ancho
       // Base: En 300mm ancho, font size 280 llena aprox "VENDO"
@@ -110,8 +120,9 @@ export default function ProductionStation() {
 
       pdf.setFontSize(fontSize);
       // Ajuste fino de posición Y para centrar verticalmente en el header
-      const textY = (headerHeight / 2) + (fontSize * 0.35);
-      pdf.text(title, pageWidth / 2, textY, { align: 'center' });
+      // Usamos baseline middle para mejor centrado
+      const textY = headerHeight / 2;
+      pdf.text(title, pageWidth / 2, textY, { align: 'center', baseline: 'middle' });
 
       // --- ZONA B: CUERPO (Blanco) ---
       const bodyY = headerHeight;
@@ -125,7 +136,7 @@ export default function ProductionStation() {
       pdf.setTextColor(0, 0, 0);
       const subTextSize = pageWidth * 0.06; // Relativo al ancho
       pdf.setFontSize(subTextSize);
-      pdf.setFont("helvetica", "bold");
+      // pdf.setFont("helvetica", "bold"); // Usamos Oswald
       const subTextMargin = pageHeight * 0.03;
       // Altura aproximada del texto (estimación conservadora)
       const subTextHeight = subTextSize * 0.4;
@@ -188,7 +199,8 @@ export default function ProductionStation() {
       pdf.setTextColor(0, 0, 0);
       pdf.setFontSize(logoSize * 0.6);
       // Centrar texto en caja
-      pdf.text(currentCode, boxX + (boxWidth / 2), boxY + (boxHeight * 0.7), { align: 'center' });
+      // Usamos baseline middle para mejor centrado
+      pdf.text(currentCode, boxX + (boxWidth / 2), boxY + (boxHeight / 2), { align: 'center', baseline: 'middle' });
     }
 
     if (startNum !== null) setStartNum(startNum + quantity);

@@ -176,8 +176,8 @@ export default function ProductionStation() {
       pdf.setFillColor(0, 0, 0);
       pdf.rect(0, footerY, pageWidth, footerHeight, 'F');
 
-      // Logo "QVisos .cl" (ESCALA MASIVA: 13% del Ancho de Página)
-      const logoSize = pageWidth * 0.13;
+      // Logo "QVisos .cl" (Sincronizado con Preview: ~8.5% del Ancho)
+      const logoSize = pageWidth * 0.085;
       pdf.setFontSize(logoSize);
       pdf.setTextColor(255, 255, 255);
 
@@ -206,8 +206,8 @@ export default function ProductionStation() {
 
       // Texto ID
       pdf.setTextColor(0, 0, 0);
-      // Tamaño fuente ID = 45% del Alto del Footer
-      const idFontSize = footerHeight * 0.45;
+      // Tamaño fuente ID = 32% del Alto del Footer (Sincronizado con Preview)
+      const idFontSize = footerHeight * 0.32;
       pdf.setFontSize(idFontSize);
 
       // Centrar texto en caja perfectamente

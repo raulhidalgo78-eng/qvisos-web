@@ -1,6 +1,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { createClient } from '@/utils/supabase/server';
+import { createAdminClient } from '@/utils/supabase/admin'; // Importar cliente admin
 import { redirect } from 'next/navigation';
 import AdminDashboardClient from './AdminDashboardClient';
 
@@ -24,8 +25,9 @@ export default async function AdminDashboard() {
     redirect('/'); // Al inicio si no es admin
   }
 
-  // Fetch ALL ads that are not deleted
-  const { data: ads, error } = await supabase
+  // Fetch ALL ads using ADMIN CLIENT (Bypass RLS)
+  const supabaseAdmin = createAdminClient();
+  const { data: ads, error } = await supabaseAdmin
     .from('ads')
     .select('*')
     .neq('status', 'deleted')

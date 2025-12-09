@@ -1,6 +1,7 @@
 'use server';
 
 import { createClient } from '@/utils/supabase/server';
+import { createAdminClient } from '@/utils/supabase/admin'; // Importar cliente admin
 import { revalidatePath } from 'next/cache';
 
 const ADMIN_USER_ID = '6411ba0e-5e36-4e4e-aa1f-4183a2f88d45';
@@ -12,7 +13,8 @@ async function checkAdmin() {
   if (error || !user || user.id !== ADMIN_USER_ID) {
     throw new Error('No autorizado');
   }
-  return supabase;
+  // Retornar cliente con privilegios de admin para operaciones de BD
+  return createAdminClient();
 }
 
 export async function approveAd(adId: string) {

@@ -176,30 +176,41 @@ export default function ProductionStation() {
       pdf.setFillColor(0, 0, 0);
       pdf.rect(0, footerY, pageWidth, footerHeight, 'F');
 
-      // Logo "QVisos .cl"
-      const logoSize = footerHeight * 0.5; // Tamaño fuente relativo al footer
+      // Logo "QVisos .cl" (ESCALA MASIVA: 13% del Ancho de Página)
+      const logoSize = pageWidth * 0.13;
       pdf.setFontSize(logoSize);
       pdf.setTextColor(255, 255, 255);
-      pdf.text("QVisos", pageWidth * 0.05, footerY + (footerHeight * 0.7));
 
-      // .cl separado
+      // Posición Y centrada en el footer
+      const logoY = footerY + (footerHeight / 2);
+      const logoX = pageWidth * 0.05;
+
+      pdf.text("QVisos", logoX, logoY, { baseline: 'middle' });
+
+      // .cl separado (Cyan)
       const qvisosWidth = pdf.getTextWidth("QVisos");
-      pdf.setTextColor(6, 182, 212); // Cyan-500 (Diferenciado)
-      pdf.text(".cl", (pageWidth * 0.05) + qvisosWidth + (pageWidth * 0.02), footerY + (footerHeight * 0.7));
+      pdf.setTextColor(6, 182, 212); // Cyan-500
+      pdf.text(".cl", logoX + qvisosWidth + (pageWidth * 0.01), logoY, { baseline: 'middle' });
 
       // Caja ID (Derecha)
-      const boxWidth = pageWidth * 0.25;
+      // Alto = 60% del Footer
+      // Ancho = 1.8 veces el Alto (Rectangular)
       const boxHeight = footerHeight * 0.6;
+      const boxWidth = boxHeight * 1.8;
+
       const boxX = pageWidth - boxWidth - (pageWidth * 0.05);
       const boxY = footerY + (footerHeight - boxHeight) / 2;
 
       pdf.setFillColor(255, 255, 255);
-      pdf.roundedRect(boxX, boxY, boxWidth, boxHeight, boxHeight * 0.2, boxHeight * 0.2, 'F');
+      pdf.roundedRect(boxX, boxY, boxWidth, boxHeight, boxHeight * 0.15, boxHeight * 0.15, 'F');
 
+      // Texto ID
       pdf.setTextColor(0, 0, 0);
-      pdf.setFontSize(logoSize * 0.6);
-      // Centrar texto en caja
-      // Usamos baseline middle para mejor centrado
+      // Tamaño fuente ID = 45% del Alto del Footer
+      const idFontSize = footerHeight * 0.45;
+      pdf.setFontSize(idFontSize);
+
+      // Centrar texto en caja perfectamente
       pdf.text(currentCode, boxX + (boxWidth / 2), boxY + (boxHeight / 2), { align: 'center', baseline: 'middle' });
     }
 

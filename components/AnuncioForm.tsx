@@ -2,7 +2,7 @@
 
 import { createClient } from '@/utils/supabase/client';
 import { useRouter, useSearchParams } from 'next/navigation';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import type { User } from '@supabase/supabase-js';
 import LocationPicker from '@/components/LocationPicker';
 import { updateAd } from '@/app/actions/ad-actions';
@@ -247,6 +247,11 @@ export default function AnuncioForm({ initialData }: AnuncioFormProps) {
     // Helper para valores por defecto
     const def = (key: string, fallback: string = '') => initialData?.features?.[key] || fallback;
     const defVal = (key: string) => initialData ? initialData[key] : undefined;
+
+    const handleLocationSelect = useCallback((la: number, lo: number) => {
+        setLat(la);
+        setLng(lo);
+    }, []);
 
     return (
         <div style={{ maxWidth: '600px', margin: 'auto', padding: '20px' }}>
@@ -500,7 +505,7 @@ export default function AnuncioForm({ initialData }: AnuncioFormProps) {
                     <LocationPicker
                         initialLat={lat || undefined}
                         initialLng={lng || undefined}
-                        onLocationSelect={(la, lo) => { setLat(la); setLng(lo); }}
+                        onLocationSelect={handleLocationSelect}
                     />
                     <input type="hidden" name="latitude" value={lat || ''} />
                     <input type="hidden" name="longitude" value={lng || ''} />

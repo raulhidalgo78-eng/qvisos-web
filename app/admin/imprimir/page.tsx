@@ -67,16 +67,20 @@ export default function ProductionStation() {
   const handleGeneratePDF = async () => {
     setIsGenerating(true);
 
-    // Obtener dimensiones seleccionadas
+    // Tamaños en CM (según snippet del usuario)
+    const sizesCM: Record<string, [number, number]> = {
+      '20x30': [20, 30],
+      '30x45': [30, 45],
+      '50x75': [50, 75],
+      '100x150': [100, 150]
+    };
     // @ts-ignore
-    const selectedSize = SIZES[size];
-    const pageWidth = selectedSize.width;
-    const pageHeight = selectedSize.height;
+    const [width, height] = sizesCM[size] || sizesCM['30x45'];
 
     const pdf = new jsPDF({
       orientation: 'portrait',
-      unit: 'mm',
-      format: [pageWidth, pageHeight] // Tamaño personalizado dinámico
+      unit: 'cm',
+      format: [width, height]
     });
 
     // --- INYECCIÓN DE FUENTE OSWALD (Base64) ---
@@ -94,124 +98,93 @@ export default function ProductionStation() {
     const records = codesList.map(code => ({
       code,
       status: 'printed',
-      category: `${action}_${category}` // ej: venta_propiedad
+      category: `${action}_${category}`
     }));
     await registerCodes(records);
 
     // Generar Páginas
     for (let i = 0; i < codesList.length; i++) {
-      if (i > 0) pdf.addPage([pageWidth, pageHeight], 'portrait');
+      if (i > 0) pdf.addPage([width, height], 'portrait');
       const currentCode = codesList[i];
 
-      // --- ZONA A: CABECERA (Azul) ---
-      // Altura ~22%
-      const headerHeight = pageHeight * 0.22;
-      pdf.setFillColor(29, 78, 216); // Blue-700
-      pdf.rect(0, 0, pageWidth, headerHeight, 'F');
+      // 1. HEADER (Azul, 22% alto)
+      const headerH = height * 0.22;
+      pdf.setFillColor(0, 0, 204); // Azul profundo
+      pdf.rect(0, 0, width, headerH, "F");
 
-      // Texto HEADER (Fit to width)
+      // Título GIGANTE dinámico (VENDO/ARRIENDO)
       pdf.setTextColor(255, 255, 255);
+      // Escala matemática del usuario: (width * 0.28) * 2.83
+      // Nota: 2.83 es aprox la conversión de mm a puntos o similar, ajustamos para CM
+      pdf.setFontSize((width * 0.28) * 2.83 * 10); // Multiplicamos por 10 porque unit es CM pero fontSize suele ser PT
+      // Ajuste: En jsPDF 'cm', setFontSize usa points. 1cm = 28.35pt.
+      // El snippet original: (width * 0.28) * 2.83. Si width=30, size=23.7. Muy chico.
+      // Probablemente el snippet asumía unit='mm' o 'pt'.
+      // Vamos a usar la lógica visual: Font size debe ser ~20% del width en puntos?
+      // Re-calculando basado en "VENDO" llenando el ancho.
+      // En el código anterior: fontSize = (pageWidth_mm / 300) * 280.
+      // Si width_cm=30 -> width_mm=300 -> size=280.
+      // 280pt es gigante.
+      // Vamos a mantener la lógica anterior que funcionaba pero adaptada a CM.
+      // 30cm = 300mm.
 
-      // Cálculo manual de tamaño de fuente para llenar el ancho
-      // Base: En 300mm ancho, font size 280 llena aprox "VENDO"
-      // Factor: pageWidth / 300 * base
-      let fontSizeBase = title === 'VENDO' ? 280 : 220; // ARRIENDO es más largo, fuente menor
-      const fontSize = (pageWidth / 300) * fontSizeBase;
-
+      const fontSize = (width / 30) * 280; // Base 280pt para 30cm ancho
       pdf.setFontSize(fontSize);
-      // Ajuste fino de posición Y para centrar verticalmente en el header
-      // Usamos baseline middle para mejor centrado
-      const textY = headerHeight / 2;
-      pdf.text(title, pageWidth / 2, textY, { align: 'center', baseline: 'middle' });
 
-      // --- ZONA B: CUERPO (Blanco) ---
-      const bodyY = headerHeight;
-      const footerHeight = pageHeight * 0.12;
-      const bodyHeight = pageHeight - headerHeight - footerHeight;
+      const titleText = action === 'venta' ? 'VENDO' : 'ARRIENDO';
+      pdf.text(titleText, width / 2, headerH / 2 + (height * 0.01), { align: "center", baseline: "middle" });
+
+      // 2. FOOTER (Negro, 12% alto)
+      const footerH = height * 0.12;
+      const footerY = height - footerH;
+      pdf.setFillColor(0, 0, 0);
+      pdf.rect(0, footerY, width, footerH, "F");
+
+      // Logo QVisos (Grande y legible)
+      // Escala usuario: (width * 0.13) * 2.83
+      const logoSize = (width * 0.13) * 28.35; // Convertir a pt
+      pdf.setFontSize(logoSize);
+      pdf.setTextColor(255, 255, 255);
+      pdf.text("QVisos", width * 0.05, footerY + (footerH / 2), { baseline: "middle" });
+
+      pdf.setTextColor(0, 150, 255); // Cyan
+      const txtW = pdf.getTextWidth("QVisos");
+      pdf.text(".cl", (width * 0.05) + txtW + (width * 0.01), footerY + (footerH / 2), { baseline: "middle" });
+
+      // ID Box (Derecha)
+      const idW = footerH * 2.5;
+      const idH = footerH * 0.6;
+      const idX = width - (width * 0.05) - idW;
+      const idY = footerY + (footerH - idH) / 2;
 
       pdf.setFillColor(255, 255, 255);
-      pdf.rect(0, bodyY, pageWidth, bodyHeight, 'F');
+      pdf.rect(idX, idY, idW, idH, "F");
 
-      // Texto "Escanea para ver precio" (Calculamos su tamaño primero para reservar espacio)
       pdf.setTextColor(0, 0, 0);
-      const subTextSize = pageWidth * 0.06; // Relativo al ancho
-      pdf.setFontSize(subTextSize);
-      // pdf.setFont("helvetica", "bold"); // Usamos Oswald
-      const subTextMargin = pageHeight * 0.03;
-      // Altura aproximada del texto (estimación conservadora)
-      const subTextHeight = subTextSize * 0.4;
+      pdf.setFontSize(logoSize * 0.7);
+      pdf.text(currentCode, idX + idW / 2, idY + idH / 2, { align: "center", baseline: "middle" });
 
-      // QR Code "Contain" Logic (El QR debe caber en el cuerpo sin tocar header ni footer)
+      // 3. QR (Cuerpo Central) - Máximo tamaño posible sin tocar bordes
+      const bodyY = headerH;
+      const bodyH = footerY - headerH;
+
+      // Obtener imagen del canvas oculto
       const canvas = document.getElementById(`qr-canvas-${currentCode}`) as HTMLCanvasElement;
       if (canvas) {
         const qrData = canvas.toDataURL('image/png');
 
-        // Espacio disponible para el QR
-        const availableWidth = pageWidth;
-        const availableHeight = bodyHeight - subTextHeight - (subTextMargin * 2); // Restamos espacio para el texto y márgenes
+        const qrSize = Math.min(width, bodyH) * 0.85; // 85% del menor lado disponible
+        const qrX = (width - qrSize) / 2;
+        // Centrado vertical en el cuerpo
+        const qrY = bodyY + (bodyH - qrSize) / 2;
 
-        // El tamaño es el menor de los dos espacios disponibles * 0.85 (Margen de seguridad)
-        const qrSize = Math.min(availableWidth, availableHeight) * 0.85;
+        pdf.addImage(qrData, "PNG", qrX, qrY, qrSize, qrSize);
 
-        const qrX = (pageWidth - qrSize) / 2;
-
-        // Centrar verticalmente en el espacio disponible (bodyHeight)
-        // Pero considerando que el texto va abajo, lo subimos un poco visualmente
-        // Coordenada Y base = inicio del cuerpo + mitad del cuerpo - mitad del QR
-        // Ajuste: Lo subimos la mitad de la altura del texto para equilibrar
-        let qrY = bodyY + (bodyHeight - qrSize) / 2 - (subTextHeight / 2);
-
-        // VALIDACIÓN CRÍTICA: Nunca tocar el header
-        if (qrY < headerHeight) qrY = headerHeight + (pageHeight * 0.01);
-
-        pdf.addImage(qrData, 'PNG', qrX, qrY, qrSize, qrSize);
-
-        // Posición del texto: Abajo del QR con un pequeño margen
-        const subTextY = qrY + qrSize + subTextMargin;
-        pdf.text("Escanea para ver precio", pageWidth / 2, subTextY, { align: 'center' });
+        // Texto "Escanea para ver precio" debajo del QR
+        pdf.setTextColor(0, 0, 0);
+        pdf.setFontSize(width * 1.5); // Aprox 5% del ancho en pt
+        pdf.text("Escanea para ver precio", width / 2, qrY + qrSize + (height * 0.02), { align: 'center' });
       }
-
-      // --- ZONA C: PIE (Negro) ---
-      const footerY = pageHeight - footerHeight;
-      pdf.setFillColor(0, 0, 0);
-      pdf.rect(0, footerY, pageWidth, footerHeight, 'F');
-
-      // Logo "QVisos .cl" (Sincronizado con Preview: ~8.5% del Ancho)
-      const logoSize = pageWidth * 0.085;
-      pdf.setFontSize(logoSize);
-      pdf.setTextColor(255, 255, 255);
-
-      // Posición Y centrada en el footer
-      const logoY = footerY + (footerHeight / 2);
-      const logoX = pageWidth * 0.05;
-
-      pdf.text("QVisos", logoX, logoY, { baseline: 'middle' });
-
-      // .cl separado (Cyan)
-      const qvisosWidth = pdf.getTextWidth("QVisos");
-      pdf.setTextColor(6, 182, 212); // Cyan-500
-      pdf.text(".cl", logoX + qvisosWidth + (pageWidth * 0.01), logoY, { baseline: 'middle' });
-
-      // Caja ID (Derecha)
-      // Alto = 60% del Footer
-      // Ancho = 1.8 veces el Alto (Rectangular)
-      const boxHeight = footerHeight * 0.6;
-      const boxWidth = boxHeight * 1.8;
-
-      const boxX = pageWidth - boxWidth - (pageWidth * 0.05);
-      const boxY = footerY + (footerHeight - boxHeight) / 2;
-
-      pdf.setFillColor(255, 255, 255);
-      pdf.roundedRect(boxX, boxY, boxWidth, boxHeight, boxHeight * 0.15, boxHeight * 0.15, 'F');
-
-      // Texto ID
-      pdf.setTextColor(0, 0, 0);
-      // Tamaño fuente ID = 32% del Alto del Footer (Sincronizado con Preview)
-      const idFontSize = footerHeight * 0.32;
-      pdf.setFontSize(idFontSize);
-
-      // Centrar texto en caja perfectamente
-      pdf.text(currentCode, boxX + (boxWidth / 2), boxY + (boxHeight / 2), { align: 'center', baseline: 'middle' });
     }
 
     if (startNum !== null) setStartNum(startNum + quantity);

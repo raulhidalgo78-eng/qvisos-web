@@ -35,62 +35,48 @@ export default function LocationPicker({ onLocationSelect, initialLat, initialLn
         mapRef.current = map;
     }, []);
 
-    // Initialize PlaceAutocompleteElement using importLibrary
+    // Initialize Autocomplete (Old API as requested for stability)
     useEffect(() => {
         if (isLoaded && autocompleteContainerRef.current) {
-            // Check if element already exists
-            if (autocompleteContainerRef.current.firstChild) return;
+            // Create input element if it doesn't exist
+            let input = autocompleteContainerRef.current.querySelector('input');
+            if (!input) {
+                input = document.createElement('input');
+                input.type = 'text';
+                input.placeholder = 'Buscar dirección...';
+                input.className = 'w-full h-12 px-4 rounded-lg shadow-lg border-0 focus:ring-2 focus:ring-blue-500';
+                autocompleteContainerRef.current.appendChild(input);
+            }
 
-            const initAutocomplete = async () => {
-                try {
-                    // Import the library dynamically
-                    const { PlaceAutocompleteElement } = await google.maps.importLibrary("places") as any;
-
-                    // Create the element
-                    const autocomplete = new PlaceAutocompleteElement();
-
-                    // Configure
-                    // @ts-ignore
-                    // autocomplete.componentRestrictions = { country: ['cl'] }; // Removed to fix "Property not available" error
-                    autocomplete.classList.add('w-full', 'shadow-lg', 'rounded-lg', 'h-12', 'px-4', 'bg-white');
-
-                    // Append
-                    autocompleteContainerRef.current?.appendChild(autocomplete);
-
-                    // Listener
-                    autocomplete.addEventListener('gmp-places-select', async (event: any) => {
-                        const place = event.place;
-                        if (!place) return;
-
-                        try {
-                            // Fetch ONLY the fields we strictly need first to avoid errors
-                            await place.fetchFields({
-                                fields: ['location']
-                            });
-
-                            if (place.location) {
-                                const lat = place.location.lat();
-                                const lng = place.location.lng();
-                                const newPos = { lat, lng };
-
-                                setSelected(newPos);
-                                onLocationSelect(lat, lng);
-
-                                if (mapRef.current) {
-                                    mapRef.current.panTo(newPos);
-                                    mapRef.current.setZoom(15);
-                                }
-                            }
-                        } catch (err) {
-                            console.error("Error fetching place fields:", err);
-                        }
-                    });
-                } catch (error) {
-                    console.error("Error initializing PlaceAutocompleteElement:", error);
-                }
+            const options = {
+                fields: ["address_components", "geometry", "icon", "name", "formatted_address"],
+                types: ["address"],
+                componentRestrictions: { country: "cl" },
             };
 
-            initAutocomplete();
+            const autocomplete = new google.maps.places.Autocomplete(input, options);
+
+            autocomplete.addListener("place_changed", () => {
+                const place = autocomplete.getPlace();
+                if (!place.geometry || !place.geometry.location) return;
+
+                // Fix para evitar error "toFixed is not a function"
+                const latVal = place.geometry.location.lat;
+                const lngVal = place.geometry.location.lng;
+
+                const lat = typeof latVal === 'function' ? latVal() : Number(latVal);
+                const lng = typeof lngVal === 'function' ? lngVal() : Number(lngVal);
+
+                // Guarda 'lat' y 'lng' en el estado del formulario ahora.
+                const newPos = { lat, lng };
+                setSelected(newPos);
+                onLocationSelect(lat, lng);
+
+                if (mapRef.current) {
+                    mapRef.current.panTo(newPos);
+                    mapRef.current.setZoom(15);
+                }
+            });
         }
     }, [isLoaded, onLocationSelect]);
 

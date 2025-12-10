@@ -35,63 +35,53 @@ export default function LocationPicker({ onLocationSelect, initialLat, initialLn
         mapRef.current = map;
     }, []);
 
-    // Initialize PlaceAutocompleteElement (New API)
+    // Initialize Autocomplete (Stable Version as requested)
     useEffect(() => {
         if (isLoaded && autocompleteContainerRef.current) {
-            const initAutocomplete = async () => {
-                try {
-                    // Import Places Library
-                    // @ts-ignore
-                    const { PlaceAutocompleteElement } = await google.maps.importLibrary("places") as google.maps.PlacesLibrary;
+            // Create input element if it doesn't exist
+            let input = autocompleteContainerRef.current.querySelector('input');
+            if (!input) {
+                input = document.createElement('input');
+                input.type = 'text';
+                input.placeholder = 'Buscar dirección...';
+                input.className = 'w-full h-12 px-4 rounded-lg shadow-lg border-0 focus:ring-2 focus:ring-blue-500';
+                autocompleteContainerRef.current.appendChild(input);
+            }
 
-                    // Create element if not exists
-                    if (!autocompleteContainerRef.current) return;
-                    let autocompleteElement = autocompleteContainerRef.current.querySelector('gmp-place-autocomplete') as any;
+            if (!window.google) return;
 
-                    if (!autocompleteElement) {
-                        autocompleteElement = new PlaceAutocompleteElement();
-                        autocompleteElement.id = 'place-autocomplete-input';
-                        autocompleteElement.className = 'w-full h-12'; // Tailwind classes might not apply directly to shadow DOM, but useful for container
-
-                        // Append to container
-                        autocompleteContainerRef.current.appendChild(autocompleteElement);
-                    }
-
-                    // Configure element
-                    // @ts-ignore - Types might be missing for new element
-                    autocompleteElement.componentRestrictions = { country: ['cl'] };
-                    // @ts-ignore
-                    autocompleteElement.types = ['address'];
-                    // @ts-ignore
-                    autocompleteElement.fields = ['location', 'formattedAddress', 'addressComponents', 'displayName'];
-
-                    // Add Event Listener
-                    autocompleteElement.addEventListener('gmp-places-select', async ({ place }: any) => {
-                        if (!place || !place.location) return;
-
-                        // Robust Lat/Lng Extraction
-                        const rawLat = place.location.lat;
-                        const rawLng = place.location.lng;
-
-                        const lat = typeof rawLat === 'function' ? Number(rawLat()) : Number(rawLat);
-                        const lng = typeof rawLng === 'function' ? Number(rawLng()) : Number(rawLng);
-
-                        const newPos = { lat, lng };
-                        setSelected(newPos);
-                        onLocationSelect(lat, lng);
-
-                        if (mapRef.current) {
-                            mapRef.current.panTo(newPos);
-                            mapRef.current.setZoom(15);
-                        }
-                    });
-
-                } catch (e) {
-                    console.error("Error initializing PlaceAutocompleteElement:", e);
-                }
+            const options = {
+                // CRÍTICO: 'fields' es obligatorio hoy en día.
+                fields: ["geometry", "formatted_address", "name"],
+                componentRestrictions: { country: "cl" },
+                types: ["geocode", "establishment"]
             };
 
-            initAutocomplete();
+            const autocomplete = new window.google.maps.places.Autocomplete(input, options);
+
+            autocomplete.addListener("place_changed", () => {
+                const place = autocomplete.getPlace();
+
+                // Validación defensiva para evitar crashes
+                if (!place.geometry || !place.geometry.location) {
+                    console.warn("No se encontraron coordenadas para esta dirección.");
+                    return;
+                }
+
+                // Extracción segura (Maneja si es función o propiedad)
+                const lat = typeof place.geometry.location.lat === 'function' ? place.geometry.location.lat() : place.geometry.location.lat;
+                const lng = typeof place.geometry.location.lng === 'function' ? place.geometry.location.lng() : place.geometry.location.lng;
+
+                // Actualizar estado
+                const newPos = { lat: Number(lat), lng: Number(lng) };
+                setSelected(newPos);
+                onLocationSelect(newPos.lat, newPos.lng);
+
+                if (mapRef.current) {
+                    mapRef.current.panTo(newPos);
+                    mapRef.current.setZoom(15);
+                }
+            });
         }
     }, [isLoaded, onLocationSelect]);
 

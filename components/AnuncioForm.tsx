@@ -4,7 +4,7 @@ import { createClient } from '@/utils/supabase/client';
 import { useRouter, useSearchParams } from 'next/navigation';
 import React, { useState, useEffect, useCallback } from 'react';
 import type { User } from '@supabase/supabase-js';
-import LocationPicker from '@/components/LocationPicker';
+import SimpleLocationPicker from '@/components/SimpleLocationPicker';
 import { updateAd } from '@/app/actions/ad-actions';
 
 interface AnuncioFormProps {
@@ -248,12 +248,14 @@ export default function AnuncioForm({ initialData }: AnuncioFormProps) {
     const def = (key: string, fallback: string = '') => initialData?.features?.[key] || fallback;
     const defVal = (key: string) => initialData ? initialData[key] : undefined;
 
-    const handleLocationSelect = useCallback((la: number, lo: number) => {
-        setLat(la);
-        setLng(lo);
+    const handleLocationSelect = useCallback((data: { lat: number; lng: number; address: string }) => {
+        setLat(data.lat);
+        setLng(data.lng);
+        // Optional: Save address if needed
     }, []);
 
     return (
+        // ... (rest of the component)
         <div style={{ maxWidth: '600px', margin: 'auto', padding: '20px' }}>
             <h1>{initialData ? 'Editar Anuncio' : 'Activar QR / Crear Anuncio'}</h1>
             <p style={{ marginBottom: '20px' }}>
@@ -262,7 +264,23 @@ export default function AnuncioForm({ initialData }: AnuncioFormProps) {
 
             <form onSubmit={handleSubmit} className="space-y-8">
 
-                {/* QR Code (Solo lectura en edición) */}
+                {/* ... (QR Code section) ... */}
+
+                {/* ... (Title section) ... */}
+
+                {/* ... (Category section) ... */}
+
+                {/* ... (Auto/Property fields) ... */}
+
+                <div style={{ marginBottom: '15px' }}>
+                    <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Ubicación</label>
+                    <SimpleLocationPicker
+                        initialAddress={initialData?.features?.address} // Pass initial address if available
+                        onLocationSelect={handleLocationSelect}
+                    />
+                    <input type="hidden" name="latitude" value={lat || ''} />
+                    <input type="hidden" name="longitude" value={lng || ''} />
+                </div>
                 {!initialData && (
                     <div style={{ marginBottom: '15px' }}>
                         <label htmlFor="qr_code" style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold', color: '#2563eb' }}>
@@ -502,9 +520,8 @@ export default function AnuncioForm({ initialData }: AnuncioFormProps) {
 
                 <div style={{ marginBottom: '15px' }}>
                     <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Ubicación</label>
-                    <LocationPicker
-                        initialLat={lat || undefined}
-                        initialLng={lng || undefined}
+                    <SimpleLocationPicker
+                        initialAddress={initialData?.features?.address}
                         onLocationSelect={handleLocationSelect}
                     />
                     <input type="hidden" name="latitude" value={lat || ''} />

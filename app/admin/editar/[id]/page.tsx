@@ -17,8 +17,21 @@ export default async function EditAdPage({ params }: { params: Promise<{ id: str
     // 2. Fetch Ad (Use Admin Client if Admin to bypass RLS)
     let fetchClient = supabase;
     if (isAdmin) {
-        const { createAdminClient } = await import('@/utils/supabase/admin');
-        fetchClient = createAdminClient();
+        try {
+            const { createAdminClient } = await import('@/utils/supabase/admin');
+            fetchClient = createAdminClient();
+        } catch (e: any) {
+            console.error("Error creating admin client:", e);
+            return (
+                <div className="p-8 text-center text-red-500">
+                    <h2 className="text-xl font-bold mb-2">Error de Configuración</h2>
+                    <p>No se pudo inicializar el cliente de Admin.</p>
+                    <p className="text-sm mt-2 bg-gray-100 p-2 rounded inline-block">
+                        {e.message || "Verifica SUPABASE_SERVICE_ROLE_KEY"}
+                    </p>
+                </div>
+            );
+        }
     }
 
     const { data: ad, error: fetchError } = await fetchClient

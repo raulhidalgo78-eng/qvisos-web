@@ -54,8 +54,13 @@ export async function updateAd(formData: FormData) {
 
     let dbClient = supabase;
     if (isAdmin) {
-        const { createAdminClient } = await import('@/utils/supabase/admin');
-        dbClient = createAdminClient();
+        try {
+            const { createAdminClient } = await import('@/utils/supabase/admin');
+            dbClient = createAdminClient();
+        } catch (e) {
+            console.error("Error creating admin client in action:", e);
+            throw new Error("Error de configuración del servidor (Service Role Key faltante).");
+        }
     }
 
     const { data: ad, error: fetchError } = await dbClient

@@ -12,8 +12,16 @@ export default async function EditAdPage({ params }: { params: Promise<{ id: str
         redirect('/login?message=Debes iniciar sesión');
     }
 
-    // 2. Fetch Ad
-    const { data: ad, error: fetchError } = await supabase
+    const isAdmin = user.id === '6411ba0e-5e36-4e4e-aa1f-4183a2f88d45';
+
+    // 2. Fetch Ad (Use Admin Client if Admin to bypass RLS)
+    let fetchClient = supabase;
+    if (isAdmin) {
+        const { createAdminClient } = await import('@/utils/supabase/admin');
+        fetchClient = createAdminClient();
+    }
+
+    const { data: ad, error: fetchError } = await fetchClient
         .from('ads')
         .select('*')
         .eq('id', id)
@@ -24,7 +32,7 @@ export default async function EditAdPage({ params }: { params: Promise<{ id: str
     }
 
     // 3. Permission Check
-    const isAdmin = user.id === '6411ba0e-5e36-4e4e-aa1f-4183a2f88d45';
+    // const isAdmin already declared above
     if (ad.user_id !== user.id && !isAdmin) {
         return <div className="p-8 text-center text-red-500">No tienes permiso para editar este anuncio</div>;
     }

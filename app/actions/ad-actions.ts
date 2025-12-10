@@ -49,7 +49,16 @@ export async function updateAd(formData: FormData) {
     if (authError || !user) throw new Error("No autorizado");
 
     // 2. Verificar propiedad (o admin)
-    const { data: ad, error: fetchError } = await supabase
+    // 2. Verificar propiedad (o admin)
+    const isAdmin = user.id === '6411ba0e-5e36-4e4e-aa1f-4183a2f88d45';
+
+    let dbClient = supabase;
+    if (isAdmin) {
+        const { createAdminClient } = await import('@/utils/supabase/admin');
+        dbClient = createAdminClient();
+    }
+
+    const { data: ad, error: fetchError } = await dbClient
         .from('ads')
         .select('user_id, media_url')
         .eq('id', adId)
@@ -58,7 +67,6 @@ export async function updateAd(formData: FormData) {
     if (fetchError || !ad) throw new Error("Anuncio no encontrado");
 
     // Permitir si es dueño O si es el admin específico
-    const isAdmin = user.id === '6411ba0e-5e36-4e4e-aa1f-4183a2f88d45';
     if (ad.user_id !== user.id && !isAdmin) {
         throw new Error("No tienes permiso para editar este anuncio");
     }
@@ -102,7 +110,7 @@ export async function updateAd(formData: FormData) {
     }
 
     // 5. Update DB
-    const { error: updateError } = await supabase
+    const { error: updateError } = await dbClient
         .from('ads')
         .update({
             title,

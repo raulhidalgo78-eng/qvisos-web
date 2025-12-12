@@ -10,27 +10,23 @@ export default function SimpleLocationPicker({ onLocationSelect, initialAddress 
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
-        // 1. Cargar la librería moderna de forma segura
+        // Función segura que espera a que Google Maps esté listo
         const initPicker = async () => {
             try {
                 if (!inputContainerRef.current) return;
 
-                // Importar librería Places
+                // 1. Esto carga la librería 'places' y espera a que 'google' exista.
                 // @ts-ignore
                 const { PlaceAutocompleteElement } = await google.maps.importLibrary("places");
 
-                // Crear el elemento nativo
+                // 2. Crear el elemento nativo
                 const autocomplete = new PlaceAutocompleteElement();
 
-                // Configuración Minimalista
-                autocomplete.id = 'simple-location-picker';
-                autocomplete.className = 'w-full h-12 border rounded-md px-3'; // Basic styling
-
-                // Limpiar contenedor y agregar el nuevo input
+                // 3. Limpiar contenedor y agregar el nuevo input
                 inputContainerRef.current.innerHTML = '';
                 inputContainerRef.current.appendChild(autocomplete);
 
-                // Listener del evento moderno 'gmp-places-select' (Corrected from user's 'gmp-placeselect')
+                // 4. Listener del evento moderno 'gmp-places-select'
                 autocomplete.addEventListener('gmp-places-select', async ({ place }: any) => {
                     // Solicitar campos explícitamente (OBLIGATORIO)
                     await place.fetchFields({ fields: ['displayName', 'formattedAddress', 'location'] });
@@ -46,23 +42,38 @@ export default function SimpleLocationPicker({ onLocationSelect, initialAddress 
                 });
 
             } catch (err) {
-                console.error("Error mapa:", err);
-                setError("Error cargando mapa. Recarga la página.");
+                console.error("Error cargando mapa:", err);
+                setError("Error cargando el buscador de mapas. Verifica tu conexión.");
             }
         };
 
-        initPicker();
+        // Pequeño timeout para asegurar que el script base de index.html haya iniciado
+        setTimeout(() => {
+            if (window.google) {
+                initPicker();
+            } else {
+                // Si google no está en window, asumimos que se cargará pronto o hay un error de API Key
+                const interval = setInterval(() => {
+                    if (window.google) {
+                        clearInterval(interval);
+                        initPicker();
+                    }
+                }, 500);
+            }
+        }, 100);
+
     }, [onLocationSelect]);
 
     return (
         <div className="w-full">
-            <label className="block text-sm font-medium mb-1">Buscar Dirección (Google Maps)</label>
+            <label className="block text-sm font-medium mb-1">Ubicación (Google Maps)</label>
             {/* Contenedor donde Google inyectará su input moderno */}
-            <div ref={inputContainerRef} className="h-12 w-full border rounded-md overflow-hidden bg-white"></div>
+            <div ref={inputContainerRef} className="place-picker-container h-12 w-full mb-2 border rounded-md overflow-hidden bg-white"></div>
+
             {error && <p className="text-red-500 text-xs mt-1">{error}</p>}
 
             {initialAddress && (
-                <p className="text-xs text-gray-500 mt-2">Ubicación actual: {initialAddress}</p>
+                <p className="text-xs text-gray-500">Ubicación guardada previamente: {initialAddress}</p>
             )}
         </div>
     );

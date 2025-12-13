@@ -59,13 +59,13 @@ export default function RobustMapPicker({ onLocationSelect, initialLat, initialL
                     fields: ["geometry", "formatted_address", "name"],
                     componentRestrictions: { country: "cl" },
                 });
-                autocomplete.bindTo("bounds", googleMap);
+                autocomplete!.bindTo("bounds", googleMap!);
 
                 // --- LISTENERS (La lógica de conexión) ---
 
                 // A) Cuando el usuario selecciona una dirección del menú
                 autocomplete.addListener("place_changed", () => {
-                    const place = autocomplete.getPlace();
+                    const place = autocomplete!.getPlace();
 
                     if (!place.geometry || !place.geometry.location) {
                         // El usuario apretó enter sin seleccionar nada

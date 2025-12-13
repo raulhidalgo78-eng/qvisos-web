@@ -272,8 +272,9 @@ export default function AnuncioForm({ initialData }: AnuncioFormProps) {
 
                 {/* ... (Auto/Property fields) ... */}
 
-                <div style={{ marginBottom: '15px' }}>
-                    <h3 className="text-lg font-bold mb-4">Ubicación</h3>
+
+                <div className="mb-6 border p-4 rounded bg-gray-50">
+                    <h3 className="text-lg font-bold mb-4 text-gray-800">Ubicación</h3>
                     <RobustMapPicker
                         initialLat={lat || undefined}
                         initialLng={lng || undefined}

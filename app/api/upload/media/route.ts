@@ -5,12 +5,7 @@ import { supabase } from '../../../../lib/supabase'; // 4 niveles arriba de /api
 import busboy from 'busboy';
 import { Readable } from 'stream';
 
-// Cambiamos el comportamiento por defecto de Next.js Body Parser
-export const config = {
-  api: {
-    bodyParser: false, // Desactivamos el parser de Next.js para manejar el 'multipart/form-data' manualmente
-  },
-};
+
 
 // Función de ayuda para procesar el body de la petición
 function parseMultipartForm(request: Request): Promise<{ fields: Record<string, string>, files: { filename: string, data: Buffer, type: string }[] }> {

@@ -43,7 +43,7 @@ function LoginForm() {
       }
 
       // 2. Si no hay retorno pendiente, usamos la lógica de roles normal.
-      const userRole = data.user?.raw_user_meta_data?.role;
+      const userRole = data.user?.user_metadata?.role;
       if (userRole === 'admin') {
         router.push('/admin/dashboard');
       } else {

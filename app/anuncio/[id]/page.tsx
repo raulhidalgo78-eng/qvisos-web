@@ -4,6 +4,7 @@ import Link from 'next/link';
 import React from 'react';
 import AdChat from '@/components/AdChat';
 import AdActions from '@/components/AdActions';
+import AdMap from '@/components/AdMap';
 
 import KeyFeaturesGrid from '@/components/KeyFeaturesGrid';
 
@@ -88,6 +89,14 @@ export default async function AdDetailPage({ params }: Props) {
             <h3 style={{ fontSize: '1.1rem', fontWeight: '600', color: colors.primary, marginBottom: '10px' }}>Descripción</h3>
             <p style={{ color: colors.textSecondary, lineHeight: '1.6', whiteSpace: 'pre-wrap' }}>{ad.description}</p>
           </div>
+
+          {/* --- MAPA DE UBICACIÓN (Nuevo) --- */}
+          {ad.lat && ad.lng && (
+            <div className="mb-8">
+              <h3 style={{ fontSize: '1.1rem', fontWeight: '600', color: colors.primary, marginBottom: '10px' }}>Ubicación</h3>
+              <AdMap lat={ad.lat} lng={ad.lng} />
+            </div>
+          )}
 
           {/* --- ZONA DE ACCIÓN --- */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>

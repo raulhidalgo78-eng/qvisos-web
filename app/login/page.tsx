@@ -1,77 +1,105 @@
-// En: app/login/page.tsx
+// Archivo: app/login/page.tsx
 
-'use client'; // Sigue siendo un Client Component para interactividad
+'use client';
 
-import { useState } from 'react';
-import { login } from './actions'; // 1. Importamos la Server Action
+import React, { useState, Suspense } from 'react';
+import { supabase } from '../../lib/supabase';
+import { useRouter, useSearchParams } from 'next/navigation';
 
-export default function LoginPage() {
-  // Estado solo para manejar el mensaje de error
-  const [error, setError] = useState<string | null>(null);
+// --- COMPONENTE INTERNO (Lógica del Login) ---
+function LoginForm() {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState('');
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
+  // Aquí capturamos a dónde quería ir el usuario antes de que lo mandáramos al login
+  const returnUrl = searchParams.get('returnUrl');
+
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setError(null);
+    setMessage('');
 
-    // 2. Creamos el FormData directamente del formulario
-    const formData = new FormData(e.currentTarget);
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
 
-    // 3. Llamamos a la Server Action
-    const result = await login(formData);
-
-    // 4. Si la acción devuelve un error, lo mostramos
-    if (result && result.error) {
-      setError(result.error);
+    if (error) {
+      setMessage(`❌ Error: ${error.message}`);
       setLoading(false);
+    } else {
+      setMessage('✅ Éxito. Redirigiendo...');
+
+      // --- AQUÍ ESTÁ EL ARREGLO ---
+      // 1. Si hay una URL de retorno pendiente (ej: ir a crear anuncio), vamos ahí.
+      if (returnUrl) {
+        router.push(returnUrl);
+        return;
+      }
+
+      // 2. Si no hay retorno pendiente, usamos la lógica de roles normal.
+      const userRole = data.user?.raw_user_meta_data?.role;
+      if (userRole === 'admin') {
+        router.push('/admin/dashboard');
+      } else {
+        router.push('/mis-anuncios');
+      }
     }
-    // (Si tiene éxito, la Server Action ya habrá redirigido,
-    // por lo que no necesitamos hacer nada aquí)
   };
 
   return (
-    <div style={{ maxWidth: '400px', margin: '50px auto', padding: '20px', border: '1px solid #ccc', borderRadius: '8px' }}>
-      <h1>Iniciar Sesión</h1>
-      
-      {/* 5. El formulario ahora llama a handleSubmit */}
-      <form onSubmit={handleSubmit}>
+    <div style={{ padding: '40px', maxWidth: '500px', margin: '50px auto', fontFamily: 'sans-serif', border: '1px solid #ddd', borderRadius: '8px' }}>
+      <h1 style={{ textAlign: 'center', color: '#0070f3' }}>Iniciar Sesión</h1>
+
+      <form onSubmit={handleLogin}>
         <div style={{ marginBottom: '15px' }}>
-          <label htmlFor="email" style={{ display: 'block', marginBottom: '5px' }}>Email</label>
-          {/* Los 'name' deben coincidir con el formData: "email" y "password" */}
+          <label style={{ display: 'block', marginBottom: '5px' }}>Email:</label>
           <input
             type="email"
-            id="email"
-            name="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
             required
-            style={{ width: '100%', padding: '8px', color: '#333' }}
+            disabled={loading}
+            style={{ width: '100%', padding: '12px', border: '1px solid #ccc' }}
           />
         </div>
-        
-        <div style={{ marginBottom: '15px' }}>
-          <label htmlFor="password" style={{ display: 'block', marginBottom: '5px' }}>Contraseña</label>
+
+        <div style={{ marginBottom: '25px' }}>
+          <label style={{ display: 'block', marginBottom: '5px' }}>Contraseña:</label>
           <input
             type="password"
-            id="password"
-            name="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
             required
-            style={{ width: '100%', padding: '8px', color: '#333' }}
+            disabled={loading}
+            style={{ width: '100%', padding: '12px', border: '1px solid #ccc' }}
           />
         </div>
 
-        {/* 6. Mostramos el error si existe */}
-        {error && (
-          <p style={{ color: 'red', marginBottom: '10px' }}>{error}</p>
-        )}
-
-        <button 
-          type="submit" 
+        <button
+          type="submit"
           disabled={loading}
-          style={{ width: '100%', padding: '10px', backgroundColor: '#0070f3', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+          style={{ width: '100%', padding: '12px', backgroundColor: '#0070f3', color: 'white', border: 'none', cursor: 'pointer', fontSize: '16px' }}
         >
           {loading ? 'Ingresando...' : 'Ingresar'}
         </button>
       </form>
+
+      {message && <p style={{ marginTop: '20px', textAlign: 'center', fontWeight: 'bold' }}>{message}</p>}
     </div>
+  );
+}
+
+// --- COMPONENTE PRINCIPAL (Protegido con Suspense para Vercel) ---
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div style={{ padding: '50px', textAlign: 'center' }}>Cargando Login...</div>}>
+      <LoginForm />
+    </Suspense>
   );
 }

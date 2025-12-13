@@ -8,16 +8,6 @@ interface AdChatProps {
 }
 
 export default function AdChat({ adData }: AdChatProps) {
-    // 1. Preparamos el contexto (la "memoria" del auto para la IA)
-    const contextString = `
-    Título: ${adData.title}
-    Precio: $${adData.price}
-    Categoría: ${adData.category}
-    Descripción: ${adData.description}
-    Características: ${JSON.stringify(adData.features || {})}
-    Contacto: ${adData.contact_phone}
-  `;
-
     // Extract contact preference from features
     const contactPreference = adData.features?.contact_preference || 'whatsapp_directo';
     const sellerName = 'el vendedor'; // Placeholder until we fetch user profile
@@ -26,7 +16,7 @@ export default function AdChat({ adData }: AdChatProps) {
     const { messages, input, handleInputChange, handleSubmit, isLoading } = useChat({
         api: '/api/chat',
         body: {
-            adContext: contextString,
+            adData, // Enviamos el objeto completo para armar el prompt en el servidor
             contactPreference,
             sellerName
         },

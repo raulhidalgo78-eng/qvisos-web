@@ -90,7 +90,7 @@ export default function RobustMapPicker({ onLocationSelect, initialLat, initialL
                 });
 
                 // B) Cuando el usuario arrastra el pin manualmente
-                marker.addListener("dragend", () => {
+                marker!.addListener("dragend", () => {
                     const newPos = marker!.getPosition();
                     if (!newPos) return;
                     const lat = newPos.lat();

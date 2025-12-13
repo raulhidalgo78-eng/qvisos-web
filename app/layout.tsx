@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Script from 'next/script';
 import { Inter } from 'next/font/google';
 import './globals.css';
 import Navbar from '@/components/Navbar'; // <--- IMPORTANTE: Importamos el componente
@@ -14,6 +15,10 @@ export default function RootLayout({ children, }: { children: React.ReactNode; }
         <main className="min-h-screen bg-gray-50">
           {children}
         </main>
+        <Script
+          src={`https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places,marker,maps&loading=async`}
+          strategy="beforeInteractive"
+        />
       </body>
     </html>
   );

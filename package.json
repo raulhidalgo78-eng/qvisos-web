@@ -16,6 +16,7 @@
     "@supabase/supabase-js": "^2.80.0",
     "@tanstack/react-table": "^8.21.3",
     "ai": "^5.0.104",
+    "busboy": "^1.6.0",
     "html2canvas": "^1.4.1",
     "jspdf": "^3.0.3",
     "lucide-react": "^0.554.0",
@@ -29,6 +30,7 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
+    "@types/busboy": "^1.5.4",
     "@types/jspdf": "^1.3.3",
     "@types/node": "^20",
     "@types/react": "^19",

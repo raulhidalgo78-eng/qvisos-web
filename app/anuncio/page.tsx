@@ -109,7 +109,7 @@ export default function ActivarPage() {
 
   // 1. Verificar Autenticación y Código URL
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+    const unsubscribe = onAuthStateChanged(auth, (currentUser: User | null) => {
       setUser(currentUser);
       setLoadingAuth(false);
     });

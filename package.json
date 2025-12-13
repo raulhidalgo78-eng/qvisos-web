@@ -17,6 +17,7 @@
     "@tanstack/react-table": "^8.21.3",
     "ai": "^5.0.104",
     "busboy": "^1.6.0",
+    "firebase": "^11.0.2",
     "html2canvas": "^1.4.1",
     "jspdf": "^3.0.3",
     "lucide-react": "^0.554.0",

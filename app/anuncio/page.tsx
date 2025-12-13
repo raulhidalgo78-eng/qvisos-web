@@ -6,6 +6,8 @@ import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 import { db, auth } from "@/lib/firebase";
 import { onAuthStateChanged, User } from "firebase/auth";
 
+export const dynamic = 'force-dynamic'; // ⚠️ CRÍTICO: Evita prerenderizado estático que falla sin env vars
+
 // --- INTERFACES PARA TYPESCRIPT ---
 interface FormData {
   code: string;

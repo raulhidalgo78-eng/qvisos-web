@@ -4,7 +4,7 @@ import { createClient } from '@/utils/supabase/client';
 import { useRouter, useSearchParams } from 'next/navigation';
 import React, { useState, useEffect, useCallback } from 'react';
 import type { User } from '@supabase/supabase-js';
-import SimpleLocationPicker from '@/components/SimpleLocationPicker';
+import RobustMapPicker from '@/components/RobustMapPicker';
 import { updateAd } from '@/app/actions/ad-actions';
 
 interface AnuncioFormProps {
@@ -248,7 +248,7 @@ export default function AnuncioForm({ initialData }: AnuncioFormProps) {
     const def = (key: string, fallback: string = '') => initialData?.features?.[key] || fallback;
     const defVal = (key: string) => initialData ? initialData[key] : undefined;
 
-    const handleLocationSelect = useCallback((data: { lat: number; lng: number; address: string }) => {
+    const handleLocationSelect = useCallback((data: { lat: number; lng: number; address?: string }) => {
         setLat(data.lat);
         setLng(data.lng);
         // Optional: Save address if needed
@@ -273,9 +273,11 @@ export default function AnuncioForm({ initialData }: AnuncioFormProps) {
                 {/* ... (Auto/Property fields) ... */}
 
                 <div style={{ marginBottom: '15px' }}>
-                    <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Ubicación</label>
-                    <SimpleLocationPicker
-                        initialAddress={initialData?.features?.address} // Pass initial address if available
+                    <h3 className="text-lg font-bold mb-4">Ubicación</h3>
+                    <RobustMapPicker
+                        initialLat={lat || undefined}
+                        initialLng={lng || undefined}
+                        initialAddress={initialData?.features?.address}
                         onLocationSelect={handleLocationSelect}
                     />
                     <input type="hidden" name="latitude" value={lat || ''} />
@@ -507,26 +509,12 @@ export default function AnuncioForm({ initialData }: AnuncioFormProps) {
                                 <span className="text-xs md:text-sm text-gray-700">👮‍♂️ Conserjería</span>
                             </label>
                             <label className="flex items-center space-x-2 cursor-pointer bg-white p-2 rounded border">
-                                <input type="checkbox" name="quincho" defaultChecked={initialData?.features?.amenities?.quincho} className="rounded text-gray-600" />
-                                <span className="text-xs md:text-sm text-gray-700">🍖 Quincho</span>
-                            </label>
-                            <label className="flex items-center space-x-2 cursor-pointer bg-white p-2 rounded border">
                                 <input type="checkbox" name="piscina" defaultChecked={initialData?.features?.amenities?.piscina} className="rounded text-gray-600" />
                                 <span className="text-xs md:text-sm text-gray-700">🏊‍♂️ Piscina</span>
                             </label>
                         </div>
                     </div>
                 )}
-
-                <div style={{ marginBottom: '15px' }}>
-                    <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Ubicación</label>
-                    <SimpleLocationPicker
-                        initialAddress={initialData?.features?.address}
-                        onLocationSelect={handleLocationSelect}
-                    />
-                    <input type="hidden" name="latitude" value={lat || ''} />
-                    <input type="hidden" name="longitude" value={lng || ''} />
-                </div>
 
                 <div style={{ marginBottom: '15px' }}>
                     <label htmlFor="price" style={{ display: 'block', marginBottom: '5px' }}>Precio</label>

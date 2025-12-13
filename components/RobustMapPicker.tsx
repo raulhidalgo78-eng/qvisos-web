@@ -64,7 +64,7 @@ export default function RobustMapPicker({ onLocationSelect, initialLat, initialL
                 // --- LISTENERS (La lógica de conexión) ---
 
                 // A) Cuando el usuario selecciona una dirección del menú
-                autocomplete.addListener("place_changed", () => {
+                autocomplete!.addListener("place_changed", () => {
                     const place = autocomplete!.getPlace();
 
                     if (!place.geometry || !place.geometry.location) {

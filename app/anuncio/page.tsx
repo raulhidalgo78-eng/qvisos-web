@@ -279,7 +279,7 @@ function AnuncioForm() {
             <p className="text-blue-800 font-bold text-lg">Sube tu Foto Principal</p>
             <p className="text-sm text-blue-600">Haz clic o arrastra la imagen aquí</p>
           </div>
-          <input type="file" accept="image/*" onChange={handleFileChange} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
+          <input type="file" accept="image/*" onChange={handleFileChange} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-50" />
           {photos.length > 0 && <p className="mt-4 text-green-600 font-bold">✅ Imagen seleccionada: {photos[0].name}</p>}
         </div>
 

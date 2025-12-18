@@ -8,7 +8,8 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import {
   Car, Home, Bed, Bath, Warehouse, Square,
   MapPin, Calendar, Gauge, Fuel, Settings,
-  FileCheck, Users, UploadCloud, CheckCircle
+  FileCheck, Users, UploadCloud, CheckCircle,
+  Coins // Nuevo icono para moneda
 } from 'lucide-react';
 
 function AnuncioForm() {
@@ -21,7 +22,11 @@ function AnuncioForm() {
 
   // --- ESTADOS ---
   const [title, setTitle] = useState('');
+
+  // MONEDA Y PRECIO
   const [price, setPrice] = useState('');
+  const [currency, setCurrency] = useState('CLP'); // CLP, UF, USD
+
   const [category, setCategory] = useState(tipoUrl?.includes('propiedad') ? 'propiedad' : 'auto');
   const [description, setDescription] = useState('');
 
@@ -73,25 +78,34 @@ function AnuncioForm() {
 
     try {
       let details = {};
+      // Guardamos la moneda en los detalles
+      const commonDetails = { currency };
+
       if (category === 'propiedad') {
-        details = { m2Total, rooms, bathrooms, type: propType, ggcc, parking, bodega, orientation };
+        details = { ...commonDetails, m2Total, rooms, bathrooms, type: propType, ggcc, parking, bodega, orientation };
       } else {
-        details = { year, km, transmission, fuel, owners, legalStatus };
+        details = { ...commonDetails, year, km, transmission, fuel, owners, legalStatus };
       }
 
-      // Descripción enriquecida para búsquedas simples
+      // Descripción enriquecida
+      const precioFmt = `${currency} ${parseFloat(price).toLocaleString('es-CL')}`;
       const extraDesc = category === 'propiedad'
-        ? `Tipo: ${propType} | GGCC: $${ggcc} | Estac: ${parking ? 'Sí' : 'No'}`
-        : `Año: ${year} | Km: ${km} | Papeles: ${legalStatus}`;
+        ? `Precio: ${precioFmt} | Tipo: ${propType} | GGCC: $${ggcc} | Estac: ${parking ? 'Sí' : 'No'}`
+        : `Precio: ${precioFmt} | Año: ${year} | Km: ${km} | Papeles: ${legalStatus}`;
 
       const finalDescription = `${description}\n\n--- Resumen Técnico ---\n${extraDesc}`;
 
       const { data: adData, error: adError } = await supabase
         .from('ads')
         .insert({
-          title, price: parseFloat(price), category, user_id: userId,
-          status: 'draft', qr_code: codigoQR || null,
-          description: finalDescription, details: details
+          title,
+          price: parseFloat(price), // Guardamos el número puro
+          category,
+          user_id: userId,
+          status: 'draft',
+          qr_code: codigoQR || null,
+          description: finalDescription,
+          details: details // Aquí va la moneda
         })
         .select('id').single();
 
@@ -173,11 +187,31 @@ function AnuncioForm() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="relative">
-              <label className="block text-sm font-bold mb-2">Precio (CLP)</label>
-              <div className="relative">
-                <span className="absolute left-4 top-4 text-gray-400">$</span>
-                <input type="number" value={price} onChange={e => setPrice(e.target.value)}
-                  className="w-full pl-8 p-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none" />
+              <label className="block text-sm font-bold mb-2">Precio</label>
+              <div className="flex">
+                <div className="relative w-1/3">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Coins className="h-5 w-5 text-gray-400" />
+                  </div>
+                  <select
+                    value={currency}
+                    onChange={(e) => setCurrency(e.target.value)}
+                    className="w-full pl-10 p-4 border border-gray-300 rounded-l-xl focus:ring-2 focus:ring-blue-500 outline-none bg-gray-50"
+                  >
+                    <option value="CLP">CLP ($)</option>
+                    <option value="UF">UF</option>
+                    <option value="USD">USD ($)</option>
+                  </select>
+                </div>
+                <div className="relative w-2/3">
+                  <input
+                    type="number"
+                    value={price}
+                    onChange={(e) => setPrice(e.target.value)}
+                    placeholder={currency === 'UF' ? 'Ej: 3500' : 'Ej: 12000000'}
+                    className="w-full p-4 border border-l-0 border-gray-300 rounded-r-xl focus:ring-2 focus:ring-blue-500 outline-none"
+                  />
+                </div>
               </div>
             </div>
           </div>

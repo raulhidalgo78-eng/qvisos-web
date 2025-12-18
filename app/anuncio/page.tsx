@@ -269,36 +269,65 @@ function AnuncioForm() {
             </>
           ) : (
             <>
-              {/* Grid Autos */}
+              {/* Grid Autos - ACTUALIZADO CON COMBUSTIBLE */}
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                {/* 1. Año */}
                 <div>
-                  <label className="text-xs font-bold text-slate-500 uppercase mb-1 flex items-center gap-1"><Calendar className="w-3 h-3" /> Año</label>
-                  <input type="number" value={year} onChange={e => setYear(e.target.value)} placeholder="2020" className="w-full p-3 rounded-lg border border-slate-300" />
+                  <label className="text-xs font-bold text-slate-500 uppercase mb-1 flex items-center gap-1">
+                    <Calendar className="w-3 h-3" /> Año
+                  </label>
+                  <input type="number" value={year} onChange={e => setYear(e.target.value)} placeholder="2021" className="w-full p-3 rounded-lg border border-slate-300" />
                 </div>
+
+                {/* 2. Kilometraje */}
                 <div>
-                  <label className="text-xs font-bold text-slate-500 uppercase mb-1 flex items-center gap-1"><Gauge className="w-3 h-3" /> Km</label>
+                  <label className="text-xs font-bold text-slate-500 uppercase mb-1 flex items-center gap-1">
+                    <Gauge className="w-3 h-3" /> Km
+                  </label>
                   <input type="number" value={km} onChange={e => setKm(e.target.value)} className="w-full p-3 rounded-lg border border-slate-300" />
                 </div>
+
+                {/* 3. Transmisión */}
                 <div>
-                  <label className="text-xs font-bold text-slate-500 uppercase mb-1 flex items-center gap-1"><Settings className="w-3 h-3" /> Caja</label>
+                  <label className="text-xs font-bold text-slate-500 uppercase mb-1 flex items-center gap-1">
+                    <Settings className="w-3 h-3" /> Caja
+                  </label>
                   <select value={transmission} onChange={e => setTransmission(e.target.value)} className="w-full p-3 rounded-lg border border-slate-300">
                     <option value="automatica">Automática</option>
                     <option value="manual">Manual</option>
                   </select>
                 </div>
-              </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* 4. COMBUSTIBLE (NUEVO) */}
                 <div>
-                  <label className="text-xs font-bold text-slate-500 uppercase mb-1 flex items-center gap-1"><FileCheck className="w-3 h-3" /> Situación Legal</label>
+                  <label className="text-xs font-bold text-slate-500 uppercase mb-1 flex items-center gap-1">
+                    <Fuel className="w-3 h-3" /> Combustible
+                  </label>
+                  <select value={fuel} onChange={e => setFuel(e.target.value)} className="w-full p-3 rounded-lg border border-slate-300">
+                    <option value="bencina">Bencina</option>
+                    <option value="diesel">Diesel</option>
+                    <option value="electrico">Eléctrico</option>
+                    <option value="hibrido">Híbrido</option>
+                  </select>
+                </div>
+
+                {/* 5. Situación Legal */}
+                <div>
+                  <label className="text-xs font-bold text-slate-500 uppercase mb-1 flex items-center gap-1">
+                    <FileCheck className="w-3 h-3" /> Papeles
+                  </label>
                   <select value={legalStatus} onChange={e => setLegalStatus(e.target.value)} className="w-full p-3 rounded-lg border border-slate-300">
-                    <option value="al_dia">✅ Papeles al día</option>
+                    <option value="al_dia">✅ Al día</option>
                     <option value="atrasado">⚠️ Atrasado</option>
                     <option value="multas">🛑 Con Multas</option>
                   </select>
                 </div>
+
+                {/* 6. Dueños */}
                 <div>
-                  <label className="text-xs font-bold text-slate-500 uppercase mb-1 flex items-center gap-1"><Users className="w-3 h-3" /> Dueños</label>
+                  <label className="text-xs font-bold text-slate-500 uppercase mb-1 flex items-center gap-1">
+                    <Users className="w-3 h-3" /> Dueños
+                  </label>
                   <input type="number" value={owners} onChange={e => setOwners(e.target.value)} className="w-full p-3 rounded-lg border border-slate-300" />
                 </div>
               </div>

@@ -1,36 +1,46 @@
+// Archivo: app/anuncio/page.tsx
 'use client';
 
 import React, { useState, useEffect, Suspense } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useRouter, useSearchParams } from 'next/navigation';
 
-// --- 1. LÓGICA DEL FORMULARIO (CLIENT COMPONENT) ---
 function AnuncioForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  // RECUPERACIÓN DE LÓGICA DE NEGOCIO
+  // --- LÓGICA DE NEGOCIO (URL) ---
   const codigoQR = searchParams.get('code');
-  const tipoUrl = searchParams.get('tipo'); // ej: 'propiedad-venta'
+  const tipoUrl = searchParams.get('tipo');
 
-  // ESTADOS
+  // --- ESTADOS GENERALES ---
   const [title, setTitle] = useState('');
   const [price, setPrice] = useState('');
-  // Autoselección inteligente: Si la URL dice propiedad, marcamos propiedad.
   const [category, setCategory] = useState(tipoUrl?.includes('propiedad') ? 'propiedad' : 'auto');
+  const [description, setDescription] = useState('');
+
+  // --- ESTADOS ESPECÍFICOS (PROPIEDADES) ---
+  const [m2Total, setM2Total] = useState('');
+  const [rooms, setRooms] = useState('');
+  const [bathrooms, setBathrooms] = useState('');
+  const [propType, setPropType] = useState('departamento'); // casa, depto, parcela
+
+  // --- ESTADOS ESPECÍFICOS (AUTOS) ---
+  const [year, setYear] = useState('');
+  const [km, setKm] = useState('');
+  const [transmission, setTransmission] = useState('automatica');
+  const [fuel, setFuel] = useState('bencina');
 
   const [photos, setPhotos] = useState<File[]>([]);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [userId, setUserId] = useState<string | null>(null);
 
-  // SEGURIDAD: Verificar sesión y redirección inteligente
+  // --- VERIFICACIÓN DE SESIÓN ---
   useEffect(() => {
     const checkUserSession = async () => {
       const { data: { session }, error } = await supabase.auth.getSession();
-
       if (error || !session) {
-        // Si no hay sesión, mandamos al login PERO guardamos los parámetros del QR
         const returnPath = `/anuncio?code=${codigoQR || ''}&tipo=${tipoUrl || ''}`;
         router.push(`/login?returnUrl=${encodeURIComponent(returnPath)}`);
         return;
@@ -52,7 +62,17 @@ function AnuncioForm() {
     if (!userId) return;
 
     try {
-      // 1. Guardar Anuncio (Draft + QR)
+      // 1. Preparar el objeto de detalles (JSON)
+      let details = {};
+      if (category === 'propiedad') {
+        details = { m2Total, rooms, bathrooms, type: propType };
+      } else {
+        details = { year, km, transmission, fuel };
+      }
+
+      // 2. Insertar en Supabase
+      // Nota: Guardamos 'details' en la columna JSONB 'details' si existe, 
+      // o concatenamos en la descripción para el MVP.
       const { data: adData, error: adError } = await supabase
         .from('ads')
         .insert({
@@ -61,32 +81,29 @@ function AnuncioForm() {
           category,
           user_id: userId,
           status: 'draft',
-          qr_code: codigoQR || null // Vinculación en BDD
+          qr_code: codigoQR || null,
+          description: description, // Descripción libre
+          details: details          // Datos estructurados (Asegúrate de tener esta columna JSONB o ignórala si no)
         })
         .select('id')
         .single();
 
       if (adError) throw adError;
 
-      // 2. Subir Foto (Si existe)
+      // 3. Subir Foto
       if (photos.length > 0) {
         const formData = new FormData();
         formData.append('adId', adData.id);
         formData.append('mediaType', 'image');
         formData.append('file', photos[0]);
 
-        const uploadRes = await fetch('/api/upload/media', {
-          method: 'POST',
-          body: formData,
-        });
-
+        const uploadRes = await fetch('/api/upload/media', { method: 'POST', body: formData });
         if (!uploadRes.ok) throw new Error('Error al subir imagen');
 
-        // Activar verificación
         await supabase.from('ads').update({ status: 'pending_verification' }).eq('id', adData.id);
       }
 
-      setMessage('✅ ¡Anuncio vinculado y enviado!');
+      setMessage('✅ ¡Anuncio completo enviado!');
       setTimeout(() => router.push('/mis-anuncios'), 2000);
 
     } catch (error: any) {
@@ -99,84 +116,142 @@ function AnuncioForm() {
   if (!userId) return <div className="p-10 text-center">Cargando sesión...</div>;
 
   return (
-    <div style={{ padding: '20px', maxWidth: '600px', margin: 'auto', fontFamily: 'sans-serif' }}>
-      <h1 style={{ color: '#0070f3', marginBottom: '20px' }}>Publicar Nuevo Qviso</h1>
+    <div className="max-w-3xl mx-auto p-5 font-sans">
+      <h1 className="text-2xl font-bold text-blue-600 mb-6">Publicar Nuevo Qviso</h1>
 
-      {/* FEEDBACK VISUAL DE VINCULACIÓN (Lo que faltaba) */}
+      {/* Banner KIT QR */}
       {codigoQR && (
-        <div style={{ background: '#e6fffa', border: '1px solid #38b2ac', color: '#2c7a7b', padding: '15px', borderRadius: '8px', marginBottom: '25px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <span style={{ fontSize: '20px' }}>🔗</span>
+        <div className="bg-green-50 border border-green-200 text-green-800 p-4 rounded-lg mb-6 flex items-center gap-3">
+          <span className="text-2xl">🔗</span>
           <div>
-            <strong>Kit Vinculado: {codigoQR}</strong>
-            <div style={{ fontSize: '0.9em', opacity: 0.9 }}>
-              Categoría detectada: {tipoUrl?.replace('-', ' ').toUpperCase() || 'GENERAL'}
-            </div>
+            <div className="font-bold">Kit Vinculado: {codigoQR}</div>
+            <div className="text-sm opacity-90 uppercase">Categoría: {tipoUrl?.replace('-', ' ') || 'GENERAL'}</div>
           </div>
         </div>
       )}
 
-      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-        <div>
-          <label style={{ fontWeight: 'bold', display: 'block', marginBottom: '5px' }}>Título</label>
-          <input
-            type="text"
-            value={title}
-            onChange={e => setTitle(e.target.value)}
-            placeholder={category === 'auto' ? "Ej: Kia Morning 2023" : "Ej: Depto en Viña del Mar"}
-            required
-            style={{ width: '100%', padding: '12px', border: '1px solid #ccc', borderRadius: '6px' }}
-          />
-        </div>
+      <form onSubmit={handleSubmit} className="space-y-6">
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
+        {/* 1. INFORMACIÓN BÁSICA */}
+        <div className="bg-white p-5 rounded-lg border border-gray-200 shadow-sm space-y-4">
+          <h2 className="font-bold text-gray-700 border-b pb-2">1. Datos Principales</h2>
           <div>
-            <label style={{ fontWeight: 'bold', display: 'block', marginBottom: '5px' }}>Precio (CLP)</label>
-            <input
-              type="number"
-              value={price}
-              onChange={e => setPrice(e.target.value)}
-              required
-              style={{ width: '100%', padding: '12px', border: '1px solid #ccc', borderRadius: '6px' }}
-            />
+            <label className="block text-sm font-semibold mb-1">Título del Aviso</label>
+            <input type="text" value={title} onChange={e => setTitle(e.target.value)}
+              placeholder={category === 'auto' ? "Ej: Toyota RAV4 2020 Impecable" : "Ej: Depto 2D/2B en Centro"}
+              required className="w-full p-3 border rounded-md" />
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-semibold mb-1">Precio (CLP)</label>
+              <input type="number" value={price} onChange={e => setPrice(e.target.value)}
+                required className="w-full p-3 border rounded-md" />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold mb-1">Categoría</label>
+              <select value={category} onChange={e => setCategory(e.target.value)} disabled={!!tipoUrl}
+                className={`w-full p-3 border rounded-md ${tipoUrl ? 'bg-gray-100' : 'bg-white'}`}>
+                <option value="auto">Vehículo</option>
+                <option value="propiedad">Propiedad</option>
+              </select>
+            </div>
           </div>
           <div>
-            <label style={{ fontWeight: 'bold', display: 'block', marginBottom: '5px' }}>Categoría</label>
-            <select
-              value={category}
-              onChange={e => setCategory(e.target.value)}
-              // Bloqueamos si viene del QR para evitar errores
-              disabled={!!tipoUrl}
-              style={{ width: '100%', padding: '12px', border: '1px solid #ccc', borderRadius: '6px', background: tipoUrl ? '#f0f0f0' : 'white', cursor: tipoUrl ? 'not-allowed' : 'pointer' }}
-            >
-              <option value="auto">Vehículo</option>
-              <option value="propiedad">Propiedad</option>
-            </select>
+            <label className="block text-sm font-semibold mb-1">Descripción Detallada</label>
+            <textarea value={description} onChange={e => setDescription(e.target.value)}
+              rows={3} placeholder="Cuenta más detalles sobre el estado, ubicación exacta, o extras..."
+              className="w-full p-3 border rounded-md"></textarea>
           </div>
         </div>
 
-        <div style={{ border: '2px dashed #ccc', padding: '30px', borderRadius: '8px', textAlign: 'center', marginTop: '10px' }}>
-          <p style={{ marginBottom: '10px', color: '#666' }}>📸 Sube la foto principal</p>
-          <input type="file" accept="image/*" onChange={handleFileChange} />
+        {/* 2. DATOS ESPECÍFICOS (CONDICIONALES) */}
+        <div className="bg-blue-50 p-5 rounded-lg border border-blue-100 shadow-sm space-y-4">
+          <h2 className="font-bold text-blue-800 border-b border-blue-200 pb-2">
+            2. Detalles de {category === 'propiedad' ? 'la Propiedad' : 'el Vehículo'}
+          </h2>
+
+          {category === 'propiedad' ? (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="col-span-2">
+                <label className="block text-sm font-semibold mb-1">Tipo</label>
+                <select value={propType} onChange={e => setPropType(e.target.value)} className="w-full p-3 border rounded-md">
+                  <option value="casa">Casa</option>
+                  <option value="departamento">Departamento</option>
+                  <option value="parcela">Parcela / Terreno</option>
+                  <option value="comercial">Local / Oficina</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-semibold mb-1">Superficie (m²)</label>
+                <input type="number" value={m2Total} onChange={e => setM2Total(e.target.value)} placeholder="Total" className="w-full p-3 border rounded-md" />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold mb-1">Habitaciones</label>
+                <input type="number" value={rooms} onChange={e => setRooms(e.target.value)} className="w-full p-3 border rounded-md" />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold mb-1">Baños</label>
+                <input type="number" value={bathrooms} onChange={e => setBathrooms(e.target.value)} className="w-full p-3 border rounded-md" />
+              </div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div>
+                <label className="block text-sm font-semibold mb-1">Año</label>
+                <input type="number" value={year} onChange={e => setYear(e.target.value)} placeholder="2020" className="w-full p-3 border rounded-md" />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold mb-1">Kilometraje</label>
+                <input type="number" value={km} onChange={e => setKm(e.target.value)} placeholder="Ej: 45000" className="w-full p-3 border rounded-md" />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold mb-1">Transmisión</label>
+                <select value={transmission} onChange={e => setTransmission(e.target.value)} className="w-full p-3 border rounded-md">
+                  <option value="automatica">Automática</option>
+                  <option value="manual">Manual</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-semibold mb-1">Combustible</label>
+                <select value={fuel} onChange={e => setFuel(e.target.value)} className="w-full p-3 border rounded-md">
+                  <option value="bencina">Bencina</option>
+                  <option value="diesel">Diesel</option>
+                  <option value="electrico">Eléctrico / Híbrido</option>
+                </select>
+              </div>
+            </div>
+          )}
         </div>
 
-        <button
-          type="submit"
-          disabled={loading}
-          style={{ marginTop: '20px', padding: '15px', background: '#0070f3', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '16px', fontWeight: 'bold' }}
-        >
-          {loading ? 'Subiendo...' : 'Guardar y Publicar'}
+        {/* 3. FOTOGRAFÍA */}
+        <div className="border-2 dashed border-gray-300 p-8 rounded-lg text-center bg-gray-50 hover:bg-gray-100 transition">
+          <p className="text-gray-600 mb-2 font-medium">📸 Foto Principal (Portada)</p>
+          <input type="file" accept="image/*" onChange={handleFileChange} className="block w-full text-sm text-gray-500
+                        file:mr-4 file:py-2 file:px-4
+                        file:rounded-full file:border-0
+                        file:text-sm file:font-semibold
+                        file:bg-blue-50 file:text-blue-700
+                        hover:file:bg-blue-100" />
+        </div>
+
+        <button type="submit" disabled={loading}
+          className="w-full py-4 bg-blue-600 text-white rounded-lg font-bold text-lg hover:bg-blue-700 shadow-lg transition transform active:scale-95 disabled:opacity-50">
+          {loading ? 'Guardando y Vinculando...' : 'Publicar Aviso'}
         </button>
       </form>
 
-      {message && <p style={{ marginTop: '20px', fontWeight: 'bold', textAlign: 'center', color: message.startsWith('✅') ? 'green' : 'red' }}>{message}</p>}
+      {message && (
+        <div className={`mt-6 p-4 rounded-lg text-center font-bold ${message.startsWith('✅') ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+          {message}
+        </div>
+      )}
     </div>
   );
 }
 
-// --- 2. SOLUCIÓN FINAL ERROR #310 (SUSPENSE) ---
 export default function CreateAdPage() {
   return (
-    <Suspense fallback={<div style={{ padding: '50px', textAlign: 'center', color: '#666' }}>Cargando formulario inteligente...</div>}>
+    <Suspense fallback={<div className="p-10 text-center text-gray-500">Cargando formulario inteligente...</div>}>
       <AnuncioForm />
     </Suspense>
   );

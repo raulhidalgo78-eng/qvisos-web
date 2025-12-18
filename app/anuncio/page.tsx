@@ -4,46 +4,51 @@
 import React, { useState, useEffect, Suspense } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useRouter, useSearchParams } from 'next/navigation';
+// Importamos iconos visuales
+import {
+  Car, Home, Bed, Bath, Warehouse, Square,
+  MapPin, Calendar, Gauge, Fuel, Settings,
+  FileCheck, Users, UploadCloud, CheckCircle
+} from 'lucide-react';
 
 function AnuncioForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  // --- LÓGICA DE NEGOCIO (URL) ---
+  // --- LÓGICA DE NEGOCIO ---
   const codigoQR = searchParams.get('code');
   const tipoUrl = searchParams.get('tipo');
 
-  // --- ESTADOS GENERALES ---
+  // --- ESTADOS ---
   const [title, setTitle] = useState('');
   const [price, setPrice] = useState('');
   const [category, setCategory] = useState(tipoUrl?.includes('propiedad') ? 'propiedad' : 'auto');
   const [description, setDescription] = useState('');
 
-  // --- ESTADOS ESPECÍFICOS (PROPIEDADES CHILE) ---
+  // Propiedades
   const [m2Total, setM2Total] = useState('');
   const [rooms, setRooms] = useState('');
   const [bathrooms, setBathrooms] = useState('');
   const [propType, setPropType] = useState('departamento');
-  const [ggcc, setGgcc] = useState(''); // Gastos Comunes
+  const [ggcc, setGgcc] = useState('');
   const [parking, setParking] = useState(false);
   const [bodega, setBodega] = useState(false);
   const [orientation, setOrientation] = useState('Norte');
 
-  // --- ESTADOS ESPECÍFICOS (AUTOS CHILE) ---
+  // Autos
   const [year, setYear] = useState('');
   const [km, setKm] = useState('');
   const [transmission, setTransmission] = useState('automatica');
   const [fuel, setFuel] = useState('bencina');
-  const [owners, setOwners] = useState('1'); // Dueños
-  const [legalStatus, setLegalStatus] = useState('al_dia'); // Papeles
-  const [patenteDigit, setPatenteDigit] = useState('');
+  const [owners, setOwners] = useState('1');
+  const [legalStatus, setLegalStatus] = useState('al_dia');
 
   const [photos, setPhotos] = useState<File[]>([]);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [userId, setUserId] = useState<string | null>(null);
 
-  // --- VERIFICACIÓN DE SESIÓN ---
+  // --- SESIÓN ---
   useEffect(() => {
     const checkUserSession = async () => {
       const { data: { session }, error } = await supabase.auth.getSession();
@@ -64,205 +69,234 @@ function AnuncioForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setMessage('');
-
     if (!userId) return;
 
     try {
-      // 1. Preparar el objeto de detalles (JSON estructurado)
       let details = {};
       if (category === 'propiedad') {
-        details = {
-          m2Total, rooms, bathrooms, type: propType,
-          ggcc, parking, bodega, orientation // Datos CL
-        };
+        details = { m2Total, rooms, bathrooms, type: propType, ggcc, parking, bodega, orientation };
       } else {
-        details = {
-          year, km, transmission, fuel,
-          owners, legalStatus, patenteDigit // Datos CL
-        };
+        details = { year, km, transmission, fuel, owners, legalStatus };
       }
 
-      // 2. Insertar en Supabase
-      // Concatenamos info clave en la descripción para búsquedas simples si no hay búsqueda JSON
+      // Descripción enriquecida para búsquedas simples
       const extraDesc = category === 'propiedad'
-        ? `GGCC: $${ggcc} | Estac: ${parking ? 'Sí' : 'No'}`
-        : `Papeles: ${legalStatus.replace('_', ' ')} | Dueños: ${owners}`;
+        ? `Tipo: ${propType} | GGCC: $${ggcc} | Estac: ${parking ? 'Sí' : 'No'}`
+        : `Año: ${year} | Km: ${km} | Papeles: ${legalStatus}`;
 
-      const finalDescription = `${description}\n\n--- Detalles ---\n${extraDesc}`;
+      const finalDescription = `${description}\n\n--- Resumen Técnico ---\n${extraDesc}`;
 
       const { data: adData, error: adError } = await supabase
         .from('ads')
         .insert({
-          title,
-          price: parseFloat(price),
-          category,
-          user_id: userId,
-          status: 'draft',
-          qr_code: codigoQR || null,
-          description: finalDescription,
-          details: details
+          title, price: parseFloat(price), category, user_id: userId,
+          status: 'draft', qr_code: codigoQR || null,
+          description: finalDescription, details: details
         })
-        .select('id')
-        .single();
+        .select('id').single();
 
       if (adError) throw adError;
 
-      // 3. Subir Foto
       if (photos.length > 0) {
         const formData = new FormData();
         formData.append('adId', adData.id);
         formData.append('mediaType', 'image');
         formData.append('file', photos[0]);
-
-        const uploadRes = await fetch('/api/upload/media', { method: 'POST', body: formData });
-        if (!uploadRes.ok) throw new Error('Error al subir imagen');
-
+        await fetch('/api/upload/media', { method: 'POST', body: formData });
         await supabase.from('ads').update({ status: 'pending_verification' }).eq('id', adData.id);
       }
 
-      setMessage('✅ ¡Anuncio publicado exitosamente!');
+      setMessage('✅ ¡Anuncio Publicado!');
       setTimeout(() => router.push('/mis-anuncios'), 2000);
 
     } catch (error: any) {
-      console.error(error);
       setMessage(`❌ Error: ${error.message}`);
     }
     setLoading(false);
   };
 
-  if (!userId) return <div className="p-10 text-center">Cargando sesión...</div>;
+  if (!userId) return <div className="p-10 text-center animate-pulse">Cargando...</div>;
 
   return (
-    <div className="max-w-3xl mx-auto p-5 font-sans">
-      <h1 className="text-2xl font-bold text-blue-600 mb-6">Publicar Nuevo Qviso</h1>
+    <div className="max-w-4xl mx-auto p-4 md:p-8 font-sans text-gray-800">
+      <h1 className="text-3xl font-extrabold text-blue-700 mb-8 text-center">Crear Nuevo Qviso</h1>
 
       {codigoQR && (
-        <div className="bg-green-50 border border-green-200 text-green-800 p-4 rounded-lg mb-6 flex items-center gap-3">
-          <span className="text-2xl">🔗</span>
+        <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 p-4 rounded-xl mb-8 flex items-center gap-4 shadow-sm">
+          <div className="bg-white p-2 rounded-full shadow-sm"><CheckCircle className="w-6 h-6 text-emerald-500" /></div>
           <div>
-            <div className="font-bold">Kit Vinculado: {codigoQR}</div>
-            <div className="text-sm opacity-90 uppercase">Categoría: {tipoUrl?.replace('-', ' ') || 'GENERAL'}</div>
+            <div className="font-bold text-lg">Kit Vinculado: {codigoQR}</div>
+            <div className="text-sm opacity-80 uppercase tracking-wide">Categoría: {tipoUrl?.replace('-', ' ') || 'GENERAL'}</div>
           </div>
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={handleSubmit} className="space-y-8">
 
-        {/* 1. DATOS PRINCIPALES */}
-        <div className="bg-white p-5 rounded-lg border border-gray-200 shadow-sm space-y-4">
-          <h2 className="font-bold text-gray-700 border-b pb-2">1. Lo Básico</h2>
-          <input type="text" value={title} onChange={e => setTitle(e.target.value)}
-            placeholder={category === 'auto' ? "Ej: Mazda CX-5 2021 Único Dueño" : "Ej: Depto en Las Condes con Estacionamiento"}
-            required className="w-full p-3 border rounded-md" />
-
+        {/* 1. SELECCIÓN VISUAL DE CATEGORÍA */}
+        <div className="space-y-3">
+          <label className="block text-sm font-bold text-gray-500 uppercase tracking-wider">1. ¿Qué publicas?</label>
           <div className="grid grid-cols-2 gap-4">
-            <input type="number" value={price} onChange={e => setPrice(e.target.value)} placeholder="Precio (CLP)" required className="w-full p-3 border rounded-md" />
-            <select value={category} onChange={e => setCategory(e.target.value)} disabled={!!tipoUrl}
-              className={`w-full p-3 border rounded-md ${tipoUrl ? 'bg-gray-100' : 'bg-white'}`}>
-              <option value="auto">Vehículo</option>
-              <option value="propiedad">Propiedad</option>
-            </select>
+            <button
+              type="button"
+              onClick={() => !tipoUrl && setCategory('auto')}
+              disabled={!!tipoUrl}
+              className={`p-6 rounded-xl border-2 flex flex-col items-center gap-3 transition-all ${category === 'auto' ? 'border-blue-500 bg-blue-50 text-blue-700 shadow-md transform scale-105' : 'border-gray-200 hover:border-blue-300 text-gray-500'}`}
+            >
+              <Car size={40} strokeWidth={1.5} />
+              <span className="font-bold text-lg">Vehículo</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => !tipoUrl && setCategory('propiedad')}
+              disabled={!!tipoUrl}
+              className={`p-6 rounded-xl border-2 flex flex-col items-center gap-3 transition-all ${category === 'propiedad' ? 'border-blue-500 bg-blue-50 text-blue-700 shadow-md transform scale-105' : 'border-gray-200 hover:border-blue-300 text-gray-500'}`}
+            >
+              <Home size={40} strokeWidth={1.5} />
+              <span className="font-bold text-lg">Propiedad</span>
+            </button>
           </div>
         </div>
 
-        {/* 2. DETALLES ESPECÍFICOS (MODO CHILE) */}
-        <div className="bg-blue-50 p-5 rounded-lg border border-blue-100 shadow-sm space-y-4">
-          <h2 className="font-bold text-blue-800 border-b border-blue-200 pb-2">
-            2. Detalles {category === 'propiedad' ? 'Propiedad' : 'Vehículo'}
+        {/* 2. DATOS PRINCIPALES */}
+        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 space-y-5">
+          <h2 className="font-bold text-xl text-gray-800 border-b pb-3 mb-2 flex items-center gap-2">
+            <FileCheck className="w-5 h-5 text-blue-600" /> Información Básica
+          </h2>
+
+          <div>
+            <label className="block text-sm font-bold mb-2">Título del Aviso</label>
+            <input type="text" value={title} onChange={e => setTitle(e.target.value)}
+              placeholder={category === 'auto' ? "Ej: Suzuki Swift 2021 GLX" : "Ej: Casa en Condominio Peñalolén"}
+              required className="w-full p-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition" />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="relative">
+              <label className="block text-sm font-bold mb-2">Precio (CLP)</label>
+              <div className="relative">
+                <span className="absolute left-4 top-4 text-gray-400">$</span>
+                <input type="number" value={price} onChange={e => setPrice(e.target.value)}
+                  className="w-full pl-8 p-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* 3. DETALLES ESPECÍFICOS CON ICONOS */}
+        <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200 shadow-inner space-y-5">
+          <h2 className="font-bold text-xl text-slate-700 border-b border-slate-200 pb-3 mb-2 flex items-center gap-2">
+            <Settings className="w-5 h-5 text-slate-600" />
+            Detalles {category === 'propiedad' ? 'de la Propiedad' : 'del Auto'}
           </h2>
 
           {category === 'propiedad' ? (
             <>
+              {/* Grid Propiedades */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <select value={propType} onChange={e => setPropType(e.target.value)} className="w-full p-3 border rounded-md col-span-2">
-                  <option value="departamento">Departamento</option>
-                  <option value="casa">Casa</option>
-                  <option value="parcela">Parcela / Terreno</option>
-                  <option value="oficina">Oficina / Local</option>
-                </select>
-                <input type="number" value={m2Total} onChange={e => setM2Total(e.target.value)} placeholder="m² Totales" className="w-full p-3 border rounded-md" />
-                <input type="number" value={ggcc} onChange={e => setGgcc(e.target.value)} placeholder="$ Gastos Comunes" className="w-full p-3 border rounded-md border-blue-300" />
-              </div>
-
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <input type="number" value={rooms} onChange={e => setRooms(e.target.value)} placeholder="Dormitorios" className="w-full p-3 border rounded-md" />
-                <input type="number" value={bathrooms} onChange={e => setBathrooms(e.target.value)} placeholder="Baños" className="w-full p-3 border rounded-md" />
-
-                <div className="flex items-center gap-2 bg-white p-3 rounded border">
-                  <input type="checkbox" id="chk_parking" checked={parking} onChange={e => setParking(e.target.checked)} className="w-5 h-5" />
-                  <label htmlFor="chk_parking" className="text-sm cursor-pointer">Estacionamiento</label>
+                <div className="col-span-2">
+                  <label className="text-xs font-bold text-slate-500 uppercase mb-1 flex items-center gap-1"><Home className="w-3 h-3" /> Tipo</label>
+                  <select value={propType} onChange={e => setPropType(e.target.value)} className="w-full p-3 rounded-lg border border-slate-300">
+                    <option value="departamento">Departamento</option>
+                    <option value="casa">Casa</option>
+                    <option value="parcela">Parcela</option>
+                  </select>
                 </div>
-                <div className="flex items-center gap-2 bg-white p-3 rounded border">
-                  <input type="checkbox" id="chk_bodega" checked={bodega} onChange={e => setBodega(e.target.checked)} className="w-5 h-5" />
-                  <label htmlFor="chk_bodega" className="text-sm cursor-pointer">Bodega</label>
+                <div>
+                  <label className="text-xs font-bold text-slate-500 uppercase mb-1 flex items-center gap-1"><Square className="w-3 h-3" /> M² Total</label>
+                  <input type="number" value={m2Total} onChange={e => setM2Total(e.target.value)} className="w-full p-3 rounded-lg border border-slate-300" />
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-slate-500 uppercase mb-1 flex items-center gap-1">💰 GGCC</label>
+                  <input type="number" value={ggcc} onChange={e => setGgcc(e.target.value)} placeholder="$ Aprox" className="w-full p-3 rounded-lg border border-slate-300" />
                 </div>
               </div>
 
-              <div>
-                <label className="block text-xs font-bold text-gray-500 mb-1">Orientación (Sol)</label>
-                <select value={orientation} onChange={e => setOrientation(e.target.value)} className="w-full p-3 border rounded-md">
-                  <option value="Norte">Norte (Sol todo el día)</option>
-                  <option value="Oriente">Oriente (Sol mañana)</option>
-                  <option value="Poniente">Poniente (Sol tarde)</option>
-                  <option value="Sur">Sur (Fresco)</option>
-                </select>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div>
+                  <label className="text-xs font-bold text-slate-500 uppercase mb-1 flex items-center gap-1"><Bed className="w-3 h-3" /> Dorms</label>
+                  <input type="number" value={rooms} onChange={e => setRooms(e.target.value)} className="w-full p-3 rounded-lg border border-slate-300" />
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-slate-500 uppercase mb-1 flex items-center gap-1"><Bath className="w-3 h-3" /> Baños</label>
+                  <input type="number" value={bathrooms} onChange={e => setBathrooms(e.target.value)} className="w-full p-3 rounded-lg border border-slate-300" />
+                </div>
+
+                {/* Botones Toggle Visuales */}
+                <button type="button" onClick={() => setParking(!parking)}
+                  className={`p-3 rounded-lg border flex flex-col items-center justify-center transition-all ${parking ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-400'}`}>
+                  <Car className="w-5 h-5 mb-1" /> <span className="text-xs font-bold">Estacionamiento</span>
+                </button>
+                <button type="button" onClick={() => setBodega(!bodega)}
+                  className={`p-3 rounded-lg border flex flex-col items-center justify-center transition-all ${bodega ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-400'}`}>
+                  <Warehouse className="w-5 h-5 mb-1" /> <span className="text-xs font-bold">Bodega</span>
+                </button>
               </div>
             </>
           ) : (
-            // FORMULARIO AUTO
             <>
+              {/* Grid Autos */}
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                <input type="number" value={year} onChange={e => setYear(e.target.value)} placeholder="Año (Ej: 2019)" className="w-full p-3 border rounded-md" />
-                <input type="number" value={km} onChange={e => setKm(e.target.value)} placeholder="Kilometraje" className="w-full p-3 border rounded-md" />
-                <select value={transmission} onChange={e => setTransmission(e.target.value)} className="w-full p-3 border rounded-md">
-                  <option value="automatica">Automática</option>
-                  <option value="manual">Manual</option>
-                </select>
+                <div>
+                  <label className="text-xs font-bold text-slate-500 uppercase mb-1 flex items-center gap-1"><Calendar className="w-3 h-3" /> Año</label>
+                  <input type="number" value={year} onChange={e => setYear(e.target.value)} placeholder="2020" className="w-full p-3 rounded-lg border border-slate-300" />
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-slate-500 uppercase mb-1 flex items-center gap-1"><Gauge className="w-3 h-3" /> Km</label>
+                  <input type="number" value={km} onChange={e => setKm(e.target.value)} className="w-full p-3 rounded-lg border border-slate-300" />
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-slate-500 uppercase mb-1 flex items-center gap-1"><Settings className="w-3 h-3" /> Caja</label>
+                  <select value={transmission} onChange={e => setTransmission(e.target.value)} className="w-full p-3 rounded-lg border border-slate-300">
+                    <option value="automatica">Automática</option>
+                    <option value="manual">Manual</option>
+                  </select>
+                </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-gray-500 mb-1">Estado Legal</label>
-                  <select value={legalStatus} onChange={e => setLegalStatus(e.target.value)} className={`w-full p-3 border rounded-md ${legalStatus !== 'al_dia' ? 'border-red-400 bg-red-50' : 'border-green-400 bg-green-50'}`}>
-                    <option value="al_dia">✅ Papeles al día (Sin multas)</option>
-                    <option value="atrasado">⚠️ Papeles Atrasados</option>
-                    <option value="multas">🛑 Con Multas / Prenda</option>
+                  <label className="text-xs font-bold text-slate-500 uppercase mb-1 flex items-center gap-1"><FileCheck className="w-3 h-3" /> Situación Legal</label>
+                  <select value={legalStatus} onChange={e => setLegalStatus(e.target.value)} className="w-full p-3 rounded-lg border border-slate-300">
+                    <option value="al_dia">✅ Papeles al día</option>
+                    <option value="atrasado">⚠️ Atrasado</option>
+                    <option value="multas">🛑 Con Multas</option>
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-gray-500 mb-1">Dueños Anteriores</label>
-                  <input type="number" value={owners} onChange={e => setOwners(e.target.value)} placeholder="Ej: 1 (Único dueño)" className="w-full p-3 border rounded-md" />
+                  <label className="text-xs font-bold text-slate-500 uppercase mb-1 flex items-center gap-1"><Users className="w-3 h-3" /> Dueños</label>
+                  <input type="number" value={owners} onChange={e => setOwners(e.target.value)} className="w-full p-3 rounded-lg border border-slate-300" />
                 </div>
               </div>
             </>
           )}
         </div>
 
-        {/* 3. DESCRIPCIÓN Y FOTO */}
-        <textarea value={description} onChange={e => setDescription(e.target.value)}
-          rows={4} placeholder="Describe lo que no se ve en las fotos: Estado de mantenciones, cercanía a metro, etc."
-          className="w-full p-3 border rounded-md bg-gray-50 border-gray-200"></textarea>
-
-        <div className="border-2 dashed border-gray-300 p-8 rounded-lg text-center bg-gray-50">
-          <p className="text-gray-600 mb-2 font-medium">📸 Foto Principal</p>
-          <input type="file" accept="image/*" onChange={handleFileChange} className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" />
+        {/* 4. FOTO */}
+        <div className="border-3 border-dashed border-blue-200 p-10 rounded-2xl text-center bg-blue-50 hover:bg-blue-100 transition cursor-pointer group">
+          <div className="flex flex-col items-center justify-center gap-3">
+            <UploadCloud className="w-12 h-12 text-blue-400 group-hover:text-blue-600 transition" />
+            <p className="text-blue-800 font-bold text-lg">Sube tu Foto Principal</p>
+            <p className="text-sm text-blue-600">Haz clic o arrastra la imagen aquí</p>
+          </div>
+          <input type="file" accept="image/*" onChange={handleFileChange} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
+          {photos.length > 0 && <p className="mt-4 text-green-600 font-bold">✅ Imagen seleccionada: {photos[0].name}</p>}
         </div>
 
         <button type="submit" disabled={loading}
-          className="w-full py-4 bg-blue-600 text-white rounded-lg font-bold text-lg hover:bg-blue-700 shadow-md transition disabled:opacity-50">
-          {loading ? 'Publicando...' : 'Publicar Aviso'}
+          className="w-full py-5 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl font-extrabold text-xl shadow-xl hover:shadow-2xl hover:scale-[1.01] transition-all disabled:opacity-50 disabled:scale-100">
+          {loading ? 'Subiendo...' : '🚀 Publicar Aviso'}
         </button>
       </form>
 
-      {message && <p className={`mt-4 text-center font-bold ${message.startsWith('✅') ? 'text-green-600' : 'text-red-600'}`}>{message}</p>}
+      {message && <div className={`mt-6 p-4 rounded-xl text-center font-bold ${message.startsWith('✅') ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>{message}</div>}
     </div>
   );
 }
 
 export default function CreateAdPage() {
   return (
-    <Suspense fallback={<div className="p-10 text-center text-gray-500">Cargando formulario...</div>}>
+    <Suspense fallback={<div className="flex h-screen items-center justify-center text-blue-600">Cargando...</div>}>
       <AnuncioForm />
     </Suspense>
   );

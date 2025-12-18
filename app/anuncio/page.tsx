@@ -273,14 +273,25 @@ function AnuncioForm() {
         </div>
 
         {/* 4. FOTO */}
-        <div className="border-3 border-dashed border-blue-200 p-10 rounded-2xl text-center bg-blue-50 hover:bg-blue-100 transition cursor-pointer group">
+        <div className="relative border-3 border-dashed border-blue-200 p-10 rounded-2xl text-center bg-blue-50 hover:bg-blue-100 transition cursor-pointer group">
           <div className="flex flex-col items-center justify-center gap-3">
             <UploadCloud className="w-12 h-12 text-blue-400 group-hover:text-blue-600 transition" />
             <p className="text-blue-800 font-bold text-lg">Sube tu Foto Principal</p>
             <p className="text-sm text-blue-600">Haz clic o arrastra la imagen aquí</p>
           </div>
-          <input type="file" accept="image/*" onChange={handleFileChange} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-50" />
-          {photos.length > 0 && <p className="mt-4 text-green-600 font-bold">✅ Imagen seleccionada: {photos[0].name}</p>}
+          <input
+            type="file"
+            accept="image/*"
+            onChange={handleFileChange}
+            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-50"
+          />
+          {photos.length > 0 && (
+            <div className="absolute bottom-2 left-0 right-0 text-center">
+              <p className="text-green-600 font-bold text-sm bg-white/80 inline-block px-2 rounded">
+                ✅ Imagen seleccionada
+              </p>
+            </div>
+          )}
         </div>
 
         <button type="submit" disabled={loading}

@@ -112,12 +112,26 @@ function AnuncioForm() {
       if (adError) throw adError;
 
       if (photos.length > 0) {
-        const formData = new FormData();
-        formData.append('adId', adData.id);
-        formData.append('mediaType', 'image');
-        formData.append('file', photos[0]);
-        await fetch('/api/upload/media', { method: 'POST', body: formData });
-        await supabase.from('ads').update({ status: 'pending_verification' }).eq('id', adData.id);
+        const file = photos[0];
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${adData.id}/image_${Date.now()}.${fileExt}`;
+
+        // 1. SUBIDA DIRECTA DESDE EL CLIENTE (Mantiene Auth)
+        const { error: uploadError } = await supabase.storage
+          .from('qvisos-media')
+          .upload(fileName, file);
+
+        if (uploadError) {
+          console.error('Error subiendo imagen:', uploadError);
+          // No lanzamos error fatal para que el anuncio se guarde aunque falle la foto
+          setMessage('⚠️ Anuncio guardado, pero hubo un error con la imagen.');
+        } else {
+          // 2. Si sube bien, actualizamos el estado
+          await supabase
+            .from('ads')
+            .update({ status: 'pending_verification' })
+            .eq('id', adData.id);
+        }
       }
 
       setMessage('✅ ¡Anuncio Publicado!');

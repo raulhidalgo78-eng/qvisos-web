@@ -137,3 +137,97 @@ export async function updateAd(formData: FormData) {
 
     return { success: true };
 }
+
+export async function createAd(formData: FormData) {
+    const supabase = await createClient();
+
+    // 1. Auth Check
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) throw new Error("Debes iniciar sesión para publicar.");
+
+    // 2. Recolectar datos básicos
+    const title = formData.get('titulo') as string;
+    const description = formData.get('descripcion') as string;
+    const price = formData.get('precio') ? parseFloat(formData.get('precio') as string) : 0;
+    const category = formData.get('categoria') as string;
+    const contact_phone = formData.get('contact_phone') as string;
+    const qrCode = formData.get('qr_code') as string; // El código QR a vincular
+
+    // Features JSON
+    const featuresRaw = formData.get('features') as string;
+    let features = {};
+    try {
+        features = JSON.parse(featuresRaw || '{}');
+    } catch (e) {
+        console.error("Error parsing features", e);
+    }
+
+    // 3. Manejar Imagen (Upload directo a Storage - esto asume que el input file viene en el FormData)
+    // NOTA: Para archivos grandes, mejor usar cliente -> storage -> URL, pero para MVP esto funciona si Vercel no hace timeout.
+    // Si el cliente ya subió la imagen y tenemos URL (recomendado), usamos esa.
+    // Aquí soportaremos ambas: file upload o media_url directo.
+
+    let mediaUrl = formData.get('media_url') as string; // Si el cliente ya la subió
+    const file = formData.get('file') as File;
+
+    if (!mediaUrl && file && file.size > 0) {
+        const fileName = `${user.id}/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.]/g, '')}`;
+        const bucketName = 'qvisos-media'; // Usando el bucket correcto
+
+        const { error: uploadError } = await supabase.storage
+            .from(bucketName)
+            .upload(fileName, file);
+
+        if (uploadError) throw new Error("Error subiendo imagen: " + uploadError.message);
+
+        const { data: { publicUrl } } = supabase.storage
+            .from(bucketName)
+            .getPublicUrl(fileName);
+
+        mediaUrl = publicUrl;
+    }
+
+    if (!mediaUrl) throw new Error("La imagen es obligatoria.");
+
+    // 4. INSERTAR ANUNCIO
+    const { data: newAd, error: insertError } = await supabase
+        .from('ads')
+        .insert({
+            user_id: user.id,
+            title,
+            description,
+            price,
+            category,
+            contact_phone,
+            features, // JSONB con todo (gastos comunes, amenities, etc.)
+            media_url: mediaUrl,
+            status: 'published' // O 'draft' si prefieres
+        })
+        .select('id')
+        .single();
+
+    if (insertError) {
+        console.error("Error creating ad:", insertError);
+        throw new Error("Error al guardar el anuncio.");
+    }
+
+    // 5. VINCULAR QR (Many-to-One: Actualizamos el QR para que apunte a este Ad)
+    if (qrCode) {
+        const { error: qrError } = await supabase
+            .from('qr_codes')
+            .update({
+                ad_id: newAd.id,
+                status: 'active' // Cambiamos estado a activo
+            })
+            .eq('code', qrCode);
+
+        // Si el QR no existe o falla, es un warning pero el anuncio ya se creó.
+        if (qrError) {
+            console.warn("Anuncio creado pero falló vinculación QR:", qrError);
+            // Podríamos lanzar error si es crítico que esté vinculado
+        }
+    }
+
+    revalidatePath('/mis-anuncios');
+    return { success: true, adId: newAd.id };
+}

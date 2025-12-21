@@ -178,7 +178,7 @@ export default function AnuncioForm({ initialData }: AnuncioFormProps) {
 
         try {
             const formData = new FormData(e.currentTarget);
-            if (file) formData.set('file', file); // Asegurar que el file va con key 'file'
+            if (file) formData.set('file', file);
 
             // Campos explícitos
             formData.set('descripcion', description);
@@ -186,6 +186,7 @@ export default function AnuncioForm({ initialData }: AnuncioFormProps) {
 
             // Recolectar JSON de features
             const features: any = {};
+
             // Autos
             if (category === 'autos') {
                 ['marca', 'modelo', 'anio', 'kilometraje', 'transmision', 'combustible', 'carroceria'].forEach(k => {
@@ -198,23 +199,24 @@ export default function AnuncioForm({ initialData }: AnuncioFormProps) {
             }
             // Inmuebles
             if (category === 'inmuebles') {
-                ['operacion', 'tipo_propiedad', 'orientacion', 'm2_utiles', 'm2_totales', 'dormitorios', 'banos', 'estacionamientos', 'bodegas'].forEach(k => {
+                // Básicos
+                ['operacion', 'tipo_propiedad', 'dormitorios', 'banos'].forEach(k => {
                     features[k] = formData.get(k);
                 });
-                features.expenses = {
-                    gastos_comunes: formData.get('gastos_comunes'),
-                    contribuciones: formData.get('contribuciones')
-                };
-                features.attributes = {
-                    recepcion_final: formData.get('recepcion_final') === 'on',
-                    mascotas: formData.get('mascotas') === 'on',
-                    amoblado: formData.get('amoblado') === 'on'
-                };
-                features.amenities = {
-                    piscina: formData.get('piscina') === 'on',
-                    quincho: formData.get('quincho') === 'on',
-                    conserjeria: formData.get('conserjeria') === 'on'
-                };
+                // Superficie
+                features.m2_utiles = formData.get('m2_utiles');
+                features.m2_totales = formData.get('m2_totales');
+
+                // Gastos y Vista
+                features.gastos_comunes = formData.get('gastos_comunes');
+                features.vista_orientacion = formData.get('vista_orientacion');
+
+                // Amenities (Checkboxes)
+                const amenitiesList = ['estacionamiento', 'bodega', 'piscina', 'quincho', 'conserjeria', 'ascensor'];
+                features.amenities = {};
+                amenitiesList.forEach(k => {
+                    features.amenities[k] = formData.get(k) === 'on';
+                });
             }
 
             // Globales
@@ -226,17 +228,17 @@ export default function AnuncioForm({ initialData }: AnuncioFormProps) {
 
             formData.set('features', JSON.stringify(features));
 
-            // Enviar
+            // Enviar usando SERVER ACTIONS
             if (initialData) {
                 // UPDATE
                 formData.append('id', initialData.id);
                 await updateAd(formData);
                 alert('¡Actualizado correctamente!');
             } else {
-                // CREATE
-                const res = await fetch('/api/upload/media', { method: 'POST', body: formData });
-                if (!res.ok) throw new Error((await res.json()).message || 'Error al crear');
-                alert('¡Aviso creado con éxito!');
+                // CREATE (Nueva lógica Many-to-One)
+                const { createAd } = await import('@/app/actions/ad-actions');
+                await createAd(formData); // Vincula QR internamente
+                alert('¡Aviso creado y vinculado con éxito!');
             }
 
             router.push('/mis-anuncios');
@@ -426,38 +428,111 @@ export default function AnuncioForm({ initialData }: AnuncioFormProps) {
 
                 {/* 4. CAMPOS ESPECÍFICOS: INMUEBLES */}
                 {showPropertyFields && (
-                    <div className="bg-gray-50 p-5 rounded-xl border border-gray-200 space-y-4 animate-in fade-in slide-in-from-top-2">
-                        <h3 className="font-bold text-gray-800 flex items-center gap-2">🏡 Detalles de Propiedad</h3>
+                    <div className="bg-gray-50 p-6 rounded-xl border border-gray-200 space-y-6 animate-in fade-in slide-in-from-top-2">
+                        <h3 className="font-bold text-gray-800 flex items-center gap-2 text-lg border-b pb-2">
+                            🏡 Detalles de la Propiedad
+                        </h3>
+
+                        {/* 1. Operación y Tipo */}
                         <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <label className="text-xs font-semibold text-gray-500">Operación</label>
+                                <label className="text-xs font-bold text-gray-600 uppercase tracking-wide">Operación</label>
                                 <select
                                     name="operacion"
                                     value={operacion}
                                     onChange={(e) => setOperacion(e.target.value)}
-                                    className="w-full p-2 border rounded bg-white"
+                                    className="w-full p-2.5 border rounded-lg bg-white mt-1"
                                 >
                                     <option value="Venta">Venta</option>
                                     <option value="Arriendo">Arriendo</option>
-                                    <option value="Arriendo_Temporal">Temporal</option>
+                                    <option value="Arriendo_Temporal">Arriendo de Temporada</option>
                                 </select>
                             </div>
                             <div>
-                                <label className="text-xs font-semibold text-gray-500">Tipo</label>
-                                <select name="tipo_propiedad" defaultValue={def('type')} className="w-full p-2 border rounded bg-white">
-                                    <option value="Departamento">Depto</option>
+                                <label className="text-xs font-bold text-gray-600 uppercase tracking-wide">Tipo de Inmueble</label>
+                                <select name="tipo_propiedad" defaultValue={def('tipo_propiedad')} className="w-full p-2.5 border rounded-lg bg-white mt-1">
+                                    <option value="Departamento">Departamento</option>
                                     <option value="Casa">Casa</option>
                                     <option value="Parcela">Parcela</option>
                                     <option value="Oficina">Oficina</option>
                                     <option value="Terreno">Terreno</option>
+                                    <option value="Bodega">Bodega</option>
+                                    <option value="Estacionamiento">Estacionamiento</option>
                                 </select>
                             </div>
                         </div>
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                            <input name="m2_utiles" type="number" placeholder="M² Útiles" defaultValue={def('m2_built')} className="p-2 border rounded" />
-                            <input name="m2_totales" type="number" placeholder="M² Totales" defaultValue={def('m2_total')} className="p-2 border rounded" />
-                            <input name="dormitorios" type="number" placeholder="Dorms" defaultValue={def('bedrooms')} className="p-2 border rounded" />
-                            <input name="banos" type="number" placeholder="Baños" defaultValue={def('bathrooms')} className="p-2 border rounded" />
+
+                        {/* 2. Gastos Comunes (Crítico en Chile) */}
+                        <div className="bg-blue-50 p-4 rounded-lg border border-blue-100">
+                            <label className="block text-sm font-bold text-blue-900 mb-1">💰 Gastos Comunes (Aprox.)</label>
+                            <div className="flex items-center">
+                                <span className="text-gray-500 mr-2">$</span>
+                                <input
+                                    name="gastos_comunes"
+                                    type="number"
+                                    defaultValue={def('gastos_comunes')}
+                                    placeholder="Ej: 85000"
+                                    className="flex-1 p-2 border border-blue-200 rounded focus:ring-2 focus:ring-blue-400 outline-none"
+                                />
+                            </div>
+                            <p className="text-xs text-blue-600 mt-1">Si no aplica, dejar en 0 o vacío.</p>
+                        </div>
+
+                        {/* 3. Distribución y Superficie */}
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            <div>
+                                <label className="text-xs font-semibold text-gray-500">Dormitorios</label>
+                                <input name="dormitorios" type="number" defaultValue={def('dormitorios')} className="w-full p-2 border rounded mt-1" placeholder="Ej: 2" />
+                            </div>
+                            <div>
+                                <label className="text-xs font-semibold text-gray-500">Baños</label>
+                                <input name="banos" type="number" defaultValue={def('banos')} className="w-full p-2 border rounded mt-1" placeholder="Ej: 2" />
+                            </div>
+                            <div>
+                                <label className="text-xs font-semibold text-gray-500">M² Útiles</label>
+                                <input name="m2_utiles" type="number" defaultValue={def('m2_utiles')} className="w-full p-2 border rounded mt-1" placeholder="Ej: 60" />
+                            </div>
+                            <div>
+                                <label className="text-xs font-semibold text-gray-500">M² Totales</label>
+                                <input name="m2_totales" type="number" defaultValue={def('m2_totales')} className="w-full p-2 border rounded mt-1" placeholder="Ej: 65" />
+                            </div>
+                        </div>
+
+                        {/* 4. Vista / Orientación */}
+                        <div>
+                            <label className="text-xs font-semibold text-gray-500">Vista / Orientación</label>
+                            <input
+                                name="vista_orientacion"
+                                type="text"
+                                defaultValue={def('vista_orientacion')}
+                                placeholder="Ej: Nor-Poniente, Vista Despejada, Interior..."
+                                className="w-full p-2 border rounded mt-1"
+                            />
+                        </div>
+
+                        {/* 5. Amenities / Extras */}
+                        <div className="pt-4 border-t border-gray-200">
+                            <label className="block text-sm font-bold text-gray-700 mb-3">Características Adicionales</label>
+                            <div className="grid grid-cols-2 gap-3">
+                                {[
+                                    { k: 'estacionamiento', label: 'Estacionamiento' },
+                                    { k: 'bodega', label: 'Bodega' },
+                                    { k: 'piscina', label: 'Piscina' },
+                                    { k: 'quincho', label: 'Quincho / Asadera' },
+                                    { k: 'conserjeria', label: 'Conserjería 24/7' },
+                                    { k: 'ascensor', label: 'Ascensor' }
+                                ].map(item => (
+                                    <label key={item.k} className="flex items-center space-x-2 bg-white p-2 rounded border border-gray-200 cursor-pointer hover:border-blue-400">
+                                        <input
+                                            type="checkbox"
+                                            name={item.k}
+                                            defaultChecked={initialData?.features?.amenities?.[item.k]}
+                                            className="rounded text-blue-600 focus:ring-blue-500 h-4 w-4"
+                                        />
+                                        <span className="text-sm text-gray-700">{item.label}</span>
+                                    </label>
+                                ))}
+                            </div>
                         </div>
                     </div>
                 )}

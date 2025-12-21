@@ -77,12 +77,17 @@ export default function AnuncioForm({ initialData }: AnuncioFormProps) {
     }, [urlTipo, initialData]);
 
     // Check QR (Solo creación)
+    // Check QR (Solo creación)
     useEffect(() => {
         if (initialData) return; // No chequear QR en edición
+        if (!qrCodeInput || qrCodeInput.length < 4) return;
+
         const checkQr = async () => {
-            if (qrCodeInput.length > 3) {
+            try {
+                // Importación dinámica segura
                 const { checkQrCategory } = await import('@/app/actions/check-qr');
                 const cat = await checkQrCategory(qrCodeInput);
+
                 if (cat) {
                     setQrCategory(cat);
                     if (cat === 'venta_auto') setCategory('autos');
@@ -90,11 +95,18 @@ export default function AnuncioForm({ initialData }: AnuncioFormProps) {
                 } else {
                     setQrCategory(null);
                 }
+            } catch (err) {
+                console.error("Error validando QR:", err);
+                // No bloqueamos la UI con un error fatal, pero podríamos mostrar un toast o mensaje pequeño
+                // Para este caso, solo logueamos para no interrumpir el flujo si es un error transitorio de red
+                // Opcionalmente: setError('No se pudo verificar el código QR. Revisa tu conexión.');
             }
         };
+
         const timeoutId = setTimeout(() => checkQr(), 500);
         return () => clearTimeout(timeoutId);
     }, [qrCodeInput, initialData]);
+
 
     const handleGenerateDescription = async () => {
         const formElement = document.querySelector('form');

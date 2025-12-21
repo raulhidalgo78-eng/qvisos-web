@@ -4,7 +4,7 @@ import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 
 // DEFINICIÓN SEGURA: Función normal, NO async
-function AnuncioFormContent() {
+function AnuncioFormContent({ initialData }: { initialData?: any }) {
     const searchParams = useSearchParams();
     const code = searchParams.get('code');
     const tipo = searchParams.get('tipo');
@@ -13,6 +13,11 @@ function AnuncioFormContent() {
     const [status, setStatus] = useState('Esperando validación...');
 
     useEffect(() => {
+        if (initialData) {
+            setStatus(`Modo Edición: Datos recibidos (${initialData.title || 'Sin título'})`);
+            return;
+        }
+
         if (!code) {
             setStatus('No se detectó ningún código.');
             return;
@@ -26,7 +31,7 @@ function AnuncioFormContent() {
         }, 1000);
 
         return () => clearTimeout(timer);
-    }, [code, tipo]);
+    }, [code, tipo, initialData]);
 
     return (
         <div className="p-8 max-w-lg mx-auto bg-white shadow-lg rounded-xl border border-gray-200 mt-10">
@@ -38,17 +43,19 @@ function AnuncioFormContent() {
                 Si puedes leer esto, el "Loop de la Muerte" se ha roto.
                 <br />
                 <strong>Código recibido:</strong> {code || 'Ninguno'}
+                <br />
+                <strong>Datos iniciales:</strong> {initialData ? 'Sí' : 'No'}
             </div>
         </div>
     );
 }
 
 // Exportación por defecto
-export default function AnuncioForm() {
+export default function AnuncioForm({ initialData }: { initialData?: any }) {
     // Doble seguridad: Suspense aquí también por si acaso
     return (
         <Suspense fallback={<div className="p-10 text-center">Cargando formulario...</div>}>
-            <AnuncioFormContent />
+            <AnuncioFormContent initialData={initialData} />
         </Suspense>
     );
 }

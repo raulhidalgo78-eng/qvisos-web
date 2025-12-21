@@ -2,7 +2,12 @@
 'use client';
 
 import React, { Suspense } from 'react';
-import AnuncioForm from '@/components/AnuncioForm';
+import dynamic from 'next/dynamic';
+
+const AnuncioForm = dynamic(() => import('@/components/AnuncioForm'), {
+  ssr: false,
+  loading: () => <div className="flex h-screen items-center justify-center text-blue-600">Cargando formulario...</div>
+});
 
 export default function CreateAdPage() {
   return (

@@ -76,12 +76,12 @@ export default function ProductionStation() {
   useEffect(() => {
     if (category === 'auto') {
       setAction('venta'); // Autos solo se venden (en este contexto simple)
-      // Autos no usan formatos gigantes ni grandes usualmente (pegar en vidrio)
+      // Autos no usan formatos gigantes ni grandes usualmente
       if (['50x75', '100x150'].includes(size)) {
         setSize('30x45');
       }
     } else {
-      // Propiedad: No usa formato "Pequeño" (muy chico para calle)
+      // Propiedad: No usa formato "Pequeño"
       if (size === '20x30') {
         setSize('30x45');
       }
@@ -157,81 +157,81 @@ export default function ProductionStation() {
       if (i > 0) pdf.addPage([width, height], 'portrait');
       const currentCode = codesList[i];
 
-      // 1. HEADER (Color Dinámico, 22% alto)
-      const headerH = height * 0.22;
+      // Convertir unidades para fórmulas
+      const widthPt = width * 28.35; // CM a PT para cálculos precisos de fuente
+
+      // DISTRIBUCIÓN VERTICAL: 20% / 65% / 15%
+      const headerH = height * 0.20;
+      const footerH = height * 0.15;
+      const bodyH = height * 0.65; // Espacio central para QR
+
+      const headerY = 0;
+      const bodyY = headerH;
+      const footerY = height - footerH;
+
+      // 1. HEADER (20%)
       const [r, g, b] = colorScheme.headerBgHex;
       pdf.setFillColor(r, g, b);
       pdf.rect(0, 0, width, headerH, "F");
 
-      // Título GIGANTE dinámico
-      pdf.setTextColor(255, 255, 255);
-
-      // FÓRMULA DE FUENTE: 18% del ancho en puntos (aprox)
-      // jsPDF usa puntos para fontSize pase lo que pase con la unit.
-      // 1cm = 28.35pt.
-      // Queremos que el texto ocupe aprox el 80-90% del ancho.
-      // "VENDO" son 5 letras. "ARRIENDO" son 8.
-      // Ajuste dinámico por longitud de palabra:
+      // TÍTULO DINÁMICO
+      // Fórmula Usuario: size = (width / textLen) * 1.3
+      // Interpretación: Width en Puntos. 
+      // Si Width=30cm=850pt. Text="ARRIENDO"(8). (850/8)*1.3 = 138pt.
       const textLen = colorScheme.title.length;
-      const baseScale = textLen > 6 ? 0.13 : 0.18; // Si es larga (ARRIENDO), achicar factor.
+      const fontSizePt = (widthPt / textLen) * 1.3;
 
-      const fontSize = (width * 28.35) * baseScale * 2; // Multiplicador empírico para Oswald Bold
-      pdf.setFontSize(fontSize);
-
-      // Centrado perfecto
-      pdf.text(colorScheme.title, width / 2, headerH / 2 + (height * 0.015), { align: "center", baseline: "middle" });
-
-      // 2. FOOTER (Negro, 12% alto)
-      const footerH = height * 0.12;
-      const footerY = height - footerH;
-      pdf.setFillColor(0, 0, 0);
-      pdf.rect(0, footerY, width, footerH, "F");
-
-      // Logo QVisos
-      const logoSize = (width * 0.13) * 28.35;
-      pdf.setFontSize(logoSize);
       pdf.setTextColor(255, 255, 255);
-      pdf.text("QVisos", width * 0.05, footerY + (footerH / 2), { baseline: "middle" });
+      pdf.setFontSize(fontSizePt);
+      // Centrado vertical óptimo: +10% del alto del header para compensar baseline
+      pdf.text(colorScheme.title, width / 2, headerH / 2 + (headerH * 0.1), { align: "center", baseline: "middle" });
 
-      pdf.setTextColor(0, 150, 255); // Cyan
-      const txtW = pdf.getTextWidth("QVisos");
-      pdf.text(".cl", (width * 0.05) + txtW + (width * 0.01), footerY + (footerH / 2), { baseline: "middle" });
 
-      // ID Box (Derecha)
-      const idW = footerH * 2.5;
-      const idH = footerH * 0.6;
-      const idX = width - (width * 0.05) - idW;
-      const idY = footerY + (footerH - idH) / 2;
+      // 2. BODY (65%) - QR MAXIMIZADO
+      // QR Size = 80% del ancho (Regla 2)
+      const qrSize = width * 0.8;
+      const qrX = (width - qrSize) / 2;
 
-      pdf.setFillColor(255, 255, 255);
-      pdf.rect(idX, idY, idW, idH, "F");
+      // Centrado Vertical en el Body
+      // bodyY es donde empieza el body. bodyH es su altura.
+      // Centro del body = bodyY + bodyH/2.
+      // Top del QR = Centro - qrSize/2.
+      const qrY = bodyY + (bodyH - qrSize) / 2;
 
-      pdf.setTextColor(0, 0, 0);
-      pdf.setFontSize(logoSize * 0.7);
-      pdf.text(currentCode, idX + idW / 2, idY + idH / 2, { align: "center", baseline: "middle" });
-
-      // 3. QR (Cuerpo Central) - Optimizado para no cortar texto
-      const bodyY = headerH;
-      const bodyH = footerY - headerH;
-
+      // Obtener imagen del canvas
       const canvas = document.getElementById(`qr-canvas-${currentCode}`) as HTMLCanvasElement;
       if (canvas) {
         const qrData = canvas.toDataURL('image/png');
-
-        // Tamaño QR: 50% del menor lado (Seguridad visual)
-        const qrSize = Math.min(width, bodyH) * 0.60;
-        const qrX = (width - qrSize) / 2;
-        // Centrado vertical un poco más arriba para dejar espacio al CTA
-        const qrY = bodyY + (bodyH - qrSize) / 2 - (bodyH * 0.05);
-
         pdf.addImage(qrData, "PNG", qrX, qrY, qrSize, qrSize);
 
-        // Texto CTA "Escanea para ver precio"
+        // Texto "Escanea" debajo del QR, pero dentro del área segura si sobra espacio
+        // O justo debajo del QR si el QR es muy grande
         pdf.setTextColor(0, 0, 0);
-        // Font promedia
-        pdf.setFontSize(width * 1.2);
-        pdf.text("Escanea para ver precio", width / 2, qrY + qrSize + (height * 0.05), { align: 'center' });
+        pdf.setFontSize(widthPt * 0.05); // Texto pequeño relativo
+        // Lo ponemos justo entre el QR y el Footer si hay espacio, o sobre el borde inferior del QR si no
+        const ctaY = qrY + qrSize + (height * 0.02);
+        // Solo dibujar si no se mete al footer
+        if (ctaY < footerY) {
+          pdf.text("Escanea para ver precio", width / 2, ctaY, { align: 'center', baseline: 'top' });
+        }
       }
+
+      // 3. FOOTER (15%)
+      pdf.setFillColor(0, 0, 0); // Fondo Negro (Regla 3)
+      pdf.rect(0, footerY, width, footerH, "F");
+
+      // Texto Footer Proporcionado: 8% del ancho
+      const footerFontSizePt = widthPt * 0.08;
+      pdf.setFontSize(footerFontSizePt);
+      pdf.setTextColor(255, 255, 255);
+
+      // Contenido: Logo + ID Centrados en el bloque negro
+      // Usamos un layout stack vertical o horizontal?
+      // "QVisos.cl + ID". Vamos a ponerlos en una línea separados o dos líneas.
+      // Dado el tamaño de fuente grande (8% ancho), mejor todo centrado.
+
+      const footerCenterY = footerY + (footerH / 2);
+      pdf.text(`QVisos.cl  |  ${currentCode}`, width / 2, footerCenterY, { align: 'center', baseline: 'middle' });
     }
 
     if (startNum !== null) setStartNum(startNum + quantity);
@@ -339,7 +339,7 @@ export default function ProductionStation() {
           </div>
         </div>
 
-        {/* --- VISTA PREVIA (CSS REFLEJA PDF) --- */}
+        {/* --- VISTA PREVIA (CSS REFLEJA PDF 20/65/15) --- */}
         <div className="flex-1 bg-gray-100 rounded-2xl p-8 flex items-center justify-center min-h-[600px]">
           <div
             className="relative bg-white shadow-2xl flex flex-col overflow-hidden transition-all duration-500"
@@ -348,30 +348,30 @@ export default function ProductionStation() {
               aspectRatio: '2/3',
             }}
           >
-            {/* ZONA A: CABECERA */}
+            {/* ZONA A: HEADER 20% */}
             <div
-              className="h-[22%] flex items-center justify-center px-2 transition-colors duration-500"
+              className="h-[20%] flex items-center justify-center px-2 transition-colors duration-500"
               style={{ backgroundColor: colorScheme.headerBg }}
             >
               <h2
                 className="text-white font-bold leading-none tracking-tighter text-center w-full"
                 style={{
                   fontFamily: 'var(--font-oswald)',
-                  // Ajuste visual aproximado para preview (Simula la lógica del PDF)
-                  fontSize: colorScheme.title.length > 6 ? '70px' : '90px'
+                  // Ajuste visual aproximado para preview
+                  fontSize: colorScheme.title.length > 6 ? '65px' : '90px'
                 }}
               >
                 {colorScheme.title}
               </h2>
             </div>
 
-            {/* ZONA B: CUERPO */}
-            <div className="flex-grow bg-white flex flex-col items-center justify-center relative">
-              {/* QR A SANGRE (60% width - Similar al PDF) */}
-              <div style={{ width: '60%' }}>
+            {/* ZONA B: BODY 65% */}
+            <div className="h-[65%] bg-white flex flex-col items-center justify-center relative">
+              {/* QR A SANGRE (80% width) */}
+              <div style={{ width: '80%' }}>
                 <QRCodeCanvas
                   value={`https://qvisos.cl/q/${codesList[0]}`}
-                  size={400} // Renderizado grande
+                  size={400}
                   style={{ width: '100%', height: 'auto' }}
                   level="H"
                   fgColor="#000000"
@@ -385,22 +385,16 @@ export default function ProductionStation() {
                   }}
                 />
               </div>
-              <p className="mt-6 text-black font-bold text-xl text-center uppercase tracking-tight" style={{ fontFamily: 'var(--font-oswald)' }}>
+              <p className="mt-2 text-black font-bold text-sm text-center uppercase tracking-tight" style={{ fontFamily: 'var(--font-oswald)' }}>
                 Escanea para ver precio
               </p>
             </div>
 
-            {/* ZONA C: PIE */}
-            <div className="h-[12%] bg-black flex items-center justify-between px-6">
-              <div className="flex items-center gap-2">
-                <span className="text-white font-bold text-3xl tracking-tighter" style={{ fontFamily: 'var(--font-oswald)' }}>QVisos</span>
-                <span className="text-cyan-400 font-bold text-3xl tracking-tighter" style={{ fontFamily: 'var(--font-oswald)' }}>.cl</span>
-              </div>
-              <div className="bg-white px-3 py-1 rounded-md min-w-[80px] text-center">
-                <span className="text-black font-bold text-xl leading-none" style={{ fontFamily: 'var(--font-oswald)' }}>
-                  {codesList[0]}
-                </span>
-              </div>
+            {/* ZONA C: FOOTER 15% */}
+            <div className="h-[15%] bg-black flex items-center justify-center px-4">
+              <span className="text-white font-bold text-2xl tracking-tighter text-center" style={{ fontFamily: 'var(--font-oswald)' }}>
+                QVisos.cl | {codesList[0]}
+              </span>
             </div>
 
           </div>

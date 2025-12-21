@@ -149,18 +149,31 @@ export async function createAd(formData: FormData) {
         // 2. Recolectar datos
         const title = formData.get('titulo') as string;
         const description = formData.get('descripcion') as string;
-        const price = formData.get('precio') ? parseFloat(formData.get('precio') as string) : 0;
+
+        // Price Safety: Handle NaN/Null
+        const priceStr = formData.get('precio') as string;
+        let price = priceStr ? parseFloat(priceStr) : 0;
+        if (isNaN(price)) price = 0; // Fallback seguro
+
         const category = formData.get('categoria') as string;
         const contact_phone = formData.get('contact_phone') as string;
         const qrCode = formData.get('qr_code') as string;
 
         // Features JSONB
         const featuresRaw = formData.get('features') as string;
-        let features = {};
+        let features: any = {};
         try {
             features = JSON.parse(featuresRaw || '{}');
+
+            // Map Safety: Ensure valid numbers
+            if (features.latitude) features.latitude = Number(features.latitude);
+            if (features.longitude) features.longitude = Number(features.longitude);
+            if (isNaN(features.latitude)) features.latitude = null;
+            if (isNaN(features.longitude)) features.longitude = null;
+
         } catch (e) {
             console.error("Error parsing features JSON", e);
+            features = {};
         }
 
         // 3. Manejar Imagen

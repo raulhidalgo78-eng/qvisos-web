@@ -321,7 +321,11 @@ export default function AnuncioForm({ initialData }: AnuncioFormProps) {
                             type="text"
                             required
                             defaultValue={initialData?.title}
-                            placeholder="Ej: Departamento en Las Condes / Mazda 3 2020"
+                            placeholder={
+                                category === 'autos' ? "Ej: Suzuki Swift 1.2 GLX 2021" :
+                                    category === 'inmuebles' ? "Ej: Depto 2D/2B con Estacionamiento en Ñuñoa" :
+                                        "Ej: Título breve de tu aviso"
+                            }
                             className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
                         />
                     </div>
@@ -354,14 +358,29 @@ export default function AnuncioForm({ initialData }: AnuncioFormProps) {
                 {!initialData && (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-blue-50 p-4 rounded-xl border border-blue-100">
                         <div>
-                            <label className="block text-xs font-bold text-blue-800 mb-1 uppercase tracking-wide">Código QR</label>
-                            <input
-                                name="qr_code"
-                                value={qrCodeInput}
-                                onChange={(e) => setQrCodeInput(e.target.value)}
-                                readOnly={!!urlCode} // Si viene de URL es read-only
-                                className={`w-full p-2 border rounded font-mono text-center font-bold ${urlCode ? 'bg-blue-100 text-blue-800 border-transparent' : 'bg-white border-blue-300'}`}
-                            />
+                            <label className="block text-xs font-bold text-blue-800 mb-2 uppercase tracking-wide">Stickers/Kits Vinculados</label>
+
+                            {/* VISUALIZACIÓN MULTI-QR (TAGS/CHIPS) */}
+                            <div className="flex flex-wrap gap-2 items-center p-3 bg-white border border-blue-200 rounded-md">
+                                {/* Código Actual */}
+                                {qrCodeInput ? (
+                                    <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800 border border-green-200">
+                                        <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"></path></svg>
+                                        {qrCodeInput}
+                                    </span>
+                                ) : (
+                                    <span className="text-sm text-gray-400 italic">Ningún código escaneado</span>
+                                )}
+                                <input type="hidden" name="qr_code" value={qrCodeInput} />
+
+                                {/* Botón Visual (Educativo) */}
+                                <button type="button" className="text-xs text-blue-600 hover:text-blue-800 hover:underline flex items-center ml-auto">
+                                    + Vincular otro sticker
+                                </button>
+                            </div>
+                            <p className="text-xs text-blue-600 mt-1">
+                                Tip: Si tienes el Pack x3, publica este aviso y luego escanea los otros stickers para agregarlos.
+                            </p>
                         </div>
                         <div>
                             <label className="block text-xs font-bold text-blue-800 mb-1 uppercase tracking-wide">Categoría</label>
@@ -413,6 +432,18 @@ export default function AnuncioForm({ initialData }: AnuncioFormProps) {
                                     <option value="automatica">Automática</option>
                                 </select>
                             </div>
+                        </div>
+                        {/* Nuevo Campo: Combustible */}
+                        <div>
+                            <label className="text-xs font-semibold text-gray-500">Combustible</label>
+                            <select name="combustible" defaultValue={def('combustible')} className="w-full p-2 border rounded">
+                                <option value="">Seleccione...</option>
+                                <option value="Bencina">Bencina</option>
+                                <option value="Diesel">Diesel</option>
+                                <option value="Hibrido">Híbrido</option>
+                                <option value="Electrico">Eléctrico</option>
+                                <option value="Gas">Gas (GLP/GNC)</option>
+                            </select>
                         </div>
                         {/* Checkboxes simplificados */}
                         <div className="flex flex-wrap gap-4 pt-2">

@@ -174,17 +174,24 @@ export default function ProductionStation() {
       pdf.setFillColor(r, g, b);
       pdf.rect(0, 0, width, headerH, "F");
 
-      // TÍTULO DINÁMICO
-      // Fórmula Usuario: size = (width / textLen) * 1.3
-      // Interpretación: Width en Puntos. 
-      // Si Width=30cm=850pt. Text="ARRIENDO"(8). (850/8)*1.3 = 138pt.
-      const textLen = colorScheme.title.length;
-      const fontSizePt = (widthPt / textLen) * 1.3;
-
+      // --- TÍTULO ELÁSTICO (Elastic Text) ---
       pdf.setTextColor(255, 255, 255);
-      pdf.setFontSize(fontSizePt);
+
+      // A. Definir ancho objetivo (85% del ancho de página)
+      const targetWidth = width * 0.85; // en CM, ya que doc está en CM
+
+      // B. Medir con un tamaño base arbitrario (ej: 100pt)
+      const baseFontSize = 100;
+      pdf.setFontSize(baseFontSize);
+      const textWidth = pdf.getTextWidth(colorScheme.title); // Retorna ancho en unit (CM)
+
+      // C. Calcular factor de escala y nuevo tamaño
+      const scaleFactor = targetWidth / textWidth;
+      const finalFontSize = baseFontSize * scaleFactor;
+
+      pdf.setFontSize(finalFontSize);
       // Centrado vertical óptimo: +10% del alto del header para compensar baseline
-      pdf.text(colorScheme.title, width / 2, headerH / 2 + (headerH * 0.1), { align: "center", baseline: "middle" });
+      pdf.text(colorScheme.title, width / 2, headerH / 2 + (headerH * 0.12), { align: "center", baseline: "middle" });
 
 
       // 2. BODY (65%) - QR MAXIMIZADO
@@ -193,9 +200,6 @@ export default function ProductionStation() {
       const qrX = (width - qrSize) / 2;
 
       // Centrado Vertical en el Body
-      // bodyY es donde empieza el body. bodyH es su altura.
-      // Centro del body = bodyY + bodyH/2.
-      // Top del QR = Centro - qrSize/2.
       const qrY = bodyY + (bodyH - qrSize) / 2;
 
       // Obtener imagen del canvas
@@ -208,9 +212,7 @@ export default function ProductionStation() {
         // O justo debajo del QR si el QR es muy grande
         pdf.setTextColor(0, 0, 0);
         pdf.setFontSize(widthPt * 0.05); // Texto pequeño relativo
-        // Lo ponemos justo entre el QR y el Footer si hay espacio, o sobre el borde inferior del QR si no
         const ctaY = qrY + qrSize + (height * 0.02);
-        // Solo dibujar si no se mete al footer
         if (ctaY < footerY) {
           pdf.text("Escanea para ver precio", width / 2, ctaY, { align: 'center', baseline: 'top' });
         }
@@ -225,13 +227,30 @@ export default function ProductionStation() {
       pdf.setFontSize(footerFontSizePt);
       pdf.setTextColor(255, 255, 255);
 
-      // Contenido: Logo + ID Centrados en el bloque negro
-      // Usamos un layout stack vertical o horizontal?
-      // "QVisos.cl + ID". Vamos a ponerlos en una línea separados o dos líneas.
-      // Dado el tamaño de fuente grande (8% ancho), mejor todo centrado.
-
       const footerCenterY = footerY + (footerH / 2);
       pdf.text(`QVisos.cl  |  ${currentCode}`, width / 2, footerCenterY, { align: 'center', baseline: 'middle' });
+
+      // 4. GUÍAS DE CORTE (Crop Marks)
+      // Dibujar líneas finas en las 4 esquinas
+      pdf.setDrawColor(200, 200, 200); // Gris claro
+      pdf.setLineWidth(0.01);
+      const mLen = 0.5; // 5mm de longitud
+
+      // Top-Left
+      pdf.line(0, 0, mLen, 0);
+      pdf.line(0, 0, 0, mLen);
+
+      // Top-Right
+      pdf.line(width, 0, width - mLen, 0);
+      pdf.line(width, 0, width, mLen);
+
+      // Bottom-Left
+      pdf.line(0, height, 0, height - mLen);
+      pdf.line(0, height, mLen, height);
+
+      // Bottom-Right
+      pdf.line(width, height, width - mLen, height);
+      pdf.line(width, height, width, height - mLen);
     }
 
     if (startNum !== null) setStartNum(startNum + quantity);
@@ -357,7 +376,7 @@ export default function ProductionStation() {
                 className="text-white font-bold leading-none tracking-tighter text-center w-full"
                 style={{
                   fontFamily: 'var(--font-oswald)',
-                  // Ajuste visual aproximado para preview
+                  // Ajuste visual aproximado para preview (Simulado)
                   fontSize: colorScheme.title.length > 6 ? '65px' : '90px'
                 }}
               >

@@ -1,61 +1,584 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { createClient } from '@/utils/supabase/client';
+import { useRouter, useSearchParams } from 'next/navigation';
+import React, { useState, useEffect, useCallback } from 'react';
+import type { User } from '@supabase/supabase-js';
+import RobustMapPicker from '@/components/RobustMapPicker';
+import { updateAd } from '@/app/actions/ad-actions';
 
-// DEFINICIÓN SEGURA: Función normal, NO async
-function AnuncioFormContent({ initialData }: { initialData?: any }) {
-    const searchParams = useSearchParams();
-    const code = searchParams.get('code');
-    const tipo = searchParams.get('tipo');
-
-    // Estado simple para probar que no crashea
-    const [status, setStatus] = useState('Esperando validación...');
-
-    useEffect(() => {
-        if (initialData) {
-            setStatus(`Modo Edición: Datos recibidos (${initialData.title || 'Sin título'})`);
-            return;
-        }
-
-        if (!code) {
-            setStatus('No se detectó ningún código.');
-            return;
-        }
-        // Simulamos la carga para verificar que el componente monta bien
-        setStatus(`Validando código: ${code} (Tipo: ${tipo || 'No definido'})...`);
-
-        // AQUÍ iría tu fetch real. Por ahora, solo probamos que NO explote.
-        const timer = setTimeout(() => {
-            setStatus('✅ Componente cargado correctamente. El error #310 se ha ido.');
-        }, 1000);
-
-        return () => clearTimeout(timer);
-    }, [code, tipo, initialData]);
-
-    return (
-        <div className="p-8 max-w-lg mx-auto bg-white shadow-lg rounded-xl border border-gray-200 mt-10">
-            <h2 className="text-xl font-bold text-gray-800 mb-4">Prueba de Diagnóstico</h2>
-            <div className="p-4 bg-blue-50 text-blue-800 rounded mb-4">
-                {status}
-            </div>
-            <div className="text-sm text-gray-500">
-                Si puedes leer esto, el "Loop de la Muerte" se ha roto.
-                <br />
-                <strong>Código recibido:</strong> {code || 'Ninguno'}
-                <br />
-                <strong>Datos iniciales:</strong> {initialData ? 'Sí' : 'No'}
-            </div>
-        </div>
-    );
+interface AnuncioFormProps {
+    initialData?: any;
 }
 
-// Exportación por defecto
-export default function AnuncioForm({ initialData }: { initialData?: any }) {
-    // Doble seguridad: Suspense aquí también por si acaso
+export default function AnuncioForm({ initialData }: AnuncioFormProps) {
+    const router = useRouter();
+    const searchParams = useSearchParams();
+
+    // --- ESTADOS CRÍTICOS (Loading/Error/Auth) ---
+    const [loading, setLoading] = useState(!initialData);
+    const [error, setError] = useState<string | null>(null);
+    const [user, setUser] = useState<User | null>(null);
+
+    // --- PARÁMETROS URL ---
+    const urlCode = searchParams.get('code');
+    const urlTipo = searchParams.get('tipo');
+
+    // --- ESTADOS DEL FORMULARIO ---
+    const [file, setFile] = useState<File | null>(null);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
+    // Inicialización de campos (con defaults seguros)
+    const [qrCodeInput, setQrCodeInput] = useState(initialData?.qr_code || urlCode || '');
+    const [category, setCategory] = useState(initialData?.category || '');
+    const [operacion, setOperacion] = useState(initialData?.features?.operacion || 'Venta');
+    const [moneda, setMoneda] = useState(initialData?.features?.moneda || 'CLP');
+    const [description, setDescription] = useState(initialData?.description || '');
+    const [extraNotes, setExtraNotes] = useState(initialData?.features?.extraNotes || '');
+    const [aiTone, setAiTone] = useState('random');
+    const [isGenerating, setIsGenerating] = useState(false);
+
+    // Ubicación
+    const [lat, setLat] = useState<number | null>(initialData?.features?.latitude ? parseFloat(initialData.features.latitude) : null);
+    const [lng, setLng] = useState<number | null>(initialData?.features?.longitude ? parseFloat(initialData.features.longitude) : null);
+
+    // Categoría detectada del QR
+    const [qrCategory, setQrCategory] = useState<string | null>(null);
+
+    // 1. EFECTO DE INICIALIZACIÓN (AUTH + PARAMS)
+    useEffect(() => {
+        if (initialData) {
+            setLoading(false);
+            return;
+        }
+
+        const init = async () => {
+            try {
+                // A) Verificar Auth
+                const supabase = createClient();
+                const { data: { user: currentUser }, error: authError } = await supabase.auth.getUser();
+
+                if (authError || !currentUser) {
+                    router.push('/login?message=Debes iniciar sesión para publicar');
+                    return;
+                }
+                setUser(currentUser);
+
+                // B) Parsear Tipo desde URL si existe
+                if (urlTipo) {
+                    if (urlTipo === 'auto') setCategory('autos');
+                    else if (urlTipo.includes('propiedad')) {
+                        setCategory('inmuebles');
+                        setOperacion(urlTipo.includes('arriendo') ? 'Arriendo' : 'Venta');
+                    } else {
+                        setCategory('otros');
+                    }
+                }
+            } catch (err) {
+                console.error("Error inicializando:", err);
+                setError("Ocurrió un error de conexión al cargar el formulario.");
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        init();
+    }, [initialData, urlTipo, router]);
+
+    // 2. EFECTO DE VALIDACIÓN QR (SEPARADO Y SEGURO)
+    useEffect(() => {
+        if (initialData) return;
+        if (!qrCodeInput || qrCodeInput.length < 3) return;
+
+        const validateQr = async () => {
+            try {
+                // Usamos import dinámico para la action
+                const { checkQrCategory } = await import('@/app/actions/check-qr');
+                const cat = await checkQrCategory(qrCodeInput);
+
+                if (cat) {
+                    setQrCategory(cat);
+                    // Autoseleccionar categoría si el QR está "hardcoded" a un tipo
+                    if (!category) { // Solo si el usuario no ha elegido ya
+                        if (cat === 'venta_auto') setCategory('autos');
+                        if (cat.includes('propiedad')) setCategory('inmuebles');
+                    }
+                }
+            } catch (err) {
+                console.error("Error background validando QR:", err);
+                // No bloqueamos la UI por esto, es progresivo
+            }
+        };
+
+        const t = setTimeout(validateQr, 600); // Debounce
+        return () => clearTimeout(t);
+    }, [qrCodeInput, initialData, category]);
+
+
+    // --- HANDLERS ---
+    const handleLocationSelect = useCallback((data: { lat: number; lng: number; address?: string }) => {
+        setLat(data.lat);
+        setLng(data.lng);
+    }, []);
+
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files[0]) {
+            setFile(e.target.files[0]);
+        }
+    };
+
+    const handleGenerateDescription = async () => {
+        const formElement = document.querySelector('form');
+        if (!formElement) return;
+
+        setIsGenerating(true);
+        const formData = new FormData(formElement);
+        const rawData = Object.fromEntries(formData.entries());
+
+        // Filtrar features limpios para la IA
+        const features = Object.entries(rawData).reduce((acc, [key, value]) => {
+            if (value && key !== 'description' && key !== 'extraNotes' && typeof value === 'string') {
+                acc[key] = value;
+            }
+            return acc;
+        }, {} as any);
+        features.moneda = moneda;
+
+        try {
+            const res = await fetch('/api/generate-description', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    category,
+                    features,
+                    extraNotes,
+                    aiTone
+                })
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Error generando descripción');
+            if (data.description) setDescription(data.description);
+        } catch (e: any) {
+            alert(e.message || "Error al conectar con la IA");
+        } finally {
+            setIsGenerating(false);
+        }
+    };
+
+    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+
+        if (!file && !initialData) {
+            alert('Debes subir una imagen principal.');
+            return;
+        }
+
+        setIsSubmitting(true);
+        setError(null);
+
+        try {
+            const formData = new FormData(e.currentTarget);
+            if (file) formData.set('file', file); // Asegurar que el file va con key 'file'
+
+            // Campos explícitos
+            formData.set('descripcion', description);
+            if (!formData.get('categoria')) formData.set('categoria', category);
+
+            // Recolectar JSON de features
+            const features: any = {};
+            // Autos
+            if (category === 'autos') {
+                ['marca', 'modelo', 'anio', 'kilometraje', 'transmision', 'combustible', 'carroceria'].forEach(k => {
+                    features[k] = formData.get(k);
+                });
+                features.unico_dueno = formData.get('unico_dueno') === 'on';
+                features.papeles_al_dia = formData.get('papeles_al_dia') === 'on';
+                features.sin_multas = formData.get('sin_multas') === 'on';
+                features.aire_acondicionado = formData.get('aire_acondicionado') === 'on';
+            }
+            // Inmuebles
+            if (category === 'inmuebles') {
+                ['operacion', 'tipo_propiedad', 'orientacion', 'm2_utiles', 'm2_totales', 'dormitorios', 'banos', 'estacionamientos', 'bodegas'].forEach(k => {
+                    features[k] = formData.get(k);
+                });
+                features.expenses = {
+                    gastos_comunes: formData.get('gastos_comunes'),
+                    contribuciones: formData.get('contribuciones')
+                };
+                features.attributes = {
+                    recepcion_final: formData.get('recepcion_final') === 'on',
+                    mascotas: formData.get('mascotas') === 'on',
+                    amoblado: formData.get('amoblado') === 'on'
+                };
+                features.amenities = {
+                    piscina: formData.get('piscina') === 'on',
+                    quincho: formData.get('quincho') === 'on',
+                    conserjeria: formData.get('conserjeria') === 'on'
+                };
+            }
+
+            // Globales
+            const contactPref = formData.get('contact_preference');
+            if (contactPref) features.contact_preference = contactPref;
+            if (lat) features.latitude = lat;
+            if (lng) features.longitude = lng;
+            features.moneda = moneda;
+
+            formData.set('features', JSON.stringify(features));
+
+            // Enviar
+            if (initialData) {
+                // UPDATE
+                formData.append('id', initialData.id);
+                await updateAd(formData);
+                alert('¡Actualizado correctamente!');
+            } else {
+                // CREATE
+                const res = await fetch('/api/upload/media', { method: 'POST', body: formData });
+                if (!res.ok) throw new Error((await res.json()).message || 'Error al crear');
+                alert('¡Aviso creado con éxito!');
+            }
+
+            router.push('/mis-anuncios');
+
+        } catch (err: any) {
+            console.error(err);
+            setError(err.message || 'Error al guardar el aviso.');
+            window.scrollTo(0, 0);
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    // --- RENDERS DE ESTADO (SAFE PATTERN) ---
+    if (loading) {
+        return (
+            <div className="flex flex-col items-center justify-center min-h-[400px]">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
+                <p className="text-gray-500 font-medium">Cargando editor seguro...</p>
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="max-w-md mx-auto mt-10 p-6 bg-red-50 border border-red-200 rounded-xl text-center">
+                <h3 className="text-red-800 font-bold mb-2">Error de Carga</h3>
+                <p className="text-red-600 mb-4">{error}</p>
+                <div className="flex gap-2 justify-center">
+                    <button onClick={() => window.location.reload()} className="px-4 py-2 bg-white border border-red-200 rounded shadow-sm hover:bg-gray-50 text-sm">
+                        Reintentar
+                    </button>
+                    <button onClick={() => router.push('/')} className="px-4 py-2 bg-red-600 text-white rounded shadow-sm hover:bg-red-700 text-sm">
+                        Ir al Inicio
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
+    const showAutoFields = category === 'autos';
+    const showPropertyFields = category === 'inmuebles';
+    const def = (key: string) => initialData?.features?.[key];
+
     return (
-        <Suspense fallback={<div className="p-10 text-center">Cargando formulario...</div>}>
-            <AnuncioFormContent initialData={initialData} />
-        </Suspense>
+        <div className="max-w-4xl mx-auto p-4 md:p-6 bg-white shadow-xl rounded-2xl mt-4 border border-gray-100">
+
+            {/* Header / Bienvenida */}
+            <div className="mb-6 border-b pb-4">
+                <h1 className="text-2xl font-bold text-gray-800">
+                    {initialData ? 'Editar Anuncio' : 'Publicar Nuevo Aviso'}
+                </h1>
+                <div className="text-gray-500 mt-1">
+                    {initialData
+                        ? 'Modifica los detalles de tu publicación.'
+                        : `Bienvenido, ${user?.email || 'Usuario'}. Completa la información.`
+                    }
+                </div>
+            </div>
+
+            {/* Success Banner si hay QR válido detectado */}
+            {qrCategory && !initialData && (
+                <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg flex items-center gap-3 animate-fade-in">
+                    <div className="h-8 w-8 bg-green-100 rounded-full flex items-center justify-center text-green-600 font-bold">✓</div>
+                    <div>
+                        <p className="font-bold text-green-800">Code: {qrCodeInput}</p>
+                        <p className="text-sm text-green-600">Categoría detectada: {qrCategory}</p>
+                    </div>
+                </div>
+            )}
+
+            <form onSubmit={handleSubmit} className="space-y-8">
+
+                {/* 1. SECCIÓN PRINCIPAL: TÍTULO Y PRECIO */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label className="block text-sm font-bold text-gray-700 mb-1">Título del Aviso</label>
+                        <input
+                            name="titulo"
+                            type="text"
+                            required
+                            defaultValue={initialData?.title}
+                            placeholder="Ej: Departamento en Las Condes / Mazda 3 2020"
+                            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                        />
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-bold text-gray-700 mb-1">Precio</label>
+                        <div className="flex gap-2">
+                            <select
+                                value={moneda}
+                                onChange={(e) => setMoneda(e.target.value)}
+                                className="p-3 border border-gray-300 rounded-lg bg-gray-50 font-medium"
+                            >
+                                <option value="CLP">CLP</option>
+                                <option value="UF">UF</option>
+                                <option value="USD">USD</option>
+                            </select>
+                            <input
+                                name="precio"
+                                type="number"
+                                required
+                                defaultValue={initialData?.price}
+                                placeholder="Ej: 9500000"
+                                className="flex-1 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                            />
+                        </div>
+                    </div>
+                </div>
+
+                {/* 2. QR y Categoría (Solo si no es edición o fix) */}
+                {!initialData && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-blue-50 p-4 rounded-xl border border-blue-100">
+                        <div>
+                            <label className="block text-xs font-bold text-blue-800 mb-1 uppercase tracking-wide">Código QR</label>
+                            <input
+                                name="qr_code"
+                                value={qrCodeInput}
+                                onChange={(e) => setQrCodeInput(e.target.value)}
+                                readOnly={!!urlCode} // Si viene de URL es read-only
+                                className={`w-full p-2 border rounded font-mono text-center font-bold ${urlCode ? 'bg-blue-100 text-blue-800 border-transparent' : 'bg-white border-blue-300'}`}
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-xs font-bold text-blue-800 mb-1 uppercase tracking-wide">Categoría</label>
+                            <select
+                                name="categoria"
+                                value={category}
+                                onChange={(e) => setCategory(e.target.value)}
+                                className="w-full p-2 border border-blue-300 rounded bg-white"
+                            >
+                                <option value="">-- Seleccionar --</option>
+                                <option value="autos">🚗 Autos / Vehículos</option>
+                                <option value="inmuebles">🏡 Propiedades</option>
+                                <option value="tecnologia">📱 Tecnología</option>
+                                <option value="otros">📦 Otros</option>
+                            </select>
+                        </div>
+                    </div>
+                )}
+                {/* Inputs ocultos para mantener consistencia en updates */}
+                {initialData && <input type="hidden" name="categoria" value={category} />}
+
+                {/* 3. CAMPOS ESPECÍFICOS: AUTOS */}
+                {showAutoFields && (
+                    <div className="bg-gray-50 p-5 rounded-xl border border-gray-200 space-y-4 animate-in fade-in slide-in-from-top-2">
+                        <h3 className="font-bold text-gray-800 flex items-center gap-2">🚗 Detalles del Vehículo</h3>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="text-xs font-semibold text-gray-500">Marca</label>
+                                <input name="marca" defaultValue={def('marca')} className="w-full p-2 border rounded" required />
+                            </div>
+                            <div>
+                                <label className="text-xs font-semibold text-gray-500">Modelo</label>
+                                <input name="modelo" defaultValue={def('modelo')} className="w-full p-2 border rounded" required />
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-3 gap-4">
+                            <div>
+                                <label className="text-xs font-semibold text-gray-500">Año</label>
+                                <input name="anio" type="number" defaultValue={def('anio')} className="w-full p-2 border rounded" required />
+                            </div>
+                            <div>
+                                <label className="text-xs font-semibold text-gray-500">Kms</label>
+                                <input name="kilometraje" type="number" defaultValue={def('kilometraje')} className="w-full p-2 border rounded" required />
+                            </div>
+                            <div>
+                                <label className="text-xs font-semibold text-gray-500">Transmisión</label>
+                                <select name="transmision" defaultValue={def('transmision')} className="w-full p-2 border rounded">
+                                    <option value="manual">Manual</option>
+                                    <option value="automatica">Automática</option>
+                                </select>
+                            </div>
+                        </div>
+                        {/* Checkboxes simplificados */}
+                        <div className="flex flex-wrap gap-4 pt-2">
+                            {['unico_dueno', 'papeles_al_dia', 'sin_multas', 'aire_acondicionado'].map(k => (
+                                <label key={k} className="flex items-center gap-2 text-sm bg-white px-3 py-2 rounded border cursor-pointer hover:bg-gray-50">
+                                    <input type="checkbox" name={k} defaultChecked={def(k)} className="rounded text-blue-600" />
+                                    <span className="capitalize">{k.replace(/_/g, ' ')}</span>
+                                </label>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {/* 4. CAMPOS ESPECÍFICOS: INMUEBLES */}
+                {showPropertyFields && (
+                    <div className="bg-gray-50 p-5 rounded-xl border border-gray-200 space-y-4 animate-in fade-in slide-in-from-top-2">
+                        <h3 className="font-bold text-gray-800 flex items-center gap-2">🏡 Detalles de Propiedad</h3>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="text-xs font-semibold text-gray-500">Operación</label>
+                                <select
+                                    name="operacion"
+                                    value={operacion}
+                                    onChange={(e) => setOperacion(e.target.value)}
+                                    className="w-full p-2 border rounded bg-white"
+                                >
+                                    <option value="Venta">Venta</option>
+                                    <option value="Arriendo">Arriendo</option>
+                                    <option value="Arriendo_Temporal">Temporal</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label className="text-xs font-semibold text-gray-500">Tipo</label>
+                                <select name="tipo_propiedad" defaultValue={def('type')} className="w-full p-2 border rounded bg-white">
+                                    <option value="Departamento">Depto</option>
+                                    <option value="Casa">Casa</option>
+                                    <option value="Parcela">Parcela</option>
+                                    <option value="Oficina">Oficina</option>
+                                    <option value="Terreno">Terreno</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                            <input name="m2_utiles" type="number" placeholder="M² Útiles" defaultValue={def('m2_built')} className="p-2 border rounded" />
+                            <input name="m2_totales" type="number" placeholder="M² Totales" defaultValue={def('m2_total')} className="p-2 border rounded" />
+                            <input name="dormitorios" type="number" placeholder="Dorms" defaultValue={def('bedrooms')} className="p-2 border rounded" />
+                            <input name="banos" type="number" placeholder="Baños" defaultValue={def('bathrooms')} className="p-2 border rounded" />
+                        </div>
+                    </div>
+                )}
+
+                {/* 5. UBICACIÓN (MAPA) */}
+                <div className="border rounded-xl p-1 overflow-hidden">
+                    <div className="bg-gray-50 px-4 py-2 border-b flex justify-between items-center">
+                        <h3 className="font-bold text-gray-700 text-sm">📍 Ubicación Exacta</h3>
+                        <span className="text-xs text-gray-500">(Google Maps)</span>
+                    </div>
+                    <div className="p-4">
+                        <RobustMapPicker
+                            initialLat={lat || undefined}
+                            initialLng={lng || undefined}
+                            initialAddress={initialData?.features?.address}
+                            onLocationSelect={handleLocationSelect}
+                        />
+                    </div>
+                </div>
+
+                {/* 6. DESCRIPCIÓN CON IA */}
+                <div className="bg-indigo-50 p-4 rounded-xl border border-indigo-100">
+                    <div className="flex justify-between items-center mb-2">
+                        <label className="font-bold text-indigo-900">Descripción</label>
+                        <span className="text-xs bg-white text-indigo-600 px-2 py-0.5 rounded border border-indigo-200">AI Powered ✨</span>
+                    </div>
+
+                    <textarea
+                        value={extraNotes}
+                        onChange={e => setExtraNotes(e.target.value)}
+                        placeholder="Escribe punteos clave para la IA (ej: 'Vista al mar, cerca metro, remodelado')..."
+                        className="w-full p-3 border border-indigo-200 rounded-lg mb-2 text-sm focus:ring-2 focus:ring-indigo-400 outline-none"
+                        rows={2}
+                    />
+
+                    <div className="flex gap-2 mb-3">
+                        <select
+                            value={aiTone}
+                            onChange={e => setAiTone(e.target.value)}
+                            className="bg-white border border-indigo-200 text-sm p-2 rounded w-1/3"
+                        >
+                            <option value="random">🎲 Creativo</option>
+                            <option value="ejecutivo">👔 Formal</option>
+                            <option value="vendedor">🔥 Vendedor</option>
+                        </select>
+                        <button
+                            type="button"
+                            onClick={handleGenerateDescription}
+                            disabled={isGenerating}
+                            className="flex-1 bg-indigo-600 text-white font-bold py-2 rounded hover:bg-indigo-700 transition flex justify-center items-center gap-2"
+                        >
+                            {isGenerating ? (
+                                <span className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></span>
+                            ) : '✨ Generar Descripción'}
+                        </button>
+                    </div>
+
+                    <textarea
+                        name="descripcion"
+                        value={description}
+                        onChange={e => setDescription(e.target.value)}
+                        className="w-full p-3 border border-gray-300 rounded-lg h-32 focus:ring-2 focus:ring-indigo-500 outline-none"
+                        placeholder="Aquí aparecerá el texto generado o puedes escribirlo tú..."
+                    ></textarea>
+                </div>
+
+                {/* 7. PREFERENCIAS DE CONTACTO */}
+                <div className="space-y-3">
+                    <label className="block text-sm font-bold text-gray-700">WhatsApp de Contacto</label>
+                    <input
+                        name="contact_phone"
+                        type="tel"
+                        required
+                        defaultValue={initialData?.contact_phone || user?.user_metadata?.phone || ''}
+                        placeholder="+569..."
+                        className="w-full p-3 border rounded-lg"
+                    />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <label className="border p-3 rounded-lg flex items-center gap-3 cursor-pointer hover:bg-gray-50 bg-white">
+                            <input type="radio" name="contact_preference" value="whatsapp_directo" defaultChecked={def('contact_preference') !== 'agente_ia'} className="h-5 w-5 text-blue-600" />
+                            <div>
+                                <span className="block font-bold text-gray-800">WhatsApp Directo</span>
+                                <span className="text-xs text-gray-500">Los interesados te escriben a ti.</span>
+                            </div>
+                        </label>
+                        <label className="border p-3 rounded-lg flex items-center gap-3 cursor-pointer hover:bg-gray-50 bg-blue-50 border-blue-200">
+                            <input type="radio" name="contact_preference" value="agente_ia" defaultChecked={def('contact_preference') === 'agente_ia'} className="h-5 w-5 text-blue-600" />
+                            <div>
+                                <span className="block font-bold text-blue-900">Agente IA (Filtro) ✨</span>
+                                <span className="text-xs text-blue-700">La IA responde dudas y filtra reales interesados.</span>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                {/* 8. IMAGEN */}
+                <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-2">Foto Principal</label>
+                    {initialData?.media_url && (
+                        <img src={initialData.media_url} className="w-32 h-32 object-cover rounded mb-2 border" alt="preview" />
+                    )}
+                    <input
+                        type="file"
+                        name="file"
+                        accept="image/*"
+                        onChange={handleFileChange}
+                        required={!initialData}
+                        className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                    />
+                </div>
+
+                {/* BOTÓN FINAL */}
+                <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className={`w-full py-4 rounded-xl text-white font-bold text-lg shadow-lg hover:shadow-xl transition-all transform ${isSubmitting ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-600 hover:scale-[1.01] hover:bg-blue-700'}`}
+                >
+                    {isSubmitting ? 'Guardando...' : (initialData ? 'Guardar Cambios' : 'Publicar Aviso')}
+                </button>
+
+            </form>
+        </div>
     );
 }

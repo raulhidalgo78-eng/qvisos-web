@@ -299,9 +299,9 @@ export default function AnuncioForm({ initialData }: AnuncioFormProps) {
         // ... (rest of the component)
         <div style={{ maxWidth: '600px', margin: 'auto', padding: '20px' }}>
             <h1>{initialData ? 'Editar Anuncio' : 'Activar QR / Crear Anuncio'}</h1>
-            <p style={{ marginBottom: '20px' }}>
-                {initialData ? 'Edita los detalles de tu anuncio.' : `Bienvenido, ${user?.email}. Completa los datos.`}
-            </p>
+            <div style={{ marginBottom: '20px' }}>
+                {initialData ? 'Edita los detalles de tu anuncio.' : `Bienvenido, ${user?.email || ''}. Completa los datos.`}
+            </div>
 
             <form onSubmit={handleSubmit} className="space-y-8">
 

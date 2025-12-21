@@ -57,11 +57,12 @@ export default function MyAdCard({ ad }: { ad: Ad }) {
             {/* Center: Info */}
             <div className="flex-1 p-4 flex flex-col justify-center">
                 <div className="flex items-center gap-2 mb-1">
-                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide ${ad.status === 'verified' || ad.status === 'aprobado' ? 'bg-green-100 text-green-700' :
-                        ad.status === 'pending_verification' ? 'bg-yellow-100 text-yellow-700' :
+                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide ${ad.status === 'active' || ad.status === 'verified' ? 'bg-green-100 text-green-700' :
+                        ad.status === 'pending' || ad.status === 'pending_verification' ? 'bg-yellow-100 text-yellow-700' :
                             'bg-gray-100 text-gray-600'
                         }`}>
-                        {ad.status === 'pending_verification' ? 'Pendiente' : ad.status}
+                        {ad.status === 'pending' || ad.status === 'pending_verification' ? 'Pendiente de Aprobación' :
+                            ad.status === 'active' || ad.status === 'verified' ? 'Activo' : ad.status}
                     </span>
                 </div>
 

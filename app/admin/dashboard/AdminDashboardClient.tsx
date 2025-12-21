@@ -23,8 +23,8 @@ export default function AdminDashboardClient({ ads }: AdminDashboardClientProps)
     const [activeTab, setActiveTab] = useState<'pending' | 'active'>('pending');
     const [isPending, startTransition] = useTransition();
 
-    const pendingAds = ads.filter(ad => ad.status === 'pending_verification');
-    const activeAds = ads.filter(ad => ['verified', 'paused'].includes(ad.status));
+    const pendingAds = ads.filter(ad => ad.status === 'pending');
+    const activeAds = ads.filter(ad => ['active', 'paused'].includes(ad.status));
 
     const handleAction = (action: () => Promise<any>, confirmMsg?: string) => {
         if (confirmMsg && !confirm(confirmMsg)) return;
@@ -57,11 +57,11 @@ export default function AdminDashboardClient({ ads }: AdminDashboardClientProps)
                         <span className="text-sm">Sin imagen</span>
                     </div>
                 )}
-                <div className={`absolute top-2 right-2 px-2 py-1 rounded text-xs font-bold uppercase ${ad.status === 'verified' ? 'bg-green-100 text-green-800' :
-                        ad.status === 'paused' ? 'bg-yellow-100 text-yellow-800' :
-                            'bg-blue-100 text-blue-800'
+                <div className={`absolute top-2 right-2 px-2 py-1 rounded text-xs font-bold uppercase ${ad.status === 'active' ? 'bg-green-100 text-green-800' :
+                    ad.status === 'paused' ? 'bg-yellow-100 text-yellow-800' :
+                        'bg-blue-100 text-blue-800'
                     }`}>
-                    {ad.status === 'pending_verification' ? 'Pendiente' : ad.status}
+                    {ad.status === 'pending' ? 'Por Aprobar' : ad.status}
                 </div>
             </div>
 
@@ -86,8 +86,8 @@ export default function AdminDashboardClient({ ads }: AdminDashboardClientProps)
                                 onClick={() => handleAction(() => toggleAdStatus(ad.id, ad.status))}
                                 disabled={isPending}
                                 className={`flex items-center justify-center gap-1 py-2 px-2 rounded-md transition-colors text-sm font-medium ${ad.status === 'paused'
-                                        ? 'bg-blue-100 text-blue-700 hover:bg-blue-200'
-                                        : 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200'
+                                    ? 'bg-blue-100 text-blue-700 hover:bg-blue-200'
+                                    : 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200'
                                     }`}
                             >
                                 {ad.status === 'paused' ? <PlayCircle size={16} /> : <PauseCircle size={16} />}
@@ -125,8 +125,8 @@ export default function AdminDashboardClient({ ads }: AdminDashboardClientProps)
                 <button
                     onClick={() => setActiveTab('pending')}
                     className={`pb-4 px-6 text-sm font-medium transition-colors relative ${activeTab === 'pending'
-                            ? 'text-blue-600 border-b-2 border-blue-600'
-                            : 'text-gray-500 hover:text-gray-700'
+                        ? 'text-blue-600 border-b-2 border-blue-600'
+                        : 'text-gray-500 hover:text-gray-700'
                         }`}
                 >
                     Por Aprobar
@@ -137,8 +137,8 @@ export default function AdminDashboardClient({ ads }: AdminDashboardClientProps)
                 <button
                     onClick={() => setActiveTab('active')}
                     className={`pb-4 px-6 text-sm font-medium transition-colors relative ${activeTab === 'active'
-                            ? 'text-blue-600 border-b-2 border-blue-600'
-                            : 'text-gray-500 hover:text-gray-700'
+                        ? 'text-blue-600 border-b-2 border-blue-600'
+                        : 'text-gray-500 hover:text-gray-700'
                         }`}
                 >
                     Inventario Activo

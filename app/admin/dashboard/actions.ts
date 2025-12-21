@@ -22,7 +22,7 @@ export async function approveAd(adId: string) {
     const supabase = await checkAdmin();
     const { error } = await supabase
       .from('ads')
-      .update({ status: 'verified' }) // Changed to 'verified'
+      .update({ status: 'active' }) // Changed to 'active'
       .eq('id', adId);
 
     if (error) throw error;
@@ -36,7 +36,7 @@ export async function approveAd(adId: string) {
 export async function toggleAdStatus(adId: string, currentStatus: string) {
   try {
     const supabase = await checkAdmin();
-    const newStatus = currentStatus === 'verified' ? 'paused' : 'verified';
+    const newStatus = currentStatus === 'active' ? 'paused' : 'active';
 
     const { error } = await supabase
       .from('ads')

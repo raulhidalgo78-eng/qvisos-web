@@ -198,7 +198,7 @@ export async function createAd(formData: FormData) {
                 contact_phone,
                 features, // <--- JSONB
                 media_url: mediaUrl,
-                status: 'published'
+                status: 'pending' // Moderación
             })
             .select('id')
             .single();

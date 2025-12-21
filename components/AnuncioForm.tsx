@@ -238,7 +238,7 @@ export default function AnuncioForm({ initialData }: AnuncioFormProps) {
                 // CREATE (Nueva lógica Many-to-One)
                 const { createAd } = await import('@/app/actions/ad-actions');
                 await createAd(formData); // Vincula QR internamente
-                alert('¡Aviso creado y vinculado con éxito!');
+                alert('¡Aviso enviado! Lo revisaremos brevemente.');
             }
 
             router.push('/mis-anuncios');

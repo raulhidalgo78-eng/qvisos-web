@@ -99,9 +99,16 @@ export default function AnuncioForm({ initialData }: AnuncioFormProps) {
                 if (cat) {
                     setQrCategory(cat);
                     // Autoseleccionar categoría si el QR está "hardcoded" a un tipo
+                    // Autoseleccionar categoría si el QR está "hardcoded" a un tipo
                     if (!category) { // Solo si el usuario no ha elegido ya
-                        if (cat === 'venta_auto') setCategory('autos');
-                        if (cat.includes('propiedad')) setCategory('inmuebles');
+                        if (cat === 'venta_auto') {
+                            setCategory('autos');
+                        } else if (cat.includes('propiedad')) {
+                            setCategory('inmuebles');
+                        } else {
+                            // Si detectamos categoría pero no es una de las principales, sugerimos 'otros'
+                            setCategory('otros');
+                        }
                     }
                 }
             } catch (err) {

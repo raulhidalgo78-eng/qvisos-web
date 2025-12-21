@@ -43,48 +43,59 @@ export default function AnuncioForm({ initialData }: AnuncioFormProps) {
     // Estado para detectar la categoría real del QR
     const [qrCategory, setQrCategory] = useState<string | null>(null);
 
-    // Auth Check (Solo si no es edición, o para verificar usuario actual)
+    // Auth Check & Initialization (CRITICAL)
     useEffect(() => {
-        const checkUser = async () => {
-            const supabase = createClient();
-            const { data, error } = await supabase.auth.getUser();
+        // Si hay datos iniciales, no hacemos login check (asumimos validado por server/parent)
+        if (initialData) {
+            setLoading(false);
+            return;
+        }
 
-            if (error || !data?.user) {
-                router.push('/login?message=Debes iniciar sesión');
-            } else {
-                setUser(data.user);
+        const initForm = async () => {
+            setLoading(true);
+            setError(null);
+            try {
+                // 1. Auth Check
+                const supabase = createClient();
+                const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+                if (authError || !user) {
+                    // Redirigir es seguro, pero para ser defensivos, podemos pedir login
+                    router.push('/login?message=Debes iniciar sesión');
+                    return; // El componente se desmontará
+                }
+                setUser(user);
+
+                // 2. Parsers de URL iniciales
+                if (urlTipo === 'auto') setCategory('autos');
+                else if (urlTipo.includes('propiedad')) {
+                    setCategory('inmuebles');
+                    if (urlTipo.includes('arriendo')) setOperacion('Arriendo');
+                    else setOperacion('Venta');
+                }
+                else if (urlTipo) setCategory('otros');
+
+                // 3. Simulación de carga de recursos críticos si fuera necesario
+                // await new Promise(r => setTimeout(r, 500)); 
+
+            } catch (err: any) {
+                console.error("Error crítico de inicialización:", err);
+                setError("No pudimos cargar el formulario. Revisa tu conexión a internet.");
+            } finally {
                 setLoading(false);
             }
         };
-        if (!initialData) {
-            checkUser();
-        } else {
-            // Si hay initialData, asumimos que el parent ya verificó auth, pero necesitamos el user para el saludo
-            checkUser();
-        }
-    }, [router, initialData]);
 
-    // Inicializar categoría desde URL (Solo creación)
+        initForm();
+    }, [router, initialData, urlTipo]);
+
+    // Check QR (Solo creación) - Independiente, no bloquea la carga principal pero es robusto
     useEffect(() => {
         if (initialData) return;
-        if (urlTipo === 'auto') setCategory('autos');
-        else if (urlTipo.includes('propiedad')) {
-            setCategory('inmuebles');
-            if (urlTipo.includes('arriendo')) setOperacion('Arriendo');
-            else setOperacion('Venta');
-        }
-        else if (urlTipo) setCategory('otros');
-    }, [urlTipo, initialData]);
-
-    // Check QR (Solo creación)
-    // Check QR (Solo creación)
-    useEffect(() => {
-        if (initialData) return; // No chequear QR en edición
         if (!qrCodeInput || qrCodeInput.length < 4) return;
 
         const checkQr = async () => {
             try {
-                // Importación dinámica segura
                 const { checkQrCategory } = await import('@/app/actions/check-qr');
                 const cat = await checkQrCategory(qrCodeInput);
 
@@ -96,10 +107,8 @@ export default function AnuncioForm({ initialData }: AnuncioFormProps) {
                     setQrCategory(null);
                 }
             } catch (err) {
-                console.error("Error validando QR:", err);
-                // No bloqueamos la UI con un error fatal, pero podríamos mostrar un toast o mensaje pequeño
-                // Para este caso, solo logueamos para no interrumpir el flujo si es un error transitorio de red
-                // Opcionalmente: setError('No se pudo verificar el código QR. Revisa tu conexión.');
+                console.error("Error validando QR (background):", err);
+                // No seteamos error global para no bloquear la UI por algo secundario
             }
         };
 
@@ -107,6 +116,26 @@ export default function AnuncioForm({ initialData }: AnuncioFormProps) {
         return () => clearTimeout(timeoutId);
     }, [qrCodeInput, initialData]);
 
+    // --- RENDERIZADO DEFENSIVO ---
+    if (loading) return (
+        <div className="flex flex-col items-center justify-center min-h-[50vh] p-8">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
+            <p className="text-gray-500">Cargando formulario...</p>
+        </div>
+    );
+
+    if (error) return (
+        <div className="p-6 m-4 max-w-lg mx-auto bg-red-50 border border-red-200 rounded-lg text-red-700 text-center shadow-sm">
+            <h3 className="font-bold text-lg mb-2">¡Ups! Ocurrió un error</h3>
+            <p className="mb-4">{error}</p>
+            <button
+                onClick={() => window.location.reload()}
+                className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
+            >
+                Intentar de nuevo
+            </button>
+        </div>
+    );
 
     const handleGenerateDescription = async () => {
         const formElement = document.querySelector('form');

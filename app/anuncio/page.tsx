@@ -1,19 +1,8 @@
 // Archivo: app/anuncio/page.tsx
-'use client';
+import React from 'react';
+import AnuncioClientWrapper from '@/components/AnuncioClientWrapper';
 
-import React, { Suspense } from 'react';
-import dynamic from 'next/dynamic';
-
-// Dynamic import with NO SSR to handle client-side logic (UseSearchParams, Maps) safely
-const AnuncioForm = dynamic(() => import('@/components/AnuncioForm'), {
-  ssr: false,
-  loading: () => <div className="flex h-screen items-center justify-center text-blue-600">Cargando formulario...</div>
-});
-
+// This is a SERVER COMPONENT. It renders the client wrapper.
 export default function CreateAdPage() {
-  return (
-    <Suspense fallback={<div className="flex h-screen items-center justify-center text-blue-600">Cargando...</div>}>
-      <AnuncioForm />
-    </Suspense>
-  );
+  return <AnuncioClientWrapper />;
 }

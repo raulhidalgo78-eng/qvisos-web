@@ -4,7 +4,7 @@ import React, { Suspense } from 'react';
 import dynamic from 'next/dynamic';
 
 // Dynamic import with ssr: false to prevent Server Side Rendering of the Form
-const AnuncioForm = dynamic(() => import('./AnuncioForm'), {
+const AnuncioForm = dynamic(() => import('@/components/AnuncioForm'), {
     ssr: false,
     loading: () => (
         <div className="flex flex-col h-screen items-center justify-center text-blue-600">

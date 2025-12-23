@@ -16,9 +16,16 @@ export default function AnuncioForm({ initialData }: AnuncioFormProps) {
     const searchParams = useSearchParams();
 
     // --- ESTADOS CRÍTICOS (Loading/Error/Auth) ---
+    const [isMounted, setIsMounted] = useState(false);
     const [loading, setLoading] = useState(!initialData);
     const [error, setError] = useState<string | null>(null);
     const [user, setUser] = useState<User | null>(null);
+
+    useEffect(() => {
+        setIsMounted(true);
+    }, []);
+
+    if (!isMounted) return null;
 
     // --- PARÁMETROS URL ---
     const urlCode = searchParams.get('code');

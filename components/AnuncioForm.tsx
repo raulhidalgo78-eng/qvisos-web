@@ -26,7 +26,7 @@ export default function AnuncioForm({ initialData }: AnuncioFormProps) {
         setIsMounted(true);
     }, []);
 
-    if (!isMounted) return null;
+
 
     // --- PARÁMETROS URL ---
     const urlCode = searchParams.get('code');
@@ -127,6 +127,9 @@ export default function AnuncioForm({ initialData }: AnuncioFormProps) {
         const t = setTimeout(validateQr, 600); // Debounce
         return () => clearTimeout(t);
     }, [qrCodeInput, initialData, category]);
+
+    // PROTECCIÓN DE HIDRATACIÓN (AL FINAL DE LOS HOOKS)
+    if (!isMounted) return null;
 
 
     // --- HANDLERS ---

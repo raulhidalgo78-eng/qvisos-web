@@ -6,7 +6,6 @@ import React, { useState, useEffect, useCallback } from 'react';
 import type { User } from '@supabase/supabase-js';
 import RobustMapPicker from '@/components/RobustMapPicker';
 import { updateAd, createAd } from '@/app/actions/ad-actions';
-import { checkQrCategory } from '@/app/actions/check-qr';
 
 interface AnuncioFormProps {
     initialData?: any;
@@ -93,34 +92,39 @@ export default function AnuncioForm({ initialData }: AnuncioFormProps) {
         init();
     }, [initialData, urlTipo, router]);
 
-    // 2. EFECTO DE VALIDACIÓN QR (SEPARADO Y SEGURO)
+    // 2. EFECTO DE VALIDACIÓN QR (VIA API ROUTE)
     useEffect(() => {
         if (initialData) return;
         if (!qrCodeInput || qrCodeInput.length < 3) return;
 
         const validateQr = async () => {
             try {
-                // Validar usando la acción importada estáticamente
-                const cat = await checkQrCategory(qrCodeInput);
+                const res = await fetch('/api/qr/check', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ code: qrCodeInput })
+                });
 
-                if (cat) {
-                    setQrCategory(cat);
-                    // Autoseleccionar categoría si el QR está "hardcoded" a un tipo
-                    // Autoseleccionar categoría si el QR está "hardcoded" a un tipo
-                    if (!category) { // Solo si el usuario no ha elegido ya
-                        if (cat === 'venta_auto') {
-                            setCategory('autos');
-                        } else if (cat.includes('propiedad')) {
-                            setCategory('inmuebles');
-                        } else {
-                            // Si detectamos categoría pero no es una de las principales, sugerimos 'otros'
-                            setCategory('otros');
+                if (res.ok) {
+                    const data = await res.json();
+                    const cat = data.category;
+
+                    if (cat) {
+                        setQrCategory(cat);
+                        // Autoseleccionar categoría si el QR está "hardcoded" a un tipo
+                        if (!category) {
+                            if (cat === 'venta_auto') {
+                                setCategory('autos');
+                            } else if (cat.includes('propiedad')) {
+                                setCategory('inmuebles');
+                            } else {
+                                setCategory('otros');
+                            }
                         }
                     }
                 }
             } catch (err) {
                 console.error("Error background validando QR:", err);
-                // No bloqueamos la UI por esto, es progresivo
             }
         };
 

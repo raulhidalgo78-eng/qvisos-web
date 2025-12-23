@@ -4,22 +4,20 @@ import { createClient } from '@/utils/supabase/client';
 import { useRouter, useSearchParams } from 'next/navigation';
 import React, { useState, useEffect, useCallback } from 'react';
 import type { User } from '@supabase/supabase-js';
-import { updateAd, createAd } from '@/app/actions/ad-actions';
-import { checkQrCategory } from '@/app/actions/check-qr';
-
-// --- CORRECCIÓN AQUÍ: IMPORTACIÓN DINÁMICA DEL MAPA ---
-// Esto arregla el Error 500 y el conflicto con el servidor.
 import dynamic from 'next/dynamic';
 
+// --- OPTIMIZATION: DYNAMIC IMPORT FOR MAP (User Contribution) ---
+// Prevents SSR issues and reduces initial bundle size.
 const RobustMapPicker = dynamic(() => import('@/components/RobustMapPicker'), {
     ssr: false,
     loading: () => (
-        <div className="h-64 bg-gray-100 rounded-lg flex items-center justify-center animate-pulse">
+        <div className="h-64 bg-gray-100 rounded-lg flex items-center justify-center animate-pulse border">
             <span className="text-gray-500 font-medium">Cargando mapa interactivo...</span>
         </div>
     )
 });
-// -----------------------------------------------------
+
+import { updateAd, createAd } from '@/app/actions/ad-actions';
 
 interface AnuncioFormProps {
     initialData?: any;
@@ -104,26 +102,35 @@ export default function AnuncioForm({ initialData }: AnuncioFormProps) {
         init();
     }, [initialData, urlTipo, router]);
 
-    // 2. EFECTO DE VALIDACIÓN QR (SEPARADO Y SEGURO)
+    // 2. EFECTO DE VALIDACIÓN QR (VIA API ROUTE - ROBUST FIX)
     useEffect(() => {
         if (initialData) return;
         if (!qrCodeInput || qrCodeInput.length < 3) return;
 
         const validateQr = async () => {
             try {
-                // Validar usando la acción importada estáticamente
-                const cat = await checkQrCategory(qrCodeInput);
+                // Usamos fetch a la nueva API Route para evitar errores de Server Action en render
+                const res = await fetch('/api/qr/check', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ code: qrCodeInput })
+                });
 
-                if (cat) {
-                    setQrCategory(cat);
-                    // Autoseleccionar categoría si el QR está "hardcoded" a un tipo
-                    if (!category) {
-                        if (cat === 'venta_auto') {
-                            setCategory('autos');
-                        } else if (cat.includes('propiedad')) {
-                            setCategory('inmuebles');
-                        } else {
-                            setCategory('otros');
+                if (res.ok) {
+                    const data = await res.json();
+                    const cat = data.category;
+
+                    if (cat) {
+                        setQrCategory(cat);
+                        // Autoseleccionar categoría si el QR está "hardcoded" a un tipo
+                        if (!category) {
+                            if (cat === 'venta_auto') {
+                                setCategory('autos');
+                            } else if (cat.includes('propiedad')) {
+                                setCategory('inmuebles');
+                            } else {
+                                setCategory('otros');
+                            }
                         }
                     }
                 }

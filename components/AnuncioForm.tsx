@@ -5,7 +5,8 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import React, { useState, useEffect, useCallback } from 'react';
 import type { User } from '@supabase/supabase-js';
 import RobustMapPicker from '@/components/RobustMapPicker';
-import { updateAd } from '@/app/actions/ad-actions';
+import { updateAd, createAd } from '@/app/actions/ad-actions';
+import { checkQrCategory } from '@/app/actions/check-qr';
 
 interface AnuncioFormProps {
     initialData?: any;
@@ -99,8 +100,7 @@ export default function AnuncioForm({ initialData }: AnuncioFormProps) {
 
         const validateQr = async () => {
             try {
-                // Usamos import dinámico para la action
-                const { checkQrCategory } = await import('@/app/actions/check-qr');
+                // Validar usando la acción importada estáticamente
                 const cat = await checkQrCategory(qrCodeInput);
 
                 if (cat) {
@@ -250,7 +250,7 @@ export default function AnuncioForm({ initialData }: AnuncioFormProps) {
                 alert('¡Actualizado correctamente!');
             } else {
                 // CREATE (Nueva lógica Many-to-One)
-                const { createAd } = await import('@/app/actions/ad-actions');
+                // CREATE (Nueva lógica Many-to-One)
                 await createAd(formData); // Vincula QR internamente
                 alert('¡Aviso enviado! Lo revisaremos brevemente.');
             }

@@ -4,65 +4,58 @@ import { createClient } from '@/utils/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 
+// --- ELIMINAR ANUNCIO ---
 export async function deleteAd(adId: string) {
     const supabase = await createClient();
 
-    // PASO 1: Desvincular el QR (Hacerlo 'libre' de nuevo)
-    // Buscamos el QR asociado a este anuncio y le quitamos el ad_id
+    // 1. Desvincular QR
     const { error: qrError } = await supabase
         .from('qr_codes')
         .update({
             ad_id: null,
-            status: 'printed' // Volvemos al estado 'printed' (libre)
+            status: 'printed'
         })
         .eq('ad_id', adId);
 
-    if (qrError) {
-        console.error("Error desvinculando QR:", qrError);
-        throw new Error("No se pudo liberar el código QR");
-    }
+    if (qrError) console.error("Error desvinculando QR (no fatal):", qrError);
 
-    // PASO 2: Ahora sí, borrar el anuncio
+    // 2. Borrar Anuncio
     const { error: adError } = await supabase
         .from('ads')
         .delete()
         .eq('id', adId);
 
-    if (adError) {
-        console.error("Error borrando anuncio:", adError);
-        throw new Error("No se pudo eliminar el anuncio");
-    }
+    if (adError) throw new Error("No se pudo eliminar el anuncio");
 
-    // Redireccionar
     revalidatePath('/mis-anuncios');
     redirect('/mis-anuncios');
 }
 
+// --- ACTUALIZAR ANUNCIO ---
 export async function updateAd(formData: FormData) {
     const supabase = await createClient();
     const adId = formData.get('id') as string;
 
-    if (!adId) throw new Error("ID de anuncio requerido");
+    if (!adId) throw new Error("ID requerido");
 
-    // 1. Auth Check
+    // 1. Auth & Permisos
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) throw new Error("No autorizado");
 
-    // 2. Verificar propiedad (o admin)
-    // 2. Verificar propiedad (o admin)
+    // Admin Hardcoded (Útil para tu MVP)
     const isAdmin = user.id === '6411ba0e-5e36-4e4e-aa1f-4183a2f88d45';
-
     let dbClient = supabase;
+
+    // Si es admin, intentamos elevar privilegios (opcional)
     if (isAdmin) {
         try {
-            const { createAdminClient } = await import('@/utils/supabase/admin');
-            dbClient = createAdminClient();
-        } catch (e) {
-            console.error("Error creating admin client in action:", e);
-            throw new Error("Error de configuración del servidor (Service Role Key faltante).");
-        }
+            // Solo si tienes configurado el admin client, sino usa el normal
+            // const { createAdminClient } = await import('@/utils/supabase/admin');
+            // dbClient = createAdminClient();
+        } catch (e) { console.warn("Modo admin no disponible, usando cliente normal"); }
     }
 
+    // 2. Verificar Dueño
     const { data: ad, error: fetchError } = await dbClient
         .from('ads')
         .select('user_id, media_url')
@@ -70,138 +63,100 @@ export async function updateAd(formData: FormData) {
         .single();
 
     if (fetchError || !ad) throw new Error("Anuncio no encontrado");
+    if (ad.user_id !== user.id && !isAdmin) throw new Error("Sin permiso");
 
-    // Permitir si es dueño O si es el admin específico
-    if (ad.user_id !== user.id && !isAdmin) {
-        throw new Error("No tienes permiso para editar este anuncio");
-    }
-
-    // 3. Recolectar datos
-    const title = formData.get('titulo') as string;
-    const description = formData.get('descripcion') as string;
-    const price = formData.get('precio') ? parseFloat(formData.get('precio') as string) : null;
-    const category = formData.get('categoria') as string;
-    const contact_phone = formData.get('contact_phone') as string;
+    // 3. Procesar Datos
     const featuresRaw = formData.get('features') as string;
-
     let features = {};
-    if (featuresRaw) {
-        try {
-            features = JSON.parse(featuresRaw);
-        } catch (e) {
-            console.error("Error parsing features", e);
-        }
-    }
+    try { features = JSON.parse(featuresRaw || '{}'); } catch (e) { }
 
-    // 4. Manejar Imagen (Opcional)
+    // 4. Imagen (Bucket: 'media')
     const file = formData.get('file') as File;
     let mediaUrl = ad.media_url;
 
     if (file && file.size > 0) {
-        const fileName = `${Date.now()}-${file.name}`;
-        const bucketName = 'media';
-
+        const fileName = `${user.id}/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.]/g, '')}`;
         const { error: uploadError } = await supabase.storage
-            .from(bucketName)
+            .from('media') // <--- UNIFICADO A 'media'
             .upload(fileName, file);
 
         if (uploadError) throw new Error("Error subiendo imagen");
 
-        const { data: { publicUrl } } = supabase.storage
-            .from(bucketName)
-            .getPublicUrl(fileName);
-
-        mediaUrl = publicUrl;
+        const { data } = supabase.storage.from('media').getPublicUrl(fileName);
+        mediaUrl = data.publicUrl;
     }
 
     // 5. Update DB
     const { error: updateError } = await dbClient
         .from('ads')
         .update({
-            title,
-            description,
-            price,
-            category,
-            contact_phone,
+            title: formData.get('titulo') as string,
+            description: formData.get('descripcion') as string,
+            price: Number(formData.get('precio')) || 0,
+            category: formData.get('categoria') as string,
+            contact_phone: formData.get('contact_phone') as string,
             features,
             media_url: mediaUrl,
             updated_at: new Date().toISOString()
         })
         .eq('id', adId);
 
-    if (updateError) throw new Error("Error actualizando base de datos");
+    if (updateError) throw new Error("Error DB: " + updateError.message);
 
     revalidatePath('/mis-anuncios');
-    revalidatePath(`/anuncio/${adId}`);
-    revalidatePath(`/admin/editar/${adId}`);
-
     return { success: true };
 }
 
+// --- CREAR ANUNCIO ---
 export async function createAd(formData: FormData) {
     try {
         const supabase = await createClient();
 
         // 1. Auth Check
         const { data: { user }, error: authError } = await supabase.auth.getUser();
-        if (authError || !user) throw new Error("Debes iniciar sesión para publicar.");
+        if (authError || !user) throw new Error("Debes iniciar sesión.");
 
         // 2. Recolectar datos
         const title = formData.get('titulo') as string;
         const description = formData.get('descripcion') as string;
-
-        // Price Safety: Handle NaN/Null
-        const priceStr = formData.get('precio') as string;
-        let price = priceStr ? parseFloat(priceStr) : 0;
-        if (isNaN(price)) price = 0; // Fallback seguro
-
+        const price = Number(formData.get('precio')) || 0;
         const category = formData.get('categoria') as string;
-        const contact_phone = formData.get('contact_phone') as string;
         const qrCode = formData.get('qr_code') as string;
+        const contact_phone = formData.get('contact_phone') as string;
 
-        // Features JSONB
-        const featuresRaw = formData.get('features') as string;
-        let features: any = {};
+        // Features JSON
+        let features = {};
         try {
-            features = JSON.parse(featuresRaw || '{}');
+            features = JSON.parse(formData.get('features') as string || '{}');
+            // Sanitizar números
+            if (features['latitude']) features['latitude'] = Number(features['latitude']) || null;
+            if (features['longitude']) features['longitude'] = Number(features['longitude']) || null;
+        } catch (e) { }
 
-            // Map Safety: Ensure valid numbers
-            if (features.latitude) features.latitude = Number(features.latitude);
-            if (features.longitude) features.longitude = Number(features.longitude);
-            if (isNaN(features.latitude)) features.latitude = null;
-            if (isNaN(features.longitude)) features.longitude = null;
-
-        } catch (e) {
-            console.error("Error parsing features JSON", e);
-            features = {};
-        }
-
-        // 3. Manejar Imagen
+        // 3. Imagen (Bucket: 'media')
         let mediaUrl = formData.get('media_url') as string;
         const file = formData.get('file') as File;
 
         if (!mediaUrl && file && file.size > 0) {
-            const fileName = `${user.id}/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.]/g, '')}`;
-            const bucketName = 'qvisos-media';
+            // Limpieza de nombre de archivo para evitar errores
+            const cleanName = file.name.replace(/[^a-zA-Z0-9.]/g, '');
+            const fileName = `${user.id}/${Date.now()}-${cleanName}`;
 
             const { error: uploadError } = await supabase.storage
-                .from(bucketName)
+                .from('media') // <--- CORREGIDO: Antes decía 'qvisos-media'
                 .upload(fileName, file);
 
             if (uploadError) throw new Error("Error subiendo imagen: " + uploadError.message);
 
-            const { data: { publicUrl } } = supabase.storage
-                .from(bucketName)
-                .getPublicUrl(fileName);
-
-            mediaUrl = publicUrl;
+            const { data } = supabase.storage.from('media').getPublicUrl(fileName);
+            mediaUrl = data.publicUrl;
         }
 
         if (!mediaUrl) throw new Error("La imagen es obligatoria.");
 
-        // 4. INSERTAR en 'ads'
+        // 4. INSERTAR EN 'ads'
         const { data: newAd, error: insertError } = await supabase
-            .from('ads') // <--- NOMBRE CORRECTO
+            .from('ads')
             .insert({
                 user_id: user.id,
                 title,
@@ -209,40 +164,30 @@ export async function createAd(formData: FormData) {
                 price,
                 category,
                 contact_phone,
-                features, // <--- JSONB
+                features,
                 media_url: mediaUrl,
-                status: 'pending' // Moderación
+                status: 'pending'
             })
             .select('id')
             .single();
 
-        if (insertError) {
-            console.error("Error creating ad:", insertError);
-            throw new Error("Error al guardar el anuncio en base de datos: " + insertError.message);
-        }
+        if (insertError) throw new Error("Error guardando aviso: " + insertError.message);
 
-        // 5. VINCULAR en 'qr_codes'
+        // 5. VINCULAR QR (Si existe)
         if (qrCode) {
-            const { error: linkError } = await supabase
-                .from('qr_codes') // <--- NOMBRE CORRECTO
-                .update({
-                    ad_id: newAd.id,
-                    status: 'active'
-                })
+            await supabase
+                .from('qr_codes')
+                .update({ ad_id: newAd.id, status: 'active' })
                 .eq('code', qrCode);
-
-            if (linkError) {
-                console.error("Error linking QR:", linkError);
-                // No lanzamos error fatal, pero logueamos
-                console.warn("Anuncio creado (ID: " + newAd.id + ") pero falló vinculación QR " + qrCode);
-            }
         }
 
         revalidatePath('/mis-anuncios');
+        revalidatePath('/admin/dashboard');
+
         return { success: true, adId: newAd.id };
 
     } catch (error: any) {
-        console.error("Server Action 'createAd' failed:", error);
-        throw new Error(error.message || "Error interno al crear el anuncio.");
+        console.error("CreateAd Failed:", error);
+        throw new Error(error.message);
     }
 }

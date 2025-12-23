@@ -4,8 +4,22 @@ import { createClient } from '@/utils/supabase/client';
 import { useRouter, useSearchParams } from 'next/navigation';
 import React, { useState, useEffect, useCallback } from 'react';
 import type { User } from '@supabase/supabase-js';
-import RobustMapPicker from '@/components/RobustMapPicker';
 import { updateAd, createAd } from '@/app/actions/ad-actions';
+import { checkQrCategory } from '@/app/actions/check-qr';
+
+// --- CORRECCIÓN AQUÍ: IMPORTACIÓN DINÁMICA DEL MAPA ---
+// Esto arregla el Error 500 y el conflicto con el servidor.
+import dynamic from 'next/dynamic';
+
+const RobustMapPicker = dynamic(() => import('@/components/RobustMapPicker'), {
+    ssr: false,
+    loading: () => (
+        <div className="h-64 bg-gray-100 rounded-lg flex items-center justify-center animate-pulse">
+            <span className="text-gray-500 font-medium">Cargando mapa interactivo...</span>
+        </div>
+    )
+});
+// -----------------------------------------------------
 
 interface AnuncioFormProps {
     initialData?: any;
@@ -24,8 +38,6 @@ export default function AnuncioForm({ initialData }: AnuncioFormProps) {
     useEffect(() => {
         setIsMounted(true);
     }, []);
-
-
 
     // --- PARÁMETROS URL ---
     const urlCode = searchParams.get('code');
@@ -92,34 +104,26 @@ export default function AnuncioForm({ initialData }: AnuncioFormProps) {
         init();
     }, [initialData, urlTipo, router]);
 
-    // 2. EFECTO DE VALIDACIÓN QR (VIA API ROUTE)
+    // 2. EFECTO DE VALIDACIÓN QR (SEPARADO Y SEGURO)
     useEffect(() => {
         if (initialData) return;
         if (!qrCodeInput || qrCodeInput.length < 3) return;
 
         const validateQr = async () => {
             try {
-                const res = await fetch('/api/qr/check', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ code: qrCodeInput })
-                });
+                // Validar usando la acción importada estáticamente
+                const cat = await checkQrCategory(qrCodeInput);
 
-                if (res.ok) {
-                    const data = await res.json();
-                    const cat = data.category;
-
-                    if (cat) {
-                        setQrCategory(cat);
-                        // Autoseleccionar categoría si el QR está "hardcoded" a un tipo
-                        if (!category) {
-                            if (cat === 'venta_auto') {
-                                setCategory('autos');
-                            } else if (cat.includes('propiedad')) {
-                                setCategory('inmuebles');
-                            } else {
-                                setCategory('otros');
-                            }
+                if (cat) {
+                    setQrCategory(cat);
+                    // Autoseleccionar categoría si el QR está "hardcoded" a un tipo
+                    if (!category) {
+                        if (cat === 'venta_auto') {
+                            setCategory('autos');
+                        } else if (cat.includes('propiedad')) {
+                            setCategory('inmuebles');
+                        } else {
+                            setCategory('otros');
                         }
                     }
                 }
@@ -138,7 +142,7 @@ export default function AnuncioForm({ initialData }: AnuncioFormProps) {
         setLng(data.lng);
     }, []);
 
-    // PROTECCIÓN DE HIDRATACIÓN (REALMENTE AL FINAL DE TODOS LOS HOOKS)
+    // PROTECCIÓN DE HIDRATACIÓN
     if (!isMounted) return null;
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -155,7 +159,6 @@ export default function AnuncioForm({ initialData }: AnuncioFormProps) {
         const formData = new FormData(formElement);
         const rawData = Object.fromEntries(formData.entries());
 
-        // Filtrar features limpios para la IA
         const features = Object.entries(rawData).reduce((acc, [key, value]) => {
             if (value && key !== 'description' && key !== 'extraNotes' && typeof value === 'string') {
                 acc[key] = value;
@@ -200,14 +203,11 @@ export default function AnuncioForm({ initialData }: AnuncioFormProps) {
             const formData = new FormData(e.currentTarget);
             if (file) formData.set('file', file);
 
-            // Campos explícitos
             formData.set('descripcion', description);
             if (!formData.get('categoria')) formData.set('categoria', category);
 
-            // Recolectar JSON de features
             const features: any = {};
 
-            // Autos
             if (category === 'autos') {
                 ['marca', 'modelo', 'anio', 'kilometraje', 'transmision', 'combustible', 'carroceria'].forEach(k => {
                     features[k] = formData.get(k);
@@ -217,21 +217,15 @@ export default function AnuncioForm({ initialData }: AnuncioFormProps) {
                 features.sin_multas = formData.get('sin_multas') === 'on';
                 features.aire_acondicionado = formData.get('aire_acondicionado') === 'on';
             }
-            // Inmuebles
             if (category === 'inmuebles') {
-                // Básicos
                 ['operacion', 'tipo_propiedad', 'dormitorios', 'banos'].forEach(k => {
                     features[k] = formData.get(k);
                 });
-                // Superficie
                 features.m2_utiles = formData.get('m2_utiles');
                 features.m2_totales = formData.get('m2_totales');
-
-                // Gastos y Vista
                 features.gastos_comunes = formData.get('gastos_comunes');
                 features.vista_orientacion = formData.get('vista_orientacion');
 
-                // Amenities (Checkboxes)
                 const amenitiesList = ['estacionamiento', 'bodega', 'piscina', 'quincho', 'conserjeria', 'ascensor'];
                 features.amenities = {};
                 amenitiesList.forEach(k => {
@@ -239,7 +233,6 @@ export default function AnuncioForm({ initialData }: AnuncioFormProps) {
                 });
             }
 
-            // Globales
             const contactPref = formData.get('contact_preference');
             if (contactPref) features.contact_preference = contactPref;
             if (lat) features.latitude = lat;
@@ -248,16 +241,12 @@ export default function AnuncioForm({ initialData }: AnuncioFormProps) {
 
             formData.set('features', JSON.stringify(features));
 
-            // Enviar usando SERVER ACTIONS
             if (initialData) {
-                // UPDATE
                 formData.append('id', initialData.id);
                 await updateAd(formData);
                 alert('¡Actualizado correctamente!');
             } else {
-                // CREATE (Nueva lógica Many-to-One)
-                // CREATE (Nueva lógica Many-to-One)
-                await createAd(formData); // Vincula QR internamente
+                await createAd(formData);
                 alert('¡Aviso enviado! Lo revisaremos brevemente.');
             }
 
@@ -272,7 +261,6 @@ export default function AnuncioForm({ initialData }: AnuncioFormProps) {
         }
     };
 
-    // --- RENDERS DE ESTADO (SAFE PATTERN) ---
     if (loading) {
         return (
             <div className="flex flex-col items-center justify-center min-h-[400px]">
@@ -374,15 +362,13 @@ export default function AnuncioForm({ initialData }: AnuncioFormProps) {
                     </div>
                 </div>
 
-                {/* 2. QR y Categoría (Solo si no es edición o fix) */}
+                {/* 2. QR y Categoría */}
                 {!initialData && (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-blue-50 p-4 rounded-xl border border-blue-100">
                         <div>
                             <label className="block text-xs font-bold text-blue-800 mb-2 uppercase tracking-wide">Stickers/Kits Vinculados</label>
 
-                            {/* VISUALIZACIÓN MULTI-QR (TAGS/CHIPS) */}
                             <div className="flex flex-wrap gap-2 items-center p-3 bg-white border border-blue-200 rounded-md">
-                                {/* Código Actual */}
                                 {qrCodeInput ? (
                                     <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800 border border-green-200">
                                         <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"></path></svg>
@@ -393,7 +379,6 @@ export default function AnuncioForm({ initialData }: AnuncioFormProps) {
                                 )}
                                 <input type="hidden" name="qr_code" value={qrCodeInput} />
 
-                                {/* Botón Visual (Educativo) */}
                                 <button type="button" className="text-xs text-blue-600 hover:text-blue-800 hover:underline flex items-center ml-auto">
                                     + Vincular otro sticker
                                 </button>
@@ -419,7 +404,6 @@ export default function AnuncioForm({ initialData }: AnuncioFormProps) {
                         </div>
                     </div>
                 )}
-                {/* Inputs ocultos para mantener consistencia en updates */}
                 {initialData && <input type="hidden" name="categoria" value={category} />}
 
                 {/* 3. CAMPOS ESPECÍFICOS: AUTOS */}
@@ -453,7 +437,6 @@ export default function AnuncioForm({ initialData }: AnuncioFormProps) {
                                 </select>
                             </div>
                         </div>
-                        {/* Nuevo Campo: Combustible */}
                         <div>
                             <label className="text-xs font-semibold text-gray-500">Combustible</label>
                             <select name="combustible" defaultValue={def('combustible')} className="w-full p-2 border rounded">
@@ -465,7 +448,6 @@ export default function AnuncioForm({ initialData }: AnuncioFormProps) {
                                 <option value="Gas">Gas (GLP/GNC)</option>
                             </select>
                         </div>
-                        {/* Checkboxes simplificados */}
                         <div className="flex flex-wrap gap-4 pt-2">
                             {['unico_dueno', 'papeles_al_dia', 'sin_multas', 'aire_acondicionado'].map(k => (
                                 <label key={k} className="flex items-center gap-2 text-sm bg-white px-3 py-2 rounded border cursor-pointer hover:bg-gray-50">
@@ -484,7 +466,6 @@ export default function AnuncioForm({ initialData }: AnuncioFormProps) {
                             🏡 Detalles de la Propiedad
                         </h3>
 
-                        {/* 1. Operación y Tipo */}
                         <div className="grid grid-cols-2 gap-4">
                             <div>
                                 <label className="text-xs font-bold text-gray-600 uppercase tracking-wide">Operación</label>
@@ -513,7 +494,6 @@ export default function AnuncioForm({ initialData }: AnuncioFormProps) {
                             </div>
                         </div>
 
-                        {/* 2. Gastos Comunes (Crítico en Chile) */}
                         <div className="bg-blue-50 p-4 rounded-lg border border-blue-100">
                             <label className="block text-sm font-bold text-blue-900 mb-1">💰 Gastos Comunes (Aprox.)</label>
                             <div className="flex items-center">
@@ -529,7 +509,6 @@ export default function AnuncioForm({ initialData }: AnuncioFormProps) {
                             <p className="text-xs text-blue-600 mt-1">Si no aplica, dejar en 0 o vacío.</p>
                         </div>
 
-                        {/* 3. Distribución y Superficie */}
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                             <div>
                                 <label className="text-xs font-semibold text-gray-500">Dormitorios</label>
@@ -549,7 +528,6 @@ export default function AnuncioForm({ initialData }: AnuncioFormProps) {
                             </div>
                         </div>
 
-                        {/* 4. Vista / Orientación */}
                         <div>
                             <label className="text-xs font-semibold text-gray-500">Vista / Orientación</label>
                             <input
@@ -561,7 +539,6 @@ export default function AnuncioForm({ initialData }: AnuncioFormProps) {
                             />
                         </div>
 
-                        {/* 5. Amenities / Extras */}
                         <div className="pt-4 border-t border-gray-200">
                             <label className="block text-sm font-bold text-gray-700 mb-3">Características Adicionales</label>
                             <div className="grid grid-cols-2 gap-3">
@@ -595,6 +572,7 @@ export default function AnuncioForm({ initialData }: AnuncioFormProps) {
                         <span className="text-xs text-gray-500">(Google Maps)</span>
                     </div>
                     <div className="p-4">
+                        {/* AQUÍ ESTÁ EL CAMBIO IMPORTANTE: USAMOS LA VERSIÓN DINÁMICA */}
                         <RobustMapPicker
                             initialLat={lat || undefined}
                             initialLng={lng || undefined}

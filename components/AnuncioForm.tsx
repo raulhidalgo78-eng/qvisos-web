@@ -128,15 +128,14 @@ export default function AnuncioForm({ initialData }: AnuncioFormProps) {
         return () => clearTimeout(t);
     }, [qrCodeInput, initialData, category]);
 
-    // PROTECCIÓN DE HIDRATACIÓN (AL FINAL DE LOS HOOKS)
-    if (!isMounted) return null;
-
-
     // --- HANDLERS ---
     const handleLocationSelect = useCallback((data: { lat: number; lng: number; address?: string }) => {
         setLat(data.lat);
         setLng(data.lng);
     }, []);
+
+    // PROTECCIÓN DE HIDRATACIÓN (REALMENTE AL FINAL DE TODOS LOS HOOKS)
+    if (!isMounted) return null;
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {

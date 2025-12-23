@@ -115,7 +115,7 @@ export async function createAd(formData: FormData) {
         const qrCode = formData.get('qr_code') as string;
         const contact_phone = formData.get('contact_phone') as string;
 
-        // Features JSON Safe Parse
+        // Features JSON
         let features: any = {};
         try {
             features = JSON.parse(formData.get('features') as string || '{}');
@@ -128,11 +128,11 @@ export async function createAd(formData: FormData) {
         const file = formData.get('file') as File;
 
         if (!mediaUrl && file && file.size > 0) {
-            // Limpieza de nombre
-            const fileName = `${user.id}/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.]/g, '')}`;
+            const cleanName = file.name.replace(/[^a-zA-Z0-9.]/g, '');
+            const fileName = `${user.id}/${Date.now()}-${cleanName}`;
 
             const { error: uploadError } = await supabase.storage
-                .from('media') // <--- UNIFICADO A 'media'
+                .from('media')
                 .upload(fileName, file);
 
             if (uploadError) throw new Error("Error subiendo imagen: " + uploadError.message);
@@ -155,14 +155,14 @@ export async function createAd(formData: FormData) {
                 contact_phone,
                 features,
                 media_url: mediaUrl,
-                status: 'pending'
+                status: 'active' // <--- ¡AQUÍ ESTABA EL ERROR! (Cambiado de 'pending' a 'active')
             })
             .select('id')
             .single();
 
         if (insertError) throw new Error("Error guardando aviso: " + insertError.message);
 
-        // 5. VINCULAR QR (Si existe)
+        // 5. VINCULAR QR
         if (qrCode) {
             await supabase
                 .from('qr_codes')

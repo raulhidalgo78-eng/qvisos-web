@@ -154,8 +154,8 @@ export async function createAd(formData: FormData) {
                 category,
                 contact_phone,
                 features,
-                media_url: mediaUrl,
-                status: 'active' // <--- ¡AQUÍ ESTABA EL ERROR! (Cambiado de 'pending' a 'active')
+                media_url: mediaUrl
+                // status: 'active' <--- ELIMINADO: Usamos DEFAULT de la DB
             })
             .select('id')
             .single();

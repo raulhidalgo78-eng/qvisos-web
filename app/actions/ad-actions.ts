@@ -125,7 +125,7 @@ export async function createAd(formData: FormData) {
         const contact_phone = formData.get('contact_phone') as string;
 
         // Features JSON
-        let features = {};
+        let features: any = {};
         try {
             features = JSON.parse(formData.get('features') as string || '{}');
             // Sanitizar números

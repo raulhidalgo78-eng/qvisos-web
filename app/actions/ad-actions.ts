@@ -42,18 +42,8 @@ export async function updateAd(formData: FormData) {
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) throw new Error("No autorizado");
 
-    // Admin Hardcoded (Útil para tu MVP)
     const isAdmin = user.id === '6411ba0e-5e36-4e4e-aa1f-4183a2f88d45';
     let dbClient = supabase;
-
-    // Si es admin, intentamos elevar privilegios (opcional)
-    if (isAdmin) {
-        try {
-            // Solo si tienes configurado el admin client, sino usa el normal
-            // const { createAdminClient } = await import('@/utils/supabase/admin');
-            // dbClient = createAdminClient();
-        } catch (e) { console.warn("Modo admin no disponible, usando cliente normal"); }
-    }
 
     // 2. Verificar Dueño
     const { data: ad, error: fetchError } = await dbClient
@@ -67,17 +57,18 @@ export async function updateAd(formData: FormData) {
 
     // 3. Procesar Datos
     const featuresRaw = formData.get('features') as string;
-    let features = {};
+    let features: any = {};
     try { features = JSON.parse(featuresRaw || '{}'); } catch (e) { }
 
-    // 4. Imagen (Bucket: 'media')
+    // 4. Imagen (Bucket UNIFICADO: 'media')
     const file = formData.get('file') as File;
     let mediaUrl = ad.media_url;
 
     if (file && file.size > 0) {
+        // Limpieza de nombre
         const fileName = `${user.id}/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.]/g, '')}`;
         const { error: uploadError } = await supabase.storage
-            .from('media') // <--- UNIFICADO A 'media'
+            .from('media')
             .upload(fileName, file);
 
         if (uploadError) throw new Error("Error subiendo imagen");
@@ -124,11 +115,10 @@ export async function createAd(formData: FormData) {
         const qrCode = formData.get('qr_code') as string;
         const contact_phone = formData.get('contact_phone') as string;
 
-        // Features JSON
+        // Features JSON Safe Parse
         let features: any = {};
         try {
             features = JSON.parse(formData.get('features') as string || '{}');
-            // Sanitizar números
             if (features['latitude']) features['latitude'] = Number(features['latitude']) || null;
             if (features['longitude']) features['longitude'] = Number(features['longitude']) || null;
         } catch (e) { }
@@ -138,12 +128,11 @@ export async function createAd(formData: FormData) {
         const file = formData.get('file') as File;
 
         if (!mediaUrl && file && file.size > 0) {
-            // Limpieza de nombre de archivo para evitar errores
-            const cleanName = file.name.replace(/[^a-zA-Z0-9.]/g, '');
-            const fileName = `${user.id}/${Date.now()}-${cleanName}`;
+            // Limpieza de nombre
+            const fileName = `${user.id}/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.]/g, '')}`;
 
             const { error: uploadError } = await supabase.storage
-                .from('media') // <--- CORREGIDO: Antes decía 'qvisos-media'
+                .from('media') // <--- UNIFICADO A 'media'
                 .upload(fileName, file);
 
             if (uploadError) throw new Error("Error subiendo imagen: " + uploadError.message);

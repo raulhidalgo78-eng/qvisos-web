@@ -92,12 +92,14 @@ export default function FilterBar() {
             {(category === 'autos' || category === 'autos_venta') && (
                 <div className="space-y-4 border-t pt-4">
                     <h4 className="font-semibold text-sm text-gray-700">Vehículos</h4>
+
+                    {/* Año */}
                     <div>
                         <label className="block text-xs font-bold text-gray-500 mb-1">Año</label>
                         <select
                             value={filters.anio}
                             onChange={(e) => setFilters({ ...filters, anio: e.target.value })}
-                            className="w-full p-2 border rounded-lg outline-none bg-white"
+                            className="w-full p-2 border rounded-lg outline-none bg-white focus:ring-2 focus:ring-blue-500"
                         >
                             <option value="">Cualquiera</option>
                             {Array.from({ length: 20 }, (_, i) => new Date().getFullYear() - i).map(year => (
@@ -105,17 +107,30 @@ export default function FilterBar() {
                             ))}
                         </select>
                     </div>
+
+                    {/* Transmisión (Pills) */}
                     <div>
-                        <label className="block text-xs font-bold text-gray-500 mb-1">Transmisión</label>
-                        <select
-                            value={filters.transmision}
-                            onChange={(e) => setFilters({ ...filters, transmision: e.target.value })}
-                            className="w-full p-2 border rounded-lg outline-none bg-white"
-                        >
-                            <option value="">Cualquiera</option>
-                            <option value="Manual">Manual</option>
-                            <option value="Automática">Automática</option>
-                        </select>
+                        <label className="block text-xs font-bold text-gray-500 mb-2">Transmisión</label>
+                        <div className="flex flex-wrap gap-2">
+                            <button
+                                onClick={() => setFilters({ ...filters, transmision: filters.transmision === 'Automática' ? '' : 'Automática' })}
+                                className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-colors ${filters.transmision === 'Automática'
+                                        ? 'bg-blue-600 text-white border-blue-600'
+                                        : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
+                                    }`}
+                            >
+                                Automática
+                            </button>
+                            <button
+                                onClick={() => setFilters({ ...filters, transmision: filters.transmision === 'Manual' ? '' : 'Manual' })}
+                                className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-colors ${filters.transmision === 'Manual'
+                                        ? 'bg-blue-600 text-white border-blue-600'
+                                        : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
+                                    }`}
+                            >
+                                Manual
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}
@@ -129,7 +144,7 @@ export default function FilterBar() {
                         <select
                             value={filters.tipoPropiedad}
                             onChange={(e) => setFilters({ ...filters, tipoPropiedad: e.target.value })}
-                            className="w-full p-2 border rounded-lg outline-none bg-white"
+                            className="w-full p-2 border rounded-lg outline-none bg-white focus:ring-2 focus:ring-blue-500"
                         >
                             <option value="">Cualquiera</option>
                             <option value="Casa">Casa</option>
@@ -137,26 +152,34 @@ export default function FilterBar() {
                             <option value="Terreno">Terreno</option>
                         </select>
                     </div>
+
+                    {/* Stepper-ish inputs for Dorms/Baños using clean small inputs */}
                     <div className="grid grid-cols-2 gap-2">
                         <div>
                             <label className="block text-xs font-bold text-gray-500 mb-1">Dormitorios</label>
-                            <input
-                                type="number"
-                                placeholder="Min"
-                                value={filters.dormitorios}
-                                onChange={(e) => setFilters({ ...filters, dormitorios: e.target.value })}
-                                className="w-full p-2 border rounded-lg outline-none"
-                            />
+                            <div className="relative">
+                                <input
+                                    type="number"
+                                    placeholder="Min"
+                                    value={filters.dormitorios}
+                                    onChange={(e) => setFilters({ ...filters, dormitorios: e.target.value })}
+                                    className="w-full p-2 pl-3 border rounded-lg outline-none focus:ring-2 focus:ring-blue-500"
+                                />
+                                <span className="absolute right-2 top-2 text-xs text-gray-400 font-bold">+</span>
+                            </div>
                         </div>
                         <div>
                             <label className="block text-xs font-bold text-gray-500 mb-1">Baños</label>
-                            <input
-                                type="number"
-                                placeholder="Min"
-                                value={filters.banos}
-                                onChange={(e) => setFilters({ ...filters, banos: e.target.value })}
-                                className="w-full p-2 border rounded-lg outline-none"
-                            />
+                            <div className="relative">
+                                <input
+                                    type="number"
+                                    placeholder="Min"
+                                    value={filters.banos}
+                                    onChange={(e) => setFilters({ ...filters, banos: e.target.value })}
+                                    className="w-full p-2 pl-3 border rounded-lg outline-none focus:ring-2 focus:ring-blue-500"
+                                />
+                                <span className="absolute right-2 top-2 text-xs text-gray-400 font-bold">+</span>
+                            </div>
                         </div>
                     </div>
                 </div>

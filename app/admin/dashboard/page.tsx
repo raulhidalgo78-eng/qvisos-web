@@ -30,7 +30,7 @@ export default async function AdminDashboard() {
   const { data: ads, error } = await supabaseAdmin
     .from('ads')
     .select('*')
-    .eq('status', 'pending_verification') // <--- Esta es la clave
+    .in('status', ['pending_verification', 'verified', 'draft', 'aprobado']) // <--- Traemos todo lo que no sea 'deleted'/'rejected'
     .order('created_at', { ascending: false });
 
   if (error) {

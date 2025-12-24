@@ -19,12 +19,21 @@ export default async function QRRedirectPage({ params }: { params: Promise<{ cod
 
     // CASO A: Código ya activo -> Ir al anuncio
     if (qrData.status === 'active' && qrData.ad_id) {
-        // Redirección inteligente al anuncio público
-        // let tipoUrl = 'auto'; // Default (unused variable)
-        // if (qrData.category === 'venta_propiedad') tipoUrl = 'propiedad-venta';
-        // if (qrData.category === 'arriendo_propiedad') tipoUrl = 'propiedad-arriendo';
+        // Buscar el Slug y Estado del Anuncio
+        const { data: ad } = await supabase
+            .from('ads')
+            .select('slug, status')
+            .eq('id', qrData.ad_id)
+            .single();
 
-        return redirect(`/anuncio/${qrData.ad_id}`);
+        // Validar que exista el anuncio y esté publicado
+        if (ad && (ad.status === 'verified' || ad.status === 'aprobado')) {
+            // Redirigir al SLUG si existe, sino al ID
+            return redirect(`/anuncio/${ad.slug || qrData.ad_id}`);
+        }
+
+        // Si el anuncio no está activo o no existe -> Homepage (Edge case fallback)
+        return redirect('/');
     }
 
     // CASO B: Código libre -> Ir a Activar (Experiencia Unboxing)

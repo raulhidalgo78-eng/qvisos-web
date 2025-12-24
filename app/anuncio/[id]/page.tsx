@@ -14,13 +14,19 @@ interface Props {
 
 export default async function AdDetailPage({ params }: Props) {
   const { id } = await params;
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+
   const supabase = await createClient();
 
-  const { data: ad, error } = await supabase
-    .from('ads')
-    .select('*')
-    .eq('id', id)
-    .single();
+  let query = supabase.from('ads').select('*');
+
+  if (isUuid) {
+    query = query.eq('id', id);
+  } else {
+    query = query.eq('slug', id);
+  }
+
+  const { data: ad, error } = await query.single();
 
   if (error || !ad) {
     notFound();

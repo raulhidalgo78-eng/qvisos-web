@@ -29,7 +29,21 @@ export default async function QRRedirectionPage({ params }: Props) {
 
     // 2. Si ya está activo (tiene anuncio), redirigir al anuncio
     if (qr.status === 'active' && qr.ad_id) {
-        redirect(`/anuncio/${qr.ad_id}`);
+        // Buscar el Slug y Estado del Anuncio
+        const { data: ad } = await supabase
+            .from('ads')
+            .select('slug, status')
+            .eq('id', qr.ad_id)
+            .single();
+
+        // Validar que exista el anuncio y esté publicado
+        if (ad && (ad.status === 'verified' || ad.status === 'aprobado')) {
+            // Redirigir al SLUG si existe, sino al ID
+            redirect(`/anuncio/${ad.slug || qr.ad_id}`);
+        }
+
+        // EDGE CASE: QR tiene anuncio asignado, pero está pausado/borrado -> Home
+        redirect('/');
     }
 
     // 3. Si es nuevo, redirigir al formulario de creación con los parámetros correctos

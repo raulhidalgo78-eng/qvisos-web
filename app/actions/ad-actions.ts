@@ -98,6 +98,21 @@ export async function updateAd(formData: FormData) {
     return { success: true };
 }
 
+// --- HELPER: GENERAR SLUG ---
+function generateSlug(title: string): string {
+    const slug = title
+        .toLowerCase()
+        .normalize('NFD') // Normalizar caracteres (tildes, etc)
+        .replace(/[\u0300-\u036f]/g, '') // Eliminar diacríticos
+        .replace(/[^a-z0-9\s-]/g, '') // Eliminar caracteres especiales
+        .trim()
+        .replace(/\s+/g, '-'); // Espacios a guiones
+
+    // Agregar sufijo único (Timestamp corto)
+    const uniqueSuffix = Date.now().toString().slice(-6);
+    return `${slug}-${uniqueSuffix}`;
+}
+
 // --- CREAR ANUNCIO ---
 export async function createAd(formData: FormData) {
     try {
@@ -114,6 +129,9 @@ export async function createAd(formData: FormData) {
         const category = formData.get('categoria') as string;
         const qrCode = formData.get('qr_code') as string;
         const contact_phone = formData.get('contact_phone') as string;
+
+        // Generar SLUG
+        const slug = generateSlug(title);
 
         // Features JSON
         let features: any = {};
@@ -154,7 +172,8 @@ export async function createAd(formData: FormData) {
                 category,
                 contact_phone,
                 features,
-                media_url: mediaUrl
+                media_url: mediaUrl,
+                slug // <--- INCLUDE SLUG
                 // status: 'active' <--- ELIMINADO: Usamos DEFAULT de la DB
             })
             .select('id')

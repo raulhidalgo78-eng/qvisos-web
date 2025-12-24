@@ -4,6 +4,7 @@ import React from 'react';
 interface AdCardProps {
     ad: {
         id: string;
+        slug?: string; // Add slug to interface
         title: string;
         price: number;
         media_url?: string;
@@ -47,7 +48,7 @@ export default function AdCard({ ad }: AdCardProps) {
 
     return (
         <Link
-            href={`/anuncio/${ad.id}`}
+            href={`/anuncio/${ad.slug || ad.id}`} // Prefer slug, fallback to ID
             className="block group"
             style={{ textDecoration: 'none', color: 'inherit' }}
         >

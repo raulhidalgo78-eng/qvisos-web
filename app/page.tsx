@@ -11,34 +11,40 @@ export default async function HomePage() {
 
   const supabase = await createClient();
 
-  // 1. Fetch Autos (Últimos 4)
-  const { data: autos } = await supabase
+  // 1. Fetch Autos (Últimos 4, Status verified)
+  const { data: autos, error: errAutos } = await supabase
     .from('ads')
     .select('*')
-    .eq('status', 'aprobado')
-    .eq('category', 'autos') // Asegurar coincidencia con valor en BD
+    .eq('status', 'verified')
+    .eq('category', 'autos')
     .order('created_at', { ascending: false })
     .limit(4);
 
+  console.log('[HOME] Autos Fetch:', { count: autos?.length, error: errAutos });
+
   // 2. Fetch Propiedades Venta
-  const { data: ventas } = await supabase
+  const { data: ventas, error: errVentas } = await supabase
     .from('ads')
     .select('*')
-    .eq('status', 'aprobado')
+    .eq('status', 'verified')
     .eq('category', 'inmuebles')
     .contains('features', { operacion: 'Venta' })
     .order('created_at', { ascending: false })
     .limit(4);
 
+  console.log('[HOME] Ventas Fetch:', { count: ventas?.length, error: errVentas });
+
   // 3. Fetch Propiedades Arriendo
-  const { data: arriendos } = await supabase
+  const { data: arriendos, error: errArriendos } = await supabase
     .from('ads')
     .select('*')
-    .eq('status', 'aprobado')
+    .eq('status', 'verified')
     .eq('category', 'inmuebles')
     .contains('features', { operacion: 'Arriendo' })
     .order('created_at', { ascending: false })
     .limit(4);
+
+  console.log('[HOME] Arriendos Fetch:', { count: arriendos?.length, error: errArriendos });
 
 
   // Componente de Sección Reutilizable

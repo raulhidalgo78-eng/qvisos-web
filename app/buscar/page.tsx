@@ -16,11 +16,11 @@ export default async function SearchPage({
     const minPrice = searchParams.minPrice ? Number(searchParams.minPrice) : null;
     const maxPrice = searchParams.maxPrice ? Number(searchParams.maxPrice) : null;
 
-    // Construir consulta base
+    // Construir consulta base (Usar 'verified' para coincidir con DB)
     let query = supabase
         .from('ads')
         .select('*')
-        .eq('status', 'aprobado')
+        .eq('status', 'verified')
         .order('created_at', { ascending: false });
 
     // Aplicar filtros dinámicos
@@ -52,6 +52,7 @@ export default async function SearchPage({
 
     // Ejecutar consulta
     const { data: ads, error } = await query;
+    console.log('[SEARCH] Query Result:', { count: ads?.length, error, filters: { category, operacion, q } });
 
     return (
         <div className="min-h-screen bg-gray-50 py-8">

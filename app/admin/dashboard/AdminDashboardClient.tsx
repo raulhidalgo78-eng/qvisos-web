@@ -11,7 +11,7 @@ interface Ad {
     price: number;
     currency: string;
     status: string;
-    images: string[];
+    media_url: string; // Updated to match DB
     created_at: string;
 }
 
@@ -45,9 +45,9 @@ export default function AdminDashboardClient({ ads }: AdminDashboardClientProps)
         <div key={ad.id} className="bg-white rounded-lg shadow-md overflow-hidden border border-gray-200 flex flex-col">
             {/* Image Thumbnail */}
             <div className="relative h-48 w-full bg-gray-100">
-                {ad.images && ad.images.length > 0 ? (
+                {ad.media_url ? ( // Check media_url
                     <Image
-                        src={ad.images[0]}
+                        src={ad.media_url} // Use media_url
                         alt={ad.title}
                         fill
                         className="object-cover"
@@ -58,8 +58,8 @@ export default function AdminDashboardClient({ ads }: AdminDashboardClientProps)
                     </div>
                 )}
                 <div className={`absolute top-2 right-2 px-2 py-1 rounded text-xs font-bold uppercase ${(ad.status === 'verified' || ad.status === 'aprobado') ? 'bg-green-100 text-green-800' :
-                        ad.status === 'draft' ? 'bg-yellow-100 text-yellow-800' :
-                            'bg-blue-100 text-blue-800'
+                    ad.status === 'draft' ? 'bg-yellow-100 text-yellow-800' :
+                        'bg-blue-100 text-blue-800'
                     }`}>
                     {(ad.status === 'pending' || ad.status === 'pending_verification') ? 'Por Aprobar' :
                         (ad.status === 'verified' || ad.status === 'aprobado') ? 'Publicado' :
@@ -88,8 +88,8 @@ export default function AdminDashboardClient({ ads }: AdminDashboardClientProps)
                                 onClick={() => handleAction(() => toggleAdStatus(ad.id, ad.status))}
                                 disabled={isPending}
                                 className={`flex items-center justify-center gap-1 py-2 px-2 rounded-md transition-colors text-sm font-medium ${ad.status === 'draft'
-                                        ? 'bg-blue-100 text-blue-700 hover:bg-blue-200'
-                                        : 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200'
+                                    ? 'bg-blue-100 text-blue-700 hover:bg-blue-200'
+                                    : 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200'
                                     }`}
                             >
                                 {ad.status === 'draft' ? <PlayCircle size={16} /> : <PauseCircle size={16} />}

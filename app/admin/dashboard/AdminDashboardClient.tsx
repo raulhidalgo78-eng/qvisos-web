@@ -13,6 +13,8 @@ interface Ad {
     status: string;
     media_url: string; // Updated to match DB
     created_at: string;
+    category: string; // Added for filtering
+    features: any; // Added for filtering
 }
 
 interface AdminDashboardClientProps {
@@ -21,10 +23,22 @@ interface AdminDashboardClientProps {
 
 export default function AdminDashboardClient({ ads }: AdminDashboardClientProps) {
     const [activeTab, setActiveTab] = useState<'pending' | 'active'>('pending');
+    const [activeFilter, setActiveFilter] = useState<'all' | 'prop_venta' | 'prop_arriendo' | 'autos'>('all'); // NEW: Filter state
     const [isPending, startTransition] = useTransition();
 
     const pendingAds = ads.filter(ad => ['pending', 'pending_verification'].includes(ad.status));
-    const activeAds = ads.filter(ad => ['verified', 'draft', 'aprobado'].includes(ad.status)); // Include 'draft' as paused equivalent
+
+    // Base active ads
+    const allActiveAds = ads.filter(ad => ['verified', 'draft', 'aprobado'].includes(ad.status));
+
+    // Filtered active ads
+    const activeAds = allActiveAds.filter(ad => {
+        if (activeFilter === 'all') return true;
+        if (activeFilter === 'autos') return ad.category === 'autos';
+        if (activeFilter === 'prop_venta') return ad.category === 'inmuebles' && ad.features?.operacion === 'Venta';
+        if (activeFilter === 'prop_arriendo') return ad.category === 'inmuebles' && ad.features?.operacion === 'Arriendo';
+        return true;
+    });
 
     const handleAction = (action: () => Promise<any>, confirmMsg?: string) => {
         if (confirmMsg && !confirm(confirmMsg)) return;
@@ -122,7 +136,7 @@ export default function AdminDashboardClient({ ads }: AdminDashboardClientProps)
 
     return (
         <div className="max-w-7xl mx-auto">
-            {/* Tabs */}
+            {/* Tabs Principal */}
             <div className="flex border-b border-gray-200 mb-6">
                 <button
                     onClick={() => setActiveTab('pending')}
@@ -145,10 +159,52 @@ export default function AdminDashboardClient({ ads }: AdminDashboardClientProps)
                 >
                     Inventario Activo
                     <span className="ml-2 bg-gray-100 text-gray-600 py-0.5 px-2 rounded-full text-xs">
-                        {activeAds.length}
+                        {allActiveAds.length}
                     </span>
                 </button>
             </div>
+
+            {/* Filter Content for Active Tab */}
+            {activeTab === 'active' && (
+                <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
+                    <button
+                        onClick={() => setActiveFilter('all')}
+                        className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${activeFilter === 'all'
+                            ? 'bg-blue-600 text-white shadow-md'
+                            : 'bg-white text-gray-600 border hover:bg-gray-50'
+                            }`}
+                    >
+                        Todos ({allActiveAds.length})
+                    </button>
+                    <button
+                        onClick={() => setActiveFilter('prop_venta')}
+                        className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${activeFilter === 'prop_venta'
+                            ? 'bg-blue-600 text-white shadow-md'
+                            : 'bg-white text-gray-600 border hover:bg-gray-50'
+                            }`}
+                    >
+                        Propiedades Venta ({allActiveAds.filter(a => a.category === 'inmuebles' && a.features?.operacion === 'Venta').length})
+                    </button>
+                    <button
+                        onClick={() => setActiveFilter('prop_arriendo')}
+                        className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${activeFilter === 'prop_arriendo'
+                            ? 'bg-blue-600 text-white shadow-md'
+                            : 'bg-white text-gray-600 border hover:bg-gray-50'
+                            }`}
+                    >
+                        Propiedades Arriendo ({allActiveAds.filter(a => a.category === 'inmuebles' && a.features?.operacion === 'Arriendo').length})
+                    </button>
+                    <button
+                        onClick={() => setActiveFilter('autos')}
+                        className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${activeFilter === 'autos'
+                            ? 'bg-blue-600 text-white shadow-md'
+                            : 'bg-white text-gray-600 border hover:bg-gray-50'
+                            }`}
+                    >
+                        Autos Venta ({allActiveAds.filter(a => a.category === 'autos').length})
+                    </button>
+                </div>
+            )}
 
             {/* Content */}
             <div className="min-h-[400px]">
@@ -171,7 +227,7 @@ export default function AdminDashboardClient({ ads }: AdminDashboardClientProps)
                     ) : (
                         <div className="flex flex-col items-center justify-center h-64 text-gray-500">
                             <Archive size={48} className="mb-4 text-gray-400" />
-                            <p className="text-lg">No hay anuncios activos en el inventario.</p>
+                            <p className="text-lg">No hay anuncios activos en esta categoría.</p>
                         </div>
                     )
                 )}

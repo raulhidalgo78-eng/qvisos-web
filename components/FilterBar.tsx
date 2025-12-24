@@ -14,10 +14,15 @@ export default function FilterBar() {
         // Autos
         anio: searchParams.get('anio') || '',
         transmision: searchParams.get('transmision') || '',
+        combustible: searchParams.get('combustible') || '',
+        duenos: searchParams.get('duenos') || '',
         // Propiedades
         dormitorios: searchParams.get('dormitorios') || '',
         banos: searchParams.get('banos') || '',
         tipoPropiedad: searchParams.get('tipoPropiedad') || '',
+        gastosComunes: searchParams.get('gastosComunes') || '',
+        orientacion: searchParams.get('orientacion') || '',
+        operacion: searchParams.get('operacion') || '',
     });
 
     const category = searchParams.get('category')?.toLowerCase() || '';
@@ -30,9 +35,14 @@ export default function FilterBar() {
             maxPrice: searchParams.get('maxPrice') || '',
             anio: searchParams.get('anio') || '',
             transmision: searchParams.get('transmision') || '',
+            combustible: searchParams.get('combustible') || '',
+            duenos: searchParams.get('duenos') || '',
             dormitorios: searchParams.get('dormitorios') || '',
             banos: searchParams.get('banos') || '',
             tipoPropiedad: searchParams.get('tipoPropiedad') || '',
+            gastosComunes: searchParams.get('gastosComunes') || '',
+            orientacion: searchParams.get('orientacion') || '',
+            operacion: searchParams.get('operacion') || '',
         });
     }, [searchParams]);
 
@@ -90,19 +100,21 @@ export default function FilterBar() {
 
             {/* --- CONDICIONAL: AUTOS --- */}
             {(category === 'autos' || category === 'autos_venta') && (
-                <div className="space-y-4 border-t pt-4">
-                    <h4 className="font-semibold text-sm text-gray-700">Vehículos</h4>
+                <div className="space-y-6 pt-2">
+                    <h4 className="font-bold text-lg text-gray-800 flex items-center gap-2">
+                        🚗 Vehículos
+                    </h4>
 
                     {/* Año */}
-                    <div>
-                        <label className="block text-xs font-bold text-gray-500 mb-1">Año</label>
+                    <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
+                        <label className="block text-xs font-bold text-gray-500 mb-2">Año</label>
                         <select
                             value={filters.anio}
                             onChange={(e) => setFilters({ ...filters, anio: e.target.value })}
-                            className="w-full p-2 border rounded-lg outline-none bg-white focus:ring-2 focus:ring-blue-500"
+                            className="w-full p-2 border rounded-lg outline-none bg-white font-medium text-sm"
                         >
                             <option value="">Cualquiera</option>
-                            {Array.from({ length: 20 }, (_, i) => new Date().getFullYear() - i).map(year => (
+                            {Array.from({ length: 30 }, (_, i) => new Date().getFullYear() - i).map(year => (
                                 <option key={year} value={year}>{year}</option>
                             ))}
                         </select>
@@ -112,76 +124,161 @@ export default function FilterBar() {
                     <div>
                         <label className="block text-xs font-bold text-gray-500 mb-2">Transmisión</label>
                         <div className="flex flex-wrap gap-2">
-                            <button
-                                onClick={() => setFilters({ ...filters, transmision: filters.transmision === 'Automática' ? '' : 'Automática' })}
-                                className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-colors ${filters.transmision === 'Automática'
-                                        ? 'bg-blue-600 text-white border-blue-600'
-                                        : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
-                                    }`}
-                            >
-                                Automática
-                            </button>
-                            <button
-                                onClick={() => setFilters({ ...filters, transmision: filters.transmision === 'Manual' ? '' : 'Manual' })}
-                                className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-colors ${filters.transmision === 'Manual'
-                                        ? 'bg-blue-600 text-white border-blue-600'
-                                        : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
-                                    }`}
-                            >
-                                Manual
-                            </button>
+                            {['Manual', 'Automática'].map(opt => (
+                                <button
+                                    key={opt}
+                                    onClick={() => setFilters({ ...filters, transmision: filters.transmision === opt ? '' : opt })}
+                                    className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-colors ${filters.transmision === opt
+                                            ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
+                                            : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
+                                        }`}
+                                >
+                                    {opt}
+                                </button>
+                            ))}
                         </div>
                     </div>
+
+                    {/* ACORDEÓN: Detalles Técnicos (Combustible, Dueños) */}
+                    <details className="group border rounded-xl overflow-hidden">
+                        <summary className="flex items-center justify-between p-4 cursor-pointer bg-gray-50 hover:bg-gray-100 transition-colors list-none font-bold text-sm text-gray-700">
+                            <span>⚙️ Detalles Técnicos</span>
+                            <span className="transition group-open:rotate-180">▼</span>
+                        </summary>
+                        <div className="p-4 bg-white border-t space-y-4">
+                            <div>
+                                <label className="block text-xs font-bold text-gray-500 mb-2">Combustible</label>
+                                <div className="flex flex-wrap gap-2">
+                                    {['Bencina', 'Diesel', 'Híbrido', 'Eléctrico'].map(opt => (
+                                        <button
+                                            key={opt}
+                                            onClick={() => setFilters({ ...filters, combustible: filters.combustible === opt ? '' : opt })}
+                                            className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-colors ${filters.combustible === opt
+                                                    ? 'bg-green-600 text-white border-green-600'
+                                                    : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
+                                                }`}
+                                        >
+                                            {opt}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                            <div>
+                                <label className="block text-xs font-bold text-gray-500 mb-2">Dueños</label>
+                                <select
+                                    value={filters.duenos}
+                                    onChange={(e) => setFilters({ ...filters, duenos: e.target.value })}
+                                    className="w-full p-2 border rounded-lg bg-gray-50 outline-none text-sm"
+                                >
+                                    <option value="">Todos</option>
+                                    <option value="1">Único Dueño</option>
+                                    <option value="2">Hasta 2 Dueños</option>
+                                </select>
+                            </div>
+                        </div>
+                    </details>
                 </div>
             )}
 
             {/* --- CONDICIONAL: INMUEBLES --- */}
             {(category === 'inmuebles' || category === 'propiedades') && (
-                <div className="space-y-4 border-t pt-4">
-                    <h4 className="font-semibold text-sm text-gray-700">Propiedades</h4>
-                    <div>
-                        <label className="block text-xs font-bold text-gray-500 mb-1">Tipo</label>
-                        <select
-                            value={filters.tipoPropiedad}
-                            onChange={(e) => setFilters({ ...filters, tipoPropiedad: e.target.value })}
-                            className="w-full p-2 border rounded-lg outline-none bg-white focus:ring-2 focus:ring-blue-500"
-                        >
-                            <option value="">Cualquiera</option>
-                            <option value="Casa">Casa</option>
-                            <option value="Departamento">Departamento</option>
-                            <option value="Terreno">Terreno</option>
-                        </select>
+                <div className="space-y-6 pt-2">
+                    <h4 className="font-bold text-lg text-gray-800 flex items-center gap-2">
+                        🏡 Propiedades
+                    </h4>
+
+                    {/* Operación TABS */}
+                    <div className="bg-gray-100 p-1 rounded-xl flex text-sm font-bold">
+                        <button
+                            onClick={() => setFilters({ ...filters, operacion: 'Venta' })}
+                            className={`flex-1 py-2 rounded-lg transition-all ${filters.operacion === 'Venta' ? 'bg-white shadow text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
+                        >Venta</button>
+                        <button
+                            onClick={() => setFilters({ ...filters, operacion: 'Arriendo' })}
+                            className={`flex-1 py-2 rounded-lg transition-all ${filters.operacion === 'Arriendo' ? 'bg-white shadow text-green-600' : 'text-gray-500 hover:text-gray-700'}`}
+                        >Arriendo</button>
                     </div>
 
-                    {/* Stepper-ish inputs for Dorms/Baños using clean small inputs */}
-                    <div className="grid grid-cols-2 gap-2">
+                    {/* Tipo y Dorms */}
+                    <div className="bg-gray-50 p-4 rounded-xl border border-gray-100 space-y-3">
                         <div>
-                            <label className="block text-xs font-bold text-gray-500 mb-1">Dormitorios</label>
-                            <div className="relative">
-                                <input
-                                    type="number"
-                                    placeholder="Min"
-                                    value={filters.dormitorios}
-                                    onChange={(e) => setFilters({ ...filters, dormitorios: e.target.value })}
-                                    className="w-full p-2 pl-3 border rounded-lg outline-none focus:ring-2 focus:ring-blue-500"
-                                />
-                                <span className="absolute right-2 top-2 text-xs text-gray-400 font-bold">+</span>
-                            </div>
+                            <label className="block text-xs font-bold text-gray-500 mb-1">Tipo</label>
+                            <select
+                                value={filters.tipoPropiedad}
+                                onChange={(e) => setFilters({ ...filters, tipoPropiedad: e.target.value })}
+                                className="w-full p-2 border rounded-lg outline-none bg-white font-medium text-sm"
+                            >
+                                <option value="">Cualquiera</option>
+                                <option value="Casa">Casa</option>
+                                <option value="Departamento">Departamento</option>
+                                <option value="Terreno">Terreno</option>
+                                <option value="Oficina">Oficina</option>
+                            </select>
                         </div>
-                        <div>
-                            <label className="block text-xs font-bold text-gray-500 mb-1">Baños</label>
-                            <div className="relative">
-                                <input
-                                    type="number"
-                                    placeholder="Min"
-                                    value={filters.banos}
-                                    onChange={(e) => setFilters({ ...filters, banos: e.target.value })}
-                                    className="w-full p-2 pl-3 border rounded-lg outline-none focus:ring-2 focus:ring-blue-500"
-                                />
-                                <span className="absolute right-2 top-2 text-xs text-gray-400 font-bold">+</span>
+                        <div className="grid grid-cols-2 gap-2">
+                            <div>
+                                <label className="block text-xs font-bold text-gray-500 mb-1">Dormitorios</label>
+                                <div className="relative">
+                                    <span className="absolute left-3 top-2 text-xs font-bold text-gray-400">Min</span>
+                                    <input
+                                        type="number"
+                                        value={filters.dormitorios}
+                                        onChange={(e) => setFilters({ ...filters, dormitorios: e.target.value })}
+                                        className="w-full p-2 pl-9 border rounded-lg outline-none text-center font-medium"
+                                    />
+                                </div>
+                            </div>
+                            <div>
+                                <label className="block text-xs font-bold text-gray-500 mb-1">Baños</label>
+                                <div className="relative">
+                                    <span className="absolute left-3 top-2 text-xs font-bold text-gray-400">Min</span>
+                                    <input
+                                        type="number"
+                                        value={filters.banos}
+                                        onChange={(e) => setFilters({ ...filters, banos: e.target.value })}
+                                        className="w-full p-2 pl-9 border rounded-lg outline-none text-center font-medium"
+                                    />
+                                </div>
                             </div>
                         </div>
                     </div>
+
+                    {/* ACORDEÓN: Costos y Detalles (Gastos Comunes, Orientación) */}
+                    <details className="group border rounded-xl overflow-hidden">
+                        <summary className="flex items-center justify-between p-4 cursor-pointer bg-gray-50 hover:bg-gray-100 transition-colors list-none font-bold text-sm text-gray-700">
+                            <span>💎 Detalles y Costos</span>
+                            <span className="transition group-open:rotate-180">▼</span>
+                        </summary>
+                        <div className="p-4 bg-white border-t space-y-4">
+                            <div>
+                                <label className="block text-xs font-bold text-gray-500 mb-1">Gastos Comunes (Max)</label>
+                                <div className="relative">
+                                    <span className="absolute left-3 top-2 text-gray-400 font-bold">$</span>
+                                    <input
+                                        type="number"
+                                        placeholder="Ej: 100000"
+                                        value={filters.gastosComunes}
+                                        onChange={(e) => setFilters({ ...filters, gastosComunes: e.target.value })}
+                                        className="w-full p-2 pl-7 border rounded-lg outline-none text-sm"
+                                    />
+                                </div>
+                            </div>
+                            <div>
+                                <label className="block text-xs font-bold text-gray-500 mb-1">Orientación</label>
+                                <select
+                                    value={filters.orientacion}
+                                    onChange={(e) => setFilters({ ...filters, orientacion: e.target.value })}
+                                    className="w-full p-2 border rounded-lg outline-none bg-gray-50 text-sm"
+                                >
+                                    <option value="">Cualquiera</option>
+                                    <option value="Norte">Norte</option>
+                                    <option value="Sur">Sur</option>
+                                    <option value="Oriente">Oriente</option>
+                                    <option value="Poniente">Poniente</option>
+                                </select>
+                            </div>
+                        </div>
+                    </details>
                 </div>
             )}
 

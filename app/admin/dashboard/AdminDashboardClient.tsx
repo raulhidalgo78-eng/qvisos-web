@@ -23,7 +23,7 @@ export default function AdminDashboardClient({ ads }: AdminDashboardClientProps)
     const [activeTab, setActiveTab] = useState<'pending' | 'active'>('pending');
     const [isPending, startTransition] = useTransition();
 
-    const pendingAds = ads.filter(ad => ad.status === 'pending');
+    const pendingAds = ads.filter(ad => ['pending', 'pending_verification'].includes(ad.status));
     const activeAds = ads.filter(ad => ['active', 'paused'].includes(ad.status));
 
     const handleAction = (action: () => Promise<any>, confirmMsg?: string) => {
@@ -61,7 +61,7 @@ export default function AdminDashboardClient({ ads }: AdminDashboardClientProps)
                     ad.status === 'paused' ? 'bg-yellow-100 text-yellow-800' :
                         'bg-blue-100 text-blue-800'
                     }`}>
-                    {ad.status === 'pending' ? 'Por Aprobar' : ad.status}
+                    {(ad.status === 'pending' || ad.status === 'pending_verification') ? 'Por Aprobar' : ad.status}
                 </div>
             </div>
 

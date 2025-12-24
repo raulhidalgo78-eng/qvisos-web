@@ -30,7 +30,7 @@ export default async function AdminDashboard() {
   const { data: ads, error } = await supabaseAdmin
     .from('ads')
     .select('*')
-    .neq('status', 'deleted')
+    .eq('status', 'pending_verification') // <--- Esta es la clave
     .order('created_at', { ascending: false });
 
   if (error) {

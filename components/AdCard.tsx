@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import React from 'react';
+import { Snowflake, Sun, Waves, Zap, Wind, Armchair, Flame, Car, ShieldCheck } from 'lucide-react';
 
 interface AdCardProps {
     ad: {
@@ -85,6 +86,35 @@ export default function AdCard({ ad }: AdCardProps) {
                             {ad.price > 0 ? formatPrice(ad.price, currency) : "Precio a conversar"}
                         </p>
                         {getDetails()}
+
+                        {/* Pro Feature Icons */}
+                        {ad.features?.equipamiento && Array.isArray(ad.features.equipamiento) && ad.features.equipamiento.length > 0 && (
+                            <div className="flex gap-2 mt-3 pt-3 border-t border-gray-100 overflow-hidden">
+                                {ad.features.equipamiento.slice(0, 4).map((item: string, i: number) => {
+                                    let Icon = ShieldCheck; // Fallback
+                                    // Auto Icons
+                                    if (item === 'Aire Acondicionado') Icon = Snowflake;
+                                    if (item === 'Sunroof / Techo Panorámico') Icon = Sun;
+                                    if (item === 'Asientos de Cuero') Icon = Armchair;
+                                    if (item === 'Velocidad Crucero') Icon = Wind;
+                                    // Propiedad Icons
+                                    if (item === 'Piscina') Icon = Waves;
+                                    if (item === 'Paneles Solares') Icon = Zap;
+                                    if (item === 'Calefacción Central') Icon = Flame;
+                                    if (item === 'Estacionamiento' || item.includes('Estacionamiento')) Icon = Car;
+                                    if (item === 'Quincho') Icon = Flame;
+
+                                    return (
+                                        <div key={i} className="text-gray-400" title={item}>
+                                            <Icon size={16} />
+                                        </div>
+                                    );
+                                })}
+                                {ad.features.equipamiento.length > 4 && (
+                                    <span className="text-xs text-gray-400 font-bold self-center">+{ad.features.equipamiento.length - 4}</span>
+                                )}
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>

@@ -54,30 +54,46 @@ export async function POST(request: Request) {
             return NextResponse.json({ message: 'No tienes permisos para modificar este anuncio' }, { status: 403 });
         }
 
-        if (action === 'close_and_release' || action === 'delete') {
-            const newStatus = action === 'delete' ? 'deleted' : 'closed';
+        if (action === 'delete') {
+            // Eliminar físicamente el anuncio
+            const { error: deleteError } = await supabase
+                .from('ads')
+                .delete()
+                .eq('id', adId);
 
-            // A. Actualizar estado del Aviso
+            if (deleteError) throw deleteError;
+
+            // Liberar QR (Update status to printed so it can be reused)
+            const { error: qrError } = await supabase
+                .from('qr_codes')
+                .update({ ad_id: null, status: 'printed' })
+                .eq('ad_id', adId);
+
+            if (qrError) console.error("Error unlinking QR on delete", qrError);
+
+            return NextResponse.json({ success: true, message: 'Aviso eliminado' });
+
+        } else if (action === 'close_and_release') {
+            // Close = Draft (Pausado)
             const { error: adError } = await supabase
                 .from('ads')
-                .update({ status: newStatus })
+                .update({ status: 'draft' })
                 .eq('id', adId);
 
             if (adError) throw adError;
 
-            // B. LIBERAR EL QR (La magia del negocio)
-            // Buscamos QRs que apunten a este ad y los soltamos
+            // Liberar QR
             const { error: qrError } = await supabase
                 .from('qr_codes')
                 .update({
-                    ad_id: null,      // Romper el vínculo
-                    status: 'active'  // Dejarlo listo para el siguiente uso
+                    ad_id: null,
+                    status: 'printed'  // Reset to printed
                 })
                 .eq('ad_id', adId);
 
             if (qrError) throw qrError;
 
-            return NextResponse.json({ success: true, message: 'Aviso actualizado y QR liberado' });
+            return NextResponse.json({ success: true, message: 'Aviso finalizado y QR liberado' });
         }
 
         return NextResponse.json({ message: 'Acción no válida' }, { status: 400 });

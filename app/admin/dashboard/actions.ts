@@ -22,7 +22,7 @@ export async function approveAd(adId: string) {
     const supabase = await checkAdmin();
     const { error } = await supabase
       .from('ads')
-      .update({ status: 'active' }) // Changed to 'active'
+      .update({ status: 'verified' }) // Changed to 'verified' (ENUM compliant)
       .eq('id', adId);
 
     if (error) throw error;
@@ -36,7 +36,9 @@ export async function approveAd(adId: string) {
 export async function toggleAdStatus(adId: string, currentStatus: string) {
   try {
     const supabase = await checkAdmin();
-    const newStatus = currentStatus === 'active' ? 'paused' : 'active';
+    // Toggle between 'verified' (public) and 'draft' (hidden/paused)
+    // Note: 'paused' is not in DB ENUM, using 'draft' as equivalent.
+    const newStatus = currentStatus === 'verified' ? 'draft' : 'verified';
 
     const { error } = await supabase
       .from('ads')

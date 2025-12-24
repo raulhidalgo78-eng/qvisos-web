@@ -55,8 +55,8 @@ export default async function MisAnunciosPage() {
     cardPrice: { fontSize: '1.1rem', color: '#059669', fontWeight: '600' },
     badge: (status: string) => ({
       display: 'inline-block', padding: '4px 10px', borderRadius: '99px', fontSize: '0.75rem', fontWeight: 'bold', textTransform: 'uppercase' as const,
-      backgroundColor: status === 'aprobado' ? '#dcfce7' : '#fef9c3',
-      color: status === 'aprobado' ? '#166534' : '#854d0e',
+      backgroundColor: (status === 'aprobado' || status === 'verified') ? '#dcfce7' : '#fef9c3',
+      color: (status === 'aprobado' || status === 'verified') ? '#166534' : '#854d0e',
       width: 'fit-content'
     }),
     actions: { display: 'flex', gap: '10px' },

@@ -24,7 +24,7 @@ export default function AdminDashboardClient({ ads }: AdminDashboardClientProps)
     const [isPending, startTransition] = useTransition();
 
     const pendingAds = ads.filter(ad => ['pending', 'pending_verification'].includes(ad.status));
-    const activeAds = ads.filter(ad => ['active', 'paused'].includes(ad.status));
+    const activeAds = ads.filter(ad => ['verified', 'draft', 'aprobado'].includes(ad.status)); // Include 'draft' as paused equivalent
 
     const handleAction = (action: () => Promise<any>, confirmMsg?: string) => {
         if (confirmMsg && !confirm(confirmMsg)) return;
@@ -57,11 +57,13 @@ export default function AdminDashboardClient({ ads }: AdminDashboardClientProps)
                         <span className="text-sm">Sin imagen</span>
                     </div>
                 )}
-                <div className={`absolute top-2 right-2 px-2 py-1 rounded text-xs font-bold uppercase ${ad.status === 'active' ? 'bg-green-100 text-green-800' :
-                    ad.status === 'paused' ? 'bg-yellow-100 text-yellow-800' :
-                        'bg-blue-100 text-blue-800'
+                <div className={`absolute top-2 right-2 px-2 py-1 rounded text-xs font-bold uppercase ${(ad.status === 'verified' || ad.status === 'aprobado') ? 'bg-green-100 text-green-800' :
+                        ad.status === 'draft' ? 'bg-yellow-100 text-yellow-800' :
+                            'bg-blue-100 text-blue-800'
                     }`}>
-                    {(ad.status === 'pending' || ad.status === 'pending_verification') ? 'Por Aprobar' : ad.status}
+                    {(ad.status === 'pending' || ad.status === 'pending_verification') ? 'Por Aprobar' :
+                        (ad.status === 'verified' || ad.status === 'aprobado') ? 'Publicado' :
+                            ad.status === 'draft' ? 'Pausado' : ad.status}
                 </div>
             </div>
 
@@ -85,13 +87,13 @@ export default function AdminDashboardClient({ ads }: AdminDashboardClientProps)
                             <button
                                 onClick={() => handleAction(() => toggleAdStatus(ad.id, ad.status))}
                                 disabled={isPending}
-                                className={`flex items-center justify-center gap-1 py-2 px-2 rounded-md transition-colors text-sm font-medium ${ad.status === 'paused'
-                                    ? 'bg-blue-100 text-blue-700 hover:bg-blue-200'
-                                    : 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200'
+                                className={`flex items-center justify-center gap-1 py-2 px-2 rounded-md transition-colors text-sm font-medium ${ad.status === 'draft'
+                                        ? 'bg-blue-100 text-blue-700 hover:bg-blue-200'
+                                        : 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200'
                                     }`}
                             >
-                                {ad.status === 'paused' ? <PlayCircle size={16} /> : <PauseCircle size={16} />}
-                                {ad.status === 'paused' ? 'Reactivar' : 'Pausar'}
+                                {ad.status === 'draft' ? <PlayCircle size={16} /> : <PauseCircle size={16} />}
+                                {ad.status === 'draft' ? 'Reactivar' : 'Pausar'}
                             </button>
 
                             <button

@@ -17,9 +17,8 @@ export default function AdManageButtons({ adId, currentStatus, isOwnerOrAdmin }:
     if (!isOwnerOrAdmin) return null;
 
     // Solo mostramos botones si el anuncio no está ya cerrado o eliminado
-    // Ajusta según tus estados. El prompt dice "si el aviso está activo".
-    // Asumimos 'active' o 'published' o 'pending_verification' como estados "vivos".
-    const isActive = ['active', 'published', 'pending_verification'].includes(currentStatus);
+    // Ajusta según tus estados. 'verified' es el estado público oficial.
+    const isActive = ['verified', 'published', 'active', 'pending_verification'].includes(currentStatus); // Support legacy and new statuses for now
 
     if (!isActive) return null;
 

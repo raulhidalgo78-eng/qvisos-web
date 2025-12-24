@@ -20,9 +20,18 @@ async function checkAdmin() {
 export async function approveAd(adId: string) {
   try {
     const supabase = await checkAdmin();
+
+    const startDate = new Date();
+    const endDate = new Date();
+    endDate.setDate(startDate.getDate() + 90); // 90 days validity
+
     const { error } = await supabase
       .from('ads')
-      .update({ status: 'verified' }) // Changed to 'verified' (ENUM compliant)
+      .update({
+        status: 'verified',
+        start_date: startDate.toISOString(),
+        end_date: endDate.toISOString()
+      })
       .eq('id', adId);
 
     if (error) throw error;
@@ -83,6 +92,28 @@ export async function deleteAd(adId: string) {
     const { error } = await supabase
       .from('ads')
       .delete()
+      .eq('id', adId);
+
+    if (error) throw error;
+    revalidatePath('/admin/dashboard');
+    return { success: true };
+  } catch (error: any) {
+    return { error: error.message };
+  }
+}
+
+export async function extendAd(adId: string, currentEndDate?: string) {
+  try {
+    const supabase = await checkAdmin();
+
+    // Calculate new end date (Current End Date + 30 days OR Now + 30 days if null)
+    const baseDate = currentEndDate ? new Date(currentEndDate) : new Date();
+    const newEndDate = new Date(baseDate);
+    newEndDate.setDate(newEndDate.getDate() + 30);
+
+    const { error } = await supabase
+      .from('ads')
+      .update({ end_date: newEndDate.toISOString() })
       .eq('id', adId);
 
     if (error) throw error;

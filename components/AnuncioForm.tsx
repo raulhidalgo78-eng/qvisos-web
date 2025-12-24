@@ -52,10 +52,23 @@ export default function AnuncioForm({ initialData }: AnuncioFormProps) {
     const [lng, setLng] = useState<number | null>(initialData?.features?.longitude ? parseFloat(initialData.features.longitude) : null);
     const [qrCategory, setQrCategory] = useState<string | null>(null);
 
-    // Estados UI Específicos (Modernización)
+    // Estados UI Específicos (Modernización Nivel Pro)
     const [transmision, setTransmision] = useState(initialData?.features?.transmision || 'Automática');
     const [dormitorios, setDormitorios] = useState<number>(initialData?.features?.dormitorios ? Number(initialData.features.dormitorios) : 2);
     const [banos, setBanos] = useState<number>(initialData?.features?.banos ? Number(initialData.features.banos) : 1);
+    const [estacionamientos, setEstacionamientos] = useState<number>(initialData?.features?.estacionamientos ? Number(initialData.features.estacionamientos) : 0);
+    const [bodega, setBodega] = useState<boolean>(initialData?.features?.bodega === 'true' || initialData?.features?.bodega === true);
+
+    // Arrays para Checkboxes
+    const [equipamientoProp, setEquipamientoProp] = useState<string[]>(initialData?.features?.equipamiento || []);
+    const [equipamientoAuto, setEquipamientoAuto] = useState<string[]>(initialData?.features?.equipamiento || []);
+
+    const toggleEquipamientoProp = (item: string) => {
+        setEquipamientoProp(prev => prev.includes(item) ? prev.filter(i => i !== item) : [...prev, item]);
+    };
+    const toggleEquipamientoAuto = (item: string) => {
+        setEquipamientoAuto(prev => prev.includes(item) ? prev.filter(i => i !== item) : [...prev, item]);
+    };
 
     // --- EFECTOS ---
     useEffect(() => { setIsMounted(true); }, []);
@@ -128,6 +141,13 @@ export default function AnuncioForm({ initialData }: AnuncioFormProps) {
             // Recolectar campos dinámicos del form
             const rawData = Object.fromEntries(formData.entries());
             Object.assign(features, rawData); // Merge simple
+
+            // Agregar arrays de checkboxes manualmente a features
+            if (category === 'autos') {
+                features.equipamiento = equipamientoAuto;
+            } else if (category === 'inmuebles') {
+                features.equipamiento = equipamientoProp;
+            }
 
             formData.set('features', JSON.stringify(features));
             if (!formData.get('categoria')) formData.set('categoria', category);
@@ -258,8 +278,8 @@ export default function AnuncioForm({ initialData }: AnuncioFormProps) {
                                         type="button"
                                         onClick={() => setTransmision(type)}
                                         className={`px-6 py-2 rounded-lg text-sm font-bold transition-all ${transmision === type
-                                                ? 'bg-blue-600 text-white shadow-md'
-                                                : 'text-gray-500 hover:bg-gray-50'
+                                            ? 'bg-blue-600 text-white shadow-md'
+                                            : 'text-gray-500 hover:bg-gray-50'
                                             }`}
                                     >
                                         {type}
@@ -354,6 +374,142 @@ export default function AnuncioForm({ initialData }: AnuncioFormProps) {
                                     defaultValue={initialData?.features?.m2_utiles}
                                 />
                                 <span className="absolute right-3 top-3 text-gray-400 text-sm font-medium">m²</span>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* --- SECCIÓN DETALLES AVANZADOS (PRO) - AUTOS --- */}
+                {showAutoFields && (
+                    <div className="bg-gray-50 border border-gray-200 p-6 rounded-2xl space-y-6">
+                        <h3 className="text-lg font-bold text-gray-700 flex items-center gap-2 border-b pb-2">
+                            ⚙️ Ficha Técnica y Estado
+                        </h3>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-xs font-bold text-gray-500 mb-1 ml-1">Combustible</label>
+                                <select name="combustible" className="p-3 border rounded-xl w-full bg-white outline-none" defaultValue={initialData?.features?.combustible}>
+                                    <option value="Bencina">Bencina</option>
+                                    <option value="Diesel">Diesel</option>
+                                    <option value="Híbrido">Híbrido</option>
+                                    <option value="Eléctrico">Eléctrico</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-xs font-bold text-gray-500 mb-1 ml-1">Dueños</label>
+                                <select name="duenos" className="p-3 border rounded-xl w-full bg-white outline-none" defaultValue={initialData?.features?.duenos}>
+                                    <option value="1">Único dueño</option>
+                                    <option value="2">2 dueños</option>
+                                    <option value="3+">3+ dueños</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label className="block text-xs font-bold text-gray-500 mb-3 ml-1">Equipamiento</label>
+                            <div className="grid grid-cols-2 gap-3">
+                                {['Aire Acondicionado', 'Apple CarPlay / Android Auto', 'Sunroof / Techo Panorámico', 'Asientos de Cuero', 'Velocidad Crucero', 'Cámara de Retroceso'].map(item => (
+                                    <label key={item} className="flex items-center gap-2 cursor-pointer p-2 hover:bg-white rounded-lg transition-colors border border-transparent hover:border-gray-200">
+                                        <input
+                                            type="checkbox"
+                                            checked={equipamientoAuto.includes(item)}
+                                            onChange={() => toggleEquipamientoAuto(item)}
+                                            className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500"
+                                        />
+                                        <span className="text-sm text-gray-700">{item}</span>
+                                    </label>
+                                ))}
+                            </div>
+                            {/* Hidden input to pass array as JSON string if manual handling needed, but logic below handles it */}
+                        </div>
+                    </div>
+                )}
+
+
+                {/* --- SECCIÓN DETALLES AVANZADOS (PRO) - PROPIEDADES --- */}
+                {showPropertyFields && (
+                    <div className="bg-gray-50 border border-gray-200 p-6 rounded-2xl space-y-6">
+                        <h3 className="text-lg font-bold text-gray-700 flex items-center gap-2 border-b pb-2">
+                            💎 Detalles Financieros y Equipamiento
+                        </h3>
+
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-xs font-bold text-gray-500 mb-1 ml-1">Gastos Comunes</label>
+                                <div className="relative">
+                                    <span className="absolute left-3 top-3 text-gray-400 text-sm font-medium">$</span>
+                                    <input
+                                        name="gastos_comunes"
+                                        type="number"
+                                        placeholder="Valor Aprox."
+                                        className="p-3 border rounded-xl w-full pl-6 outline-none"
+                                        defaultValue={initialData?.features?.gastos_comunes}
+                                    />
+                                </div>
+                            </div>
+                            <div>
+                                <label className="block text-xs font-bold text-gray-500 mb-1 ml-1">Orientación</label>
+                                <select name="orientacion" className="p-3 border rounded-xl w-full bg-white outline-none" defaultValue={initialData?.features?.orientacion}>
+                                    <option value="">Seleccionar</option>
+                                    <option value="Norte">Norte</option>
+                                    <option value="Sur">Sur</option>
+                                    <option value="Oriente">Oriente</option>
+                                    <option value="Poniente">Poniente</option>
+                                    <option value="Nor-Oriente">Nor-Oriente</option>
+                                    <option value="Nor-Poniente">Nor-Poniente</option>
+                                    <option value="Sur-Oriente">Sur-Oriente</option>
+                                    <option value="Sur-Poniente">Sur-Poniente</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div className="flex gap-6">
+                            {/* Estacionamientos */}
+                            <div>
+                                <label className="block text-xs font-bold text-gray-500 mb-2 ml-1">Estacionamientos</label>
+                                <div className="flex bg-white rounded-lg border overflow-hidden">
+                                    {[0, 1, 2, 3].map(num => (
+                                        <button
+                                            key={num}
+                                            type="button"
+                                            onClick={() => setEstacionamientos(num)}
+                                            className={`px-4 py-2 text-sm font-bold border-r last:border-r-0 hover:bg-gray-50 ${estacionamientos === num ? 'bg-green-100 text-green-800' : 'text-gray-600'}`}
+                                        >
+                                            {num}{num === 3 ? '+' : ''}
+                                        </button>
+                                    ))}
+                                </div>
+                                <input type="hidden" name="estacionamientos" value={estacionamientos} />
+                            </div>
+
+                            {/* Bodega Toggle */}
+                            <div>
+                                <label className="block text-xs font-bold text-gray-500 mb-2 ml-1">Bodega</label>
+                                <button
+                                    type="button"
+                                    onClick={() => setBodega(!bodega)}
+                                    className={`px-4 py-2 rounded-lg border text-sm font-bold transition-colors ${bodega ? 'bg-green-600 text-white border-green-600' : 'bg-white text-gray-500 border-gray-300'}`}
+                                >
+                                    {bodega ? 'Sí, incluye' : 'No incluye'}
+                                </button>
+                                <input type="hidden" name="bodega" value={bodega ? 'true' : 'false'} />
+                            </div>
+                        </div>
+
+                        <div>
+                            <label className="block text-xs font-bold text-gray-500 mb-3 ml-1">Sustentabilidad y Otros</label>
+                            <div className="grid grid-cols-2 gap-3">
+                                {['Paneles Solares', 'Ventanas Termopanel', 'Calefacción Central', 'Logia', 'Walking Closet', 'Piscina', 'Quincho'].map(item => (
+                                    <label key={item} className="flex items-center gap-2 cursor-pointer p-2 hover:bg-white rounded-lg transition-colors border border-transparent hover:border-gray-200">
+                                        <input
+                                            type="checkbox"
+                                            checked={equipamientoProp.includes(item)}
+                                            onChange={() => toggleEquipamientoProp(item)}
+                                            className="w-5 h-5 text-green-600 rounded focus:ring-green-500"
+                                        />
+                                        <span className="text-sm text-gray-700">{item}</span>
+                                    </label>
+                                ))}
                             </div>
                         </div>
                     </div>

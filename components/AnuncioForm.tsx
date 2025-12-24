@@ -50,6 +50,8 @@ export default function AnuncioForm({ initialData }: AnuncioFormProps) {
     // Ubicación
     const [lat, setLat] = useState<number | null>(initialData?.features?.latitude ? parseFloat(initialData.features.latitude) : null);
     const [lng, setLng] = useState<number | null>(initialData?.features?.longitude ? parseFloat(initialData.features.longitude) : null);
+    const [city, setCity] = useState<string>(initialData?.features?.city || '');
+    const [region, setRegion] = useState<string>(initialData?.features?.region || '');
     const [qrCategory, setQrCategory] = useState<string | null>(null);
 
     // Estados UI Específicos (Modernización Nivel Pro)
@@ -109,9 +111,11 @@ export default function AnuncioForm({ initialData }: AnuncioFormProps) {
     }, [qrCodeInput, initialData]);
 
     // --- HANDLERS ---
-    const handleLocationSelect = useCallback((data: { lat: number; lng: number; address?: string }) => {
+    const handleLocationSelect = useCallback((data: { lat: number; lng: number; address?: string; city?: string; region?: string }) => {
         setLat(data.lat);
         setLng(data.lng);
+        if (data.city) setCity(data.city);
+        if (data.region) setRegion(data.region);
     }, []);
 
     const handleGenerateDescription = async () => {
@@ -137,6 +141,8 @@ export default function AnuncioForm({ initialData }: AnuncioFormProps) {
             features.moneda = moneda;
             if (lat) features.latitude = lat;
             if (lng) features.longitude = lng;
+            if (city) features.city = city;
+            if (region) features.region = region;
 
             // Recolectar campos dinámicos del form
             const rawData = Object.fromEntries(formData.entries());

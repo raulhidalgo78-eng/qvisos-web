@@ -31,16 +31,14 @@ export default function AdMap({ lat, lng }: AdMapProps) {
                     gestureHandling: 'cooperative', // Mejor UX en móvil
                 });
 
-                // 3. Dibujar el Círculo de Privacidad (Radio de Seguridad)
-                circle = new google.maps.Circle({
-                    strokeColor: "#3b82f6", // Azul Qvisos
-                    strokeOpacity: 0.8,
-                    strokeWeight: 2,
-                    fillColor: "#3b82f6",
-                    fillOpacity: 0.20,
+                // 3. Inicializar Advanced Marker (Pin Exacto)
+                // @ts-ignore
+                const { AdvancedMarkerElement } = await google.maps.importLibrary("marker");
+
+                new AdvancedMarkerElement({
                     map: map,
-                    center: { lat, lng },
-                    radius: 400, // 400 metros de radio aproximado
+                    position: { lat, lng },
+                    title: "Ubicación",
                 });
 
             } catch (err) {
@@ -84,7 +82,7 @@ export default function AdMap({ lat, lng }: AdMapProps) {
             <div ref={mapRef} className="w-full h-full" />
             {/* Overlay informativo */}
             <div className="absolute bottom-4 left-4 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-medium text-blue-800 shadow-sm border border-blue-100">
-                🛡️ Ubicación aproximada (Privacidad protegida)
+                📍 Ubicación del Anuncio
             </div>
         </div>
     );

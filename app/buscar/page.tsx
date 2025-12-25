@@ -44,6 +44,15 @@ export default async function SearchPage(props: {
     if (dbCategory) {
         // Usamos ilike para 'category' por si en BD se guardó 'Autos' en vez de 'autos'
         query = query.ilike('category', dbCategory);
+
+        // FIX CRITICO: Bloqueo explícito de categorías cruzadas
+        if (dbCategory === 'inmuebles') {
+            query = query.not('category', 'ilike', 'autos');
+        } else if (dbCategory === 'autos') {
+            query = query.not('category', 'ilike', 'inmuebles');
+        }
+
+        console.log("🔒 STRICT FILTERING APPLIED:", { dbCategory, filter: `ilike ${dbCategory}` });
     }
 
     // 2. Operación (Usando operador ->> para extraer texto del JSONB y ser flexible con mayúsculas)

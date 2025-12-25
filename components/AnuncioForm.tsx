@@ -3,6 +3,7 @@
 import { createClient } from '@/utils/supabase/client';
 import { useRouter, useSearchParams } from 'next/navigation';
 import React, { useState, useEffect, useCallback } from 'react';
+import { MessageCircle, Bot, Shield } from 'lucide-react';
 import type { User } from '@supabase/supabase-js';
 import { updateAd, createAd } from '@/app/actions/ad-actions';
 import { checkQrCategory } from '@/app/actions/check-qr';
@@ -46,6 +47,7 @@ export default function AnuncioForm({ initialData }: AnuncioFormProps) {
     const [extraNotes, setExtraNotes] = useState(initialData?.features?.extraNotes || '');
     const [aiTone, setAiTone] = useState('random');
     const [isGenerating, setIsGenerating] = useState(false);
+    const [contactPreference, setContactPreference] = useState(initialData?.features?.contact_preference || 'ai_filter');
 
     // Ubicación
     const [lat, setLat] = useState<number | null>(initialData?.features?.latitude ? parseFloat(initialData.features.latitude) : null);
@@ -139,6 +141,7 @@ export default function AnuncioForm({ initialData }: AnuncioFormProps) {
             // (Aquí va tu lógica de recolección de campos según categoría, la mantengo simple por seguridad)
             features.operacion = operacion;
             features.moneda = moneda;
+            features.contact_preference = contactPreference;
             if (lat) features.latitude = lat;
             if (lng) features.longitude = lng;
             if (city) features.city = city;
@@ -533,7 +536,57 @@ export default function AnuncioForm({ initialData }: AnuncioFormProps) {
                     </div>
                 </div>
 
-                {/* 5. Contacto y Foto */}
+                {/* 5. PREFERENCIA DE CONTACTO (Radio Cards) */}
+                <div className="bg-gray-50 p-6 rounded-2xl border border-gray-200">
+                    <h3 className="block font-bold text-gray-700 mb-4">¿Cómo quieres que te contacten?</h3>
+                    <div className="grid md:grid-cols-2 gap-4">
+                        {/* Opción A: WhatsApp Directo */}
+                        <div
+                            onClick={() => setContactPreference('direct_whatsapp')}
+                            className={`cursor-pointer p-4 rounded-xl border-2 transition-all flex items-start gap-4 ${contactPreference === 'direct_whatsapp' ? 'border-green-500 bg-green-50' : 'border-gray-200 bg-white hover:border-green-200'}`}
+                        >
+                            <div className={`mt-1 p-2 rounded-full ${contactPreference === 'direct_whatsapp' ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-400'}`}>
+                                <MessageCircle size={24} />
+                            </div>
+                            <div>
+                                <h4 className={`font-bold ${contactPreference === 'direct_whatsapp' ? 'text-green-800' : 'text-gray-700'}`}>WhatsApp Directo</h4>
+                                <p className="text-sm text-gray-500 leading-snug mt-1">
+                                    Los interesados verán tu número y te escribirán directamente a tu teléfono personal.
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* Opción B: Filtro IA (Recomendado) */}
+                        <div
+                            onClick={() => setContactPreference('ai_filter')}
+                            className={`cursor-pointer p-4 rounded-xl border-2 transition-all flex items-start gap-4 relative overflow-hidden ${contactPreference === 'ai_filter' ? 'border-blue-500 bg-blue-50' : 'border-gray-200 bg-white hover:border-blue-200'}`}
+                        >
+                            {/* Badge de Recomendado */}
+                            {contactPreference === 'ai_filter' && (
+                                <div className="absolute top-0 right-0 bg-blue-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-bl-lg">
+                                    RECOMENDADO
+                                </div>
+                            )}
+
+                            <div className={`mt-1 p-2 rounded-full ${contactPreference === 'ai_filter' ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-400'}`}>
+                                <Bot size={24} />
+                            </div>
+                            <div>
+                                <div className="flex items-center gap-2">
+                                    <h4 className={`font-bold ${contactPreference === 'ai_filter' ? 'text-blue-800' : 'text-gray-700'}`}>Filtrar con IA</h4>
+                                    <span className="flex items-center gap-1 bg-gray-100 px-1.5 py-0.5 rounded text-[10px] font-bold text-gray-500 border border-gray-200">
+                                        <Shield size={10} /> Privacidad
+                                    </span>
+                                </div>
+                                <p className="text-sm text-gray-500 leading-snug mt-1">
+                                    Nuestra IA atiende las preguntas básicas y solo te pasa los contactos realmente interesados. Protege tu número.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* 6. Contacto y Foto */}
                 <input name="contact_phone" defaultValue={user?.user_metadata?.phone} placeholder="WhatsApp (+569...)" required className="w-full p-3 border rounded-lg" />
 
                 <div>

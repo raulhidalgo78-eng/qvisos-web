@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import React from 'react';
-import { Snowflake, Sun, Waves, Zap, Wind, Armchair, Flame, Car, ShieldCheck } from 'lucide-react';
+import { Snowflake, Sun, Waves, Zap, Wind, Armchair, Flame, Car, ShieldCheck, MapPin, Bed, Bath, Ruler } from 'lucide-react';
 
 interface AdCardProps {
     ad: {
@@ -16,28 +16,50 @@ interface AdCardProps {
 
 export default function AdCard({ ad }: AdCardProps) {
     // Helper to format price
+    // Helper to format price
     const formatPrice = (price: number, currency: string = 'CLP') => {
-        return `${currency} $${price?.toLocaleString('es-CL') || '0'}`;
+        if (currency === 'UF') {
+            return `UF ${price?.toLocaleString('es-CL')}`;
+        }
+        return `$${price?.toLocaleString('es-CL')}`;
     };
 
+    // Helper to get specific details based on category
     // Helper to get specific details based on category
     const getDetails = () => {
         const f = ad.features || {};
         if (ad.category === 'autos' || ad.category === 'Autos') {
             return (
-                <div className="text-xs text-gray-500 mt-1 flex gap-2">
-                    <span>{f.anio || ''}</span>
-                    <span>•</span>
-                    <span>{f.kilometraje ? `${f.kilometraje} km` : ''}</span>
+                <div className="text-sm text-gray-500 mt-2 flex gap-3 items-center">
+                    <span className="bg-gray-100 px-2 py-1 rounded text-xs font-medium">{f.anio || 'Año N/A'}</span>
+                    <span className="text-gray-300">|</span>
+                    <span className="flex items-center gap-1">
+                        {f.kilometraje ? `${Number(f.kilometraje).toLocaleString('es-CL')} km` : '0 km'}
+                    </span>
                 </div>
             );
         }
         if (ad.category === 'inmuebles' || ad.category === 'Propiedades') {
             return (
-                <div className="text-xs text-gray-500 mt-1 flex gap-2">
-                    {f.m2_utiles && <span>{f.m2_utiles} m²</span>}
-                    {f.dormitorios && <span>• {f.dormitorios}d</span>}
-                    {f.banos && <span>• {f.banos}b</span>}
+                <div className="flex gap-4 mt-3 text-gray-600 text-sm">
+                    {f.dormitorios && (
+                        <div className="flex items-center gap-1" title="Dormitorios">
+                            <Bed size={16} className="text-blue-500" />
+                            <span>{f.dormitorios}</span>
+                        </div>
+                    )}
+                    {f.banos && (
+                        <div className="flex items-center gap-1" title="Baños">
+                            <Bath size={16} className="text-blue-500" />
+                            <span>{f.banos}</span>
+                        </div>
+                    )}
+                    {(f.m2_utiles || f.m2_total) && (
+                        <div className="flex items-center gap-1" title="Metros Cuadrados">
+                            <Ruler size={16} className="text-blue-500" />
+                            <span>{f.m2_utiles || f.m2_total} m²</span>
+                        </div>
+                    )}
                 </div>
             );
         }
@@ -45,7 +67,19 @@ export default function AdCard({ ad }: AdCardProps) {
     };
 
     // Determine currency (default to CLP if not in features)
+    // Determine currency (default to CLP if not in features)
     const currency = ad.features?.moneda || 'CLP';
+
+    // Determine Badge Logic
+    const operacion = ad.features?.operacion || 'Venta'; // Default to Venta if missing
+    const isArriendo = operacion.toLowerCase().includes('arriendo');
+
+    // Badge Styles
+    const badgeColor = isArriendo ? 'bg-orange-500' : 'bg-green-600'; // Orange for Rent, Green for Sale
+    const badgeText = isArriendo ? 'ARRIENDO' : 'EN VENTA';
+
+    // Location
+    const locationText = ad.features?.city ? `${ad.features.city}, ${ad.features.region || ''}` : null;
 
     return (
         <Link
@@ -57,9 +91,9 @@ export default function AdCard({ ad }: AdCardProps) {
 
                 {/* Image */}
                 <div className="relative h-48 bg-gray-100 overflow-hidden">
-                    {/* Badge Category */}
-                    <div className="absolute top-2 left-2 bg-blue-600 text-white text-xs font-bold px-2 py-1 rounded shadow z-10">
-                        {ad.category}
+                    {/* Badge Operation (Dynamic) */}
+                    <div className={`absolute top-3 left-3 ${badgeColor} text-white text-[10px] font-bold px-3 py-1 rounded-full shadow-md z-10 tracking-wide`}>
+                        {badgeText}
                     </div>
 
                     {ad.media_url ? (
@@ -77,12 +111,25 @@ export default function AdCard({ ad }: AdCardProps) {
 
                 {/* Content */}
                 <div className="p-4 flex-1 flex flex-col">
-                    <h3 className="text-lg font-semibold text-gray-900 line-clamp-2 mb-1 group-hover:text-blue-600 transition-colors">
-                        {ad.title}
+                    <h3 className="text-lg font-bold text-gray-900 line-clamp-1 mb-1 group-hover:text-blue-600 transition-colors capitalize">
+                        {ad.title.toLowerCase()}
                     </h3>
 
+                    {/* Location Line */}
+                    {locationText ? (
+                        <div className="flex items-center gap-1 text-gray-500 text-sm mb-3">
+                            <MapPin size={14} className="text-gray-400" />
+                            <span className="line-clamp-1">{locationText}</span>
+                        </div>
+                    ) : (
+                        <div className="flex items-center gap-1 text-gray-500 text-sm mb-3">
+                            <MapPin size={14} className="text-gray-400" />
+                            <span className="capitalize">Ubicación Disponible</span>
+                        </div>
+                    )}
+
                     <div className="mt-auto">
-                        <p className="text-xl font-bold text-green-600">
+                        <p className="text-2xl font-extrabold text-gray-900">
                             {ad.price > 0 ? formatPrice(ad.price, currency) : "Precio a conversar"}
                         </p>
                         {getDetails()}

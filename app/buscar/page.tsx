@@ -24,21 +24,31 @@ export default async function SearchPage({
         .order('created_at', { ascending: false });
 
     // Aplicar filtros dinámicos
+    // --- MAPPING DE FILTROS (Lógica Estricta) ---
+    // Mapeamos los params de la URL (Ej: 'Propiedades', 'Venta') a los valores reales de la BD.
+
+    // 1. Categoría
+    let dbCategory = null;
     if (category) {
-        // Mapeo simple para asegurar coincidencia con BD (Autos vs autos)
-        // Si la BD usa minúsculas, forzamos minúsculas, o viceversa.
-        // Asumiremos que la BD es consistente con lo que enviamos, o usamos ilike si fuera texto.
-        // Pero category suele ser enum o fijo. Probemos ilike para seguridad.
-        query = query.ilike('category', category);
+        const catLower = category.toLowerCase();
+        if (catLower === 'propiedades' || catLower === 'inmuebles') dbCategory = 'inmuebles';
+        else if (catLower === 'autos') dbCategory = 'autos';
+        else dbCategory = category; // Fallback
     }
 
+    if (dbCategory) {
+        query = query.eq('category', dbCategory);
+    }
+
+    // 2. Operación (Solo para Propiedades generalmente, pero lo aplicamos si viene)
     if (operacion) {
-        query = query.contains('features', { operacion: operacion });
+        // Asumimos que en BD se guarda como 'Venta' o 'Arriendo' (Capitalized)
+        // Forzamos el formato correcto para el JSONB
+        const opCapitalized = operacion.charAt(0).toUpperCase() + operacion.slice(1).toLowerCase();
+        query = query.contains('features', { operacion: opCapitalized });
     }
 
     if (q) {
-        // Búsqueda simple por texto en título o descripción
-        // Supabase textSearch es mejor, pero ilike es más fácil de configurar rápido sin índices full-text
         query = query.ilike('title', `%${q}%`);
     }
 
@@ -67,7 +77,7 @@ export default async function SearchPage({
     }
 
     // Filtros Específicos: Autos
-    if (category?.toLowerCase() === 'autos' || category?.toLowerCase() === 'autos') {
+    if (dbCategory === 'autos') {
         if (anio) query = query.contains('features', { anio: anio });
         if (transmision) query = query.contains('features', { transmision: transmision });
         if (combustible) query = query.contains('features', { combustible: combustible });
@@ -76,7 +86,7 @@ export default async function SearchPage({
     }
 
     // Filtros Específicos: Inmuebles
-    if (category?.toLowerCase() === 'inmuebles' || category?.toLowerCase() === 'propiedades') {
+    if (dbCategory === 'inmuebles') {
         if (dormitorios) query = query.contains('features', { dormitorios: dormitorios }); // Ideally gte, but simple contains for now
         if (banos) query = query.contains('features', { banos: banos });
         if (tipoPropiedad) query = query.contains('features', { tipo_propiedad: tipoPropiedad });

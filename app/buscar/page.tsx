@@ -4,11 +4,10 @@ import FilterBar from '@/components/FilterBar';
 
 export const dynamic = 'force-dynamic';
 
-export default async function SearchPage({
-    searchParams,
-}: {
-    searchParams: { [key: string]: string | string[] | undefined };
+export default async function SearchPage(props: {
+    searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
+    const searchParams = await props.searchParams;
     const supabase = await createClient();
 
     // Extraer parámetros
@@ -17,6 +16,9 @@ export default async function SearchPage({
     const q = searchParams.q as string;
     const minPrice = searchParams.minPrice ? Number(searchParams.minPrice) : null;
     const maxPrice = searchParams.maxPrice ? Number(searchParams.maxPrice) : null;
+
+    // LOG DE DEBUG OBLIGATORIO (Fix Crítico)
+    console.log("🔍 Backend recibiendo params:", { category, operacion, q });
 
     // Construir consulta base (Usar 'verified' para coincidir con DB)
     let query = supabase

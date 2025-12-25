@@ -2,6 +2,8 @@ import { createClient } from '@/utils/supabase/server';
 import AdCard from '@/components/AdCard';
 import FilterBar from '@/components/FilterBar';
 
+export const dynamic = 'force-dynamic';
+
 export default async function SearchPage({
     searchParams,
 }: {
@@ -31,21 +33,22 @@ export default async function SearchPage({
     let dbCategory = null;
     if (category) {
         const catLower = category.toLowerCase();
+        // Mapeo exhaustivo
         if (catLower === 'propiedades' || catLower === 'inmuebles') dbCategory = 'inmuebles';
-        else if (catLower === 'autos') dbCategory = 'autos';
-        else dbCategory = category; // Fallback
+        else if (catLower === 'autos' || catLower === 'vehiculos') dbCategory = 'autos';
+        else dbCategory = catLower; // Fallback a lo que venga en minúsculas
     }
 
     if (dbCategory) {
-        query = query.eq('category', dbCategory);
+        // Usamos ilike para 'category' por si en BD se guardó 'Autos' en vez de 'autos'
+        query = query.ilike('category', dbCategory);
     }
 
-    // 2. Operación (Solo para Propiedades generalmente, pero lo aplicamos si viene)
+    // 2. Operación (Usando operador ->> para extraer texto del JSONB y ser flexible con mayúsculas)
     if (operacion) {
-        // Asumimos que en BD se guarda como 'Venta' o 'Arriendo' (Capitalized)
-        // Forzamos el formato correcto para el JSONB
-        const opCapitalized = operacion.charAt(0).toUpperCase() + operacion.slice(1).toLowerCase();
-        query = query.contains('features', { operacion: opCapitalized });
+        // Buscamos ignorando mayúsculas/minúsculas en el valor del JSON key "operacion"
+        // Nota: features->>operacion extrae el valor como texto.
+        query = query.ilike('features->>operacion', operacion);
     }
 
     if (q) {

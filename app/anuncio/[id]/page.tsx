@@ -2,6 +2,7 @@ import { createClient } from '@/utils/supabase/server';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import React from 'react';
+import { MapPin } from 'lucide-react';
 import AdChat from '@/components/AdChat';
 import AdActions from '@/components/AdActions';
 import AdMap from '@/components/AdMap';
@@ -79,14 +80,77 @@ export default async function AdDetailPage({ params }: Props) {
 
         {/* COLUMNA DERECHA: INFO */}
         <div style={{ padding: '40px', display: 'flex', flexDirection: 'column' }}>
-          <span style={{ alignSelf: 'flex-start', padding: '4px 12px', borderRadius: '99px', backgroundColor: '#e0f2fe', color: '#0369a1', fontSize: '0.8rem', fontWeight: '600', marginBottom: '15px', textTransform: 'capitalize' }}>
-            {ad.category || 'General'}
-          </span>
 
-          <h1 style={{ fontSize: '2.5rem', fontWeight: '800', color: colors.primary, marginBottom: '10px', lineHeight: '1.1' }}>{ad.title}</h1>
-          <p style={{ fontSize: '2rem', fontWeight: 'bold', color: colors.success, marginBottom: '30px' }}>
-            ${ad.price ? ad.price.toLocaleString('es-CL') : 'A convenir'}
-          </p>
+          {/* 1. BADGE DE OPERACIÓN (High Impact) */}
+          {(() => {
+            const operacion = ad.features?.operacion || 'Venta';
+            const isArriendo = operacion.toLowerCase().includes('arriendo');
+            const badgeColor = isArriendo ? 'bg-orange-500' : 'bg-green-600';
+            const badgeText = isArriendo ? 'ARRIENDO' : 'EN VENTA';
+
+            return (
+              <div className={`self-start ${badgeColor} text-white text-sm font-bold px-4 py-1.5 rounded-full shadow-sm mb-4 tracking-wide`}>
+                {badgeText}
+              </div>
+            );
+          })()}
+
+          {/* 2. TÍTULO (Capitalized + Auto Fallback) */}
+          {(() => {
+            let displayTitle = ad.title;
+            // Lógica Car Fallback
+            if (ad.category === 'Autos' || ad.category === 'autos') {
+              const brand = ad.features?.marca || '';
+              const model = ad.features?.modelo || '';
+              const year = ad.features?.anio || '';
+              // Si el título es muy corto/genérico (ej: "Auto"), intentar usar Marca + Modelo
+              if (displayTitle.length < 5 && brand && model) {
+                displayTitle = `${brand} ${model} ${year}`;
+              }
+            }
+            return (
+              <h1 className="text-4xl font-extrabold text-gray-900 mb-2 capitalize leading-tight">
+                {displayTitle.toLowerCase()}
+              </h1>
+            );
+          })()}
+
+          {/* 3. UBICACIÓN (Prominent) */}
+          {(() => {
+            const city = ad.features?.city;
+            const region = ad.features?.region; // Puede ser largo, quizas mostrar solo region corta si la hay
+            const locationStr = city ? `${city}, ${region || 'Chile'}` : 'Ubicación no especificada';
+
+            return (
+              <div className="flex items-center gap-2 mb-6">
+                <MapPin className="text-gray-500" size={20} />
+                <span className="text-xl text-gray-600 font-medium capitalize">
+                  {locationStr.toLowerCase()}
+                </span>
+              </div>
+            );
+          })()}
+
+          {/* 4. PRECIO (Clean Format) */}
+          {(() => {
+            const currency = ad.features?.moneda || 'CLP'; // UF or CLP
+            const price = ad.price || 0;
+            let priceDisplay = 'Precio a convenir';
+
+            if (price > 0) {
+              if (currency === 'UF') {
+                priceDisplay = `UF ${price.toLocaleString('es-CL')}`;
+              } else {
+                priceDisplay = `$${price.toLocaleString('es-CL')}`;
+              }
+            }
+
+            return (
+              <p className="text-4xl font-extrabold text-gray-900 mb-8 tracking-tight">
+                {priceDisplay}
+              </p>
+            );
+          })()}
 
           {/* --- CARACTERÍSTICAS CLAVE --- */}
           <KeyFeaturesGrid category={ad.category} features={ad.features} />

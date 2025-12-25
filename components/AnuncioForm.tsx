@@ -3,7 +3,7 @@
 import { createClient } from '@/utils/supabase/client';
 import { useRouter, useSearchParams } from 'next/navigation';
 import React, { useState, useEffect, useCallback } from 'react';
-import { MessageCircle, Bot, Shield } from 'lucide-react';
+import { MessageCircle, Bot, Shield, Sparkles, Pencil } from 'lucide-react';
 import type { User } from '@supabase/supabase-js';
 import { updateAd, createAd } from '@/app/actions/ad-actions';
 import { checkQrCategory } from '@/app/actions/check-qr';
@@ -43,9 +43,10 @@ export default function AnuncioForm({ initialData }: AnuncioFormProps) {
     const [category, setCategory] = useState(initialData?.category || '');
     const [operacion, setOperacion] = useState(initialData?.features?.operacion || 'Venta');
     const [moneda, setMoneda] = useState(initialData?.features?.moneda || 'CLP');
-    const [description, setDescription] = useState(initialData?.description || '');
+    const [description, setDescription] = useState<string>(initialData?.description || '');
     const [extraNotes, setExtraNotes] = useState(initialData?.features?.extraNotes || '');
-    const [aiTone, setAiTone] = useState('random');
+    const [showAiPanel, setShowAiPanel] = useState(false); // UI toggle
+    const [aiTone, setAiTone] = useState('venta_rapida');
     const [isGenerating, setIsGenerating] = useState(false);
     const [contactPreference, setContactPreference] = useState(initialData?.features?.contact_preference || 'ai_filter');
 
@@ -121,10 +122,49 @@ export default function AnuncioForm({ initialData }: AnuncioFormProps) {
     }, []);
 
     const handleGenerateDescription = async () => {
-        // Lógica de IA existente... (resumida para no alargar, la tuya original estaba bien)
+        if (!extraNotes && !confirm("¿Seguro que quieres generar sin 'puntos clave'? El resultado podría ser genérico.")) return;
+
         setIsGenerating(true);
-        // ... (Simulamos llamada o usamos tu lógica anterior)
-        setTimeout(() => { setIsGenerating(false); setDescription("Descripción generada por IA..."); }, 1000);
+        try {
+            const res = await fetch('/api/generate-description', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    category,
+                    features: {
+                        marca: initialData?.features?.marca || (document.getElementsByName('marca')[0] as HTMLInputElement)?.value,
+                        modelo: initialData?.features?.modelo || (document.getElementsByName('modelo')[0] as HTMLInputElement)?.value,
+                        anio: initialData?.features?.anio || (document.getElementsByName('anio')[0] as HTMLInputElement)?.value,
+                        kilometraje: initialData?.features?.kilometraje || (document.getElementsByName('kilometraje')[0] as HTMLInputElement)?.value,
+                        // Propiedades
+                        tipo_propiedad: initialData?.features?.tipo_propiedad || (document.getElementsByName('tipo_propiedad')[0] as HTMLInputElement)?.value,
+                        operacion: operacion,
+                        precio: (document.getElementsByName('precio')[0] as HTMLInputElement)?.value,
+                        moneda: moneda,
+                    },
+                    extraNotes, // "Lo mejor de tu aviso"
+                    aiTone
+                })
+            });
+
+            const data = await res.json();
+            if (data.description) {
+                // Typewriter effect simple
+                let i = 0;
+                const txt = data.description;
+                setDescription("");
+                const interval = setInterval(() => {
+                    setDescription(prev => txt.substring(0, i + 1));
+                    i++;
+                    if (i === txt.length) clearInterval(interval);
+                }, 15); // Velocidad escritura
+            }
+        } catch (e) {
+            console.error(e);
+            alert("Error al generar descripción. Intenta de nuevo.");
+        } finally {
+            setIsGenerating(false);
+        }
     };
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -523,6 +563,80 @@ export default function AnuncioForm({ initialData }: AnuncioFormProps) {
                         </div>
                     </div>
                 )}
+
+                {/* DESCRIÇÃO Y GENERADOR IA */}
+                <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                        <label className="font-bold text-gray-700">Descripción detallada</label>
+                        <button
+                            type="button"
+                            onClick={() => setShowAiPanel(!showAiPanel)}
+                            className="bg-purple-100 text-purple-700 px-3 py-1.5 rounded-full text-xs font-bold flex items-center gap-1 hover:bg-purple-200 transition-colors"
+                        >
+                            <Sparkles size={14} />
+                            {showAiPanel ? 'Cerrar Asistente' : '✨ Ayúdame a escribirlo'}
+                        </button>
+                    </div>
+
+                    {/* PANEL IA */}
+                    {showAiPanel && (
+                        <div className="bg-purple-50 border border-purple-100 p-4 rounded-xl space-y-4 animate-fadeIn">
+                            <div>
+                                <label className="block text-xs font-bold text-purple-800 mb-1">
+                                    💡 Lo mejor de tu aviso (Clave para que no suene a robot)
+                                </label>
+                                <input
+                                    value={extraNotes}
+                                    onChange={e => setExtraNotes(e.target.value)}
+                                    placeholder={category === 'autos' ? "Ej: Solo uso carretera, mantenciones en marca, nunca chocado..." : "Ej: Barrio tranquilo, sol de tarde, recién remodelado..."}
+                                    className="w-full p-2 border border-purple-200 rounded-lg text-sm focus:ring-2 focus:ring-purple-400 outline-none"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-xs font-bold text-purple-800 mb-2">Estilo de Redacción</label>
+                                <div className="flex flex-wrap gap-2">
+                                    {[
+                                        { id: 'formal', label: 'Formal y Técnico' },
+                                        { id: 'venta_rapida', label: '🔥 Venta Rápida' },
+                                        { id: 'inspirador', label: '❤️ Inspirador' }
+                                    ].map(tone => (
+                                        <button
+                                            key={tone.id}
+                                            type="button"
+                                            onClick={() => setAiTone(tone.id)}
+                                            className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-all ${aiTone === tone.id ? 'bg-purple-600 text-white border-purple-600' : 'bg-white text-purple-600 border-purple-200 hover:bg-purple-50'}`}
+                                        >
+                                            {tone.label}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <button
+                                type="button"
+                                onClick={handleGenerateDescription}
+                                disabled={isGenerating}
+                                className="w-full bg-purple-600 text-white font-bold py-2 rounded-lg text-sm hover:bg-purple-700 transition flex items-center justify-center gap-2"
+                            >
+                                {isGenerating ? (
+                                    <span className="animate-pulse">✨ Escribiendo tu anuncio...</span>
+                                ) : (
+                                    <span>✨ Generar Descripción Mágica</span>
+                                )}
+                            </button>
+                        </div>
+                    )}
+
+                    <textarea
+                        name="description"
+                        value={description}
+                        onChange={e => setDescription(e.target.value)}
+                        placeholder="Escribe aquí los detalles..."
+                        className="w-full p-4 border rounded-xl h-40 focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+                        required
+                    />
+                </div>
 
                 {/* 4. MAPA (Aquí vuelve la magia) */}
                 <div className="border rounded-xl overflow-hidden">

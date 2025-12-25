@@ -26,11 +26,11 @@ export async function POST(req: Request) {
             : 'No especificada';
 
         // Lógica de Estilos
+        // Lógica de Estilos (NUEVA)
         const estilos: Record<string, string> = {
-            ejecutivo: "Usa un tono sobrio, directo y elegante. Enfócate en la eficiencia y calidad.",
-            entusiasta: "Usa un tono enérgico y positivo. Enfócate en la emoción y la experiencia.",
-            cercano: "Usa un tono de tú a tú, como un amigo recomendando algo. Transmite confianza.",
-            oportunista: "Enfócate en la exclusividad y que es una oportunidad única/urgente."
+            formal: "Usa un lenguaje técnico, preciso y profesional. Ideal para clientes exigentes que buscan datos concretos y seriedad.",
+            venta_rapida: "Usa frases cortas, gatillos mentales de urgencia y oportunidad. Enfócate en el precio/calidad y que se irá rápido.",
+            inspirador: "Usa storytelling. Enfócate en la experiencia de vida, la comodidad y los sentimientos que provoca el producto. Enamora al lector."
         };
 
         let instruccionEstilo = "";
@@ -38,36 +38,31 @@ export async function POST(req: Request) {
         if (aiTone && aiTone !== 'random' && estilos[aiTone]) {
             instruccionEstilo = estilos[aiTone];
         } else {
-            // Si es random, elegimos uno al azar
-            const keys = Object.keys(estilos);
-            const randomKey = keys[Math.floor(Math.random() * keys.length)];
-            instruccionEstilo = estilos[randomKey];
+            // Default a Inspirador si falla
+            instruccionEstilo = estilos['inspirador'];
         }
 
-        const systemPrompt = `Eres un redactor experto en marketing para Clasificados (Autos y Propiedades) en Chile.
+        const systemPrompt = `Eres un experto redactor publicitario chileno (copywriter). Tu objetivo es vender, no describir robóticamente.
 ESTILO DE REDACCIÓN APLICAR: ${instruccionEstilo}
 
-CONTEXTO: El usuario ya está viendo una tabla visual con los datos técnicos (Año, KM, Dormitorios, Baños, M2).
+CONTEXTO: El usuario ya ve los datos técnicos en una tabla. NO hagas una lista de especificaciones.
 
-TU MISIÓN: Escribir una descripción breve (2-3 párrafos) que complemente esa información técnica, NO que la repita como lista.
+TU MISIÓN: Escribir un texto de venta persuasivo (2-3 párrafos) que integre los datos técnicos de forma fluida en una narrativa.
 
 REGLAS DE ORO:
+1. 🚫 NO uses frases cliché de IA como "Descubre la excelencia", "Sumérgete en", "En el mundo digital".
+2. 🇨🇱 Usa lenguaje natural chileno pero educado (Ej: "Impecable", "Apura", "Joyita", "Oportunidad").
+3. ⭐ PRIORIDAD TOTAL a "Lo mejor del aviso" (Notes): Si el usuario dice "aire congela", úsalo ("el aire acondicionado funciona increíble, ideal para este verano").
+4. 🏗️ ESTRUCTURA:
+   - Gancho inicial (Atención).
+   - Cuerpo persuasivo (Deseo - integrando datos).
+   - Cierre con llamado a la acción (Acción).
 
-🚫 NO repitas datos técnicos obvios (ej: No empieces diciendo "Tiene 3 dormitorios", eso ya se ve. Di "Amplios dormitorios con luz natural").
+Ejemplo Bueno (Estilo Inspirador):
+"¡Oportunidad única en el sector! Vendo mi joya por renovación. Este auto no es cualquiera: lo he cuidado como hueso santo y se nota. Viene con neumáticos Michelin recién instalados (te ahorras ese gasto) y el aire acondicionado funciona perfecto. Mecánicamente impecable, llegar y andar. ¡Hablemos antes de que se lo lleven!"
 
-⭐ ENFÓCATE EN LO ÚNICO: Dale prioridad absoluta a las "Notas del Dueño" (extraNotes). Si dice "único dueño" o "vista al mar", ese es tu titular.
-
-🇨🇱 TONO CHILENO: Usa un lenguaje cercano y vendedor. (Ej: "Impecable", "Llegar y habitar", "Joya", "Oportunidad").
-
-🎯 OBJETIVO: Vender el estado del producto y la oportunidad, no la ficha técnica.
-
-📵 PRIVACIDAD: JAMÁS inventes ni incluyas números de teléfono o correos.
-
-FORMATO: Texto plano, párrafos cortos. Sin Markdown (##, **).
-
-Ejemplo Bueno: "Espectacular oportunidad en sector exclusivo. La propiedad destaca por su luminosidad y una vista inigualable. Ha sido remodelada recientemente con terminaciones de lujo. Ideal para familias que buscan tranquilidad y seguridad."
-
-Ejemplo Malo: "Se vende casa. Tiene 3 dormitorios, 2 baños, 100m2. Tiene estacionamiento." (Esto es aburrido y redundante). `;
+Ejemplo Malo:
+"Se vende vehículo Toyota. Características: Motor 1.6, Aire acondicionado. Es una gran oportunidad de inversión para su vida transporte." (Robótico y aburrido).`;
 
         const prompt = `
       ${systemPrompt}

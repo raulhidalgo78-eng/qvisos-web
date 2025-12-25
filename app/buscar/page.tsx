@@ -1,6 +1,7 @@
 import { createClient } from '@/utils/supabase/server';
 import AdCard from '@/components/AdCard';
 import FilterBar from '@/components/FilterBar';
+import SortDropdown from '@/components/SortDropdown';
 
 export const dynamic = 'force-dynamic';
 
@@ -16,16 +17,25 @@ export default async function SearchPage(props: {
     const q = searchParams.q as string;
     const minPrice = searchParams.minPrice ? Number(searchParams.minPrice) : null;
     const maxPrice = searchParams.maxPrice ? Number(searchParams.maxPrice) : null;
+    const sort = searchParams.sort as string || 'newest';
 
     // LOG DE DEBUG OBLIGATORIO (Fix Crítico)
-    console.log("🔍 Backend recibiendo params:", { category, operacion, q });
+    console.log("🔍 Backend recibiendo params:", { category, operacion, q, sort });
 
     // Construir consulta base (Usar 'verified' para coincidir con DB)
     let query = supabase
         .from('ads')
         .select('*')
-        .eq('status', 'verified')
-        .order('created_at', { ascending: false });
+        .eq('status', 'verified');
+
+    // Ordenamiento
+    if (sort === 'price_asc') {
+        query = query.order('price', { ascending: true });
+    } else if (sort === 'price_desc') {
+        query = query.order('price', { ascending: false });
+    } else {
+        query = query.order('created_at', { ascending: false });
+    }
 
     // Aplicar filtros dinámicos
     // --- MAPPING DE FILTROS (Lógica Estricta) ---
@@ -131,11 +141,16 @@ export default async function SearchPage(props: {
         <div className="min-h-screen bg-gray-50 py-8">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
-                <h1 className="text-3xl font-bold text-gray-900 mb-6 font-sans">
-                    Resultados de Búsqueda
-                    {category && <span className="text-blue-600 capitalize"> - {category}</span>}
-                    {operacion && <span className="text-green-600 capitalize"> ({operacion})</span>}
-                </h1>
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+                    <h1 className="text-3xl font-bold text-gray-900 font-sans">
+                        Resultados de Búsqueda
+                        {category && <span className="text-blue-600 capitalize"> - {category}</span>}
+                        {operacion && <span className="text-green-600 capitalize"> ({operacion})</span>}
+                    </h1>
+                    <div className="flex-shrink-0">
+                        <SortDropdown />
+                    </div>
+                </div>
 
                 <div className="flex flex-col md:flex-row gap-8">
                     {/* Sidebar Filtros */}

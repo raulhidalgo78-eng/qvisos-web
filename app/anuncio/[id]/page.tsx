@@ -135,10 +135,14 @@ export default async function AdDetailPage(props: Props) {
             {/* MAPA (Ubicación Aproximada) */}
             {ad.lat && ad.lng && (
               <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm overflow-hidden mb-8">
-                <h3 className="text-lg font-bold text-gray-900 mb-4">Ubicación Aproximada</h3>
-                <div className="h-[300px] rounded-xl overflow-hidden">
+                <h3 className="text-lg font-bold text-gray-900 mb-4">📍 Ubicación Aproximada</h3>
+                <div className="h-[300px] rounded-xl overflow-hidden border border-gray-200">
                   <AdMap lat={ad.lat} lng={ad.lng} />
                 </div>
+                <p className="text-sm text-gray-500 mt-3 flex items-center gap-2">
+                  <span className="inline-block w-2 h-2 bg-blue-400 rounded-full"></span>
+                  La ubicación es referencial para proteger la privacidad del vendedor.
+                </p>
               </div>
             )}
 
@@ -165,45 +169,29 @@ export default async function AdDetailPage(props: Props) {
 
                 {/* RENDERIZADO CONDICIONAL EXCLUSIVO */}
                 {(() => {
-                  // Si es dueño, ve AMBOS (Modo Debug/Admin)
+                  // DUEÑO: Ver todo (Debug)
                   if (isOwner) {
                     return (
                       <div className="space-y-4">
                         <div className="p-3 bg-yellow-50 text-yellow-800 rounded-lg text-xs font-bold text-center border border-yellow-200">
-                          Vista de Dueño (Ves ambas opciones)
+                          👑 Vista de Dueño (Ves ambas opciones)
                         </div>
                         <AdChat adData={ad} />
                         <div className="border-t pt-4">
-                          <div className="text-center text-xs text-gray-400 mb-2">Opción Directa (Simulada)</div>
                           <WhatsAppButton ad={ad} />
                         </div>
                       </div>
                     );
                   }
 
-                  // Si prefiere IA -> Solo Chat
-                  if (contactPreference === 'ai_filter') {
-                    return (
-                      <div className="animate-in fade-in zoom-in duration-300">
-                        <AdChat adData={ad} />
-                      </div>
-                    );
+                  // CLIENTE: Lógica Binaria
+                  if (contactPreference === 'direct_whatsapp' || contactPreference === 'whatsapp_directo') {
+                    // OPCIÓN A: Solo WhatsApp
+                    return <WhatsAppButton ad={ad} />;
+                  } else {
+                    // OPCIÓN B: Asistente IA (Default)
+                    return <AdChat adData={ad} />;
                   }
-
-                  // Si prefiere WhatsApp -> Solo Botón
-                  if (contactPreference === 'whatsapp_directo' || contactPreference === 'direct_whatsapp') {
-                    return (
-                      <div className="animate-in fade-in zoom-in duration-300">
-                        <WhatsAppButton ad={ad} />
-                        <p className="text-xs text-center text-gray-400 mt-3">
-                          Serás redirigido a WhatsApp Web/App
-                        </p>
-                      </div>
-                    );
-                  }
-
-                  // Fallback
-                  return <AdChat adData={ad} />;
                 })()}
 
               </div>

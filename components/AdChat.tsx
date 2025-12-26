@@ -16,7 +16,8 @@ export default function AdChat({ adData }: AdChatProps) {
     const { messages, input, handleInputChange, handleSubmit, isLoading } = useChat({
         api: '/api/chat',
         body: {
-            adData, // Enviamos el objeto completo para armar el prompt en el servidor
+            adId: adData.id, // Corrección Crítica: route.ts espera 'adId'
+            adData,
             contactPreference,
             sellerName
         },

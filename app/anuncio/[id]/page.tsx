@@ -38,7 +38,7 @@ export default async function AdDetailPage(props: Props) {
   // Lógica de Preferencias (Exclusive)
   const contactPreference = ad.features?.contact_preference || 'ai_filter';
 
-  // Helpers
+  // Helpers & Fallbacks (CRITICAL FIX)
   const operacion = ad.features?.operacion || 'Venta';
   const isArriendo = operacion.toLowerCase().includes('arriendo');
   const city = ad.features?.city || 'Ubicación no especificada';
@@ -46,10 +46,20 @@ export default async function AdDetailPage(props: Props) {
   const currency = ad.features?.moneda || 'CLP';
   const price = ad.price || 0;
 
+  // Fallback de Coordenadas
+  const lat = ad.lat || ad.features?.latitude;
+  const lng = ad.lng || ad.features?.longitude;
+
+  // Fallback de Descripción
+  const finalDescription = ad.description || ad.features?.description || "Sin descripción disponible.";
+
   // Formato Precio
   const priceDisplay = price > 0
     ? (currency === 'UF' ? `UF ${price.toLocaleString('es-CL')}` : `$${price.toLocaleString('es-CL')}`)
     : 'Precio a convenir';
+
+  // Objeto Ad saneado para el Chat
+  const adForChat = { ...ad, description: finalDescription };
 
   return (
     <div className="bg-gray-50 min-h-screen pb-20">
@@ -99,7 +109,7 @@ export default async function AdDetailPage(props: Props) {
         </div>
 
         {/* --- LAYOUT GRID PRINCIPAL --- */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols12 gap-8">
 
           {/* COLUMNA IZQUIERDA (Galería + Detalles) - 8 Cols */}
           <div className="lg:col-span-8 space-y-8">
@@ -133,11 +143,11 @@ export default async function AdDetailPage(props: Props) {
             <AdAdvancedDetails category={ad.category} features={ad.features} />
 
             {/* MAPA (Ubicación Aproximada) */}
-            {ad.lat && ad.lng && (
+            {lat && lng && (
               <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm overflow-hidden mb-8">
                 <h3 className="text-lg font-bold text-gray-900 mb-4">📍 Ubicación Aproximada</h3>
                 <div className="h-[300px] rounded-xl overflow-hidden border border-gray-200">
-                  <AdMap lat={ad.lat} lng={ad.lng} />
+                  <AdMap lat={lat} lng={lng} />
                 </div>
                 <p className="text-sm text-gray-500 mt-3 flex items-center gap-2">
                   <span className="inline-block w-2 h-2 bg-blue-400 rounded-full"></span>
@@ -150,7 +160,7 @@ export default async function AdDetailPage(props: Props) {
             <div className="bg-white rounded-2xl border border-gray-100 p-6 sm:p-8 shadow-sm">
               <h3 className="text-xl font-bold text-gray-900 mb-6 border-b border-gray-100 pb-4">Descripción Oficial</h3>
               <div className="prose prose-blue max-w-none text-gray-600 leading-relaxed whitespace-pre-wrap">
-                {ad.description}
+                {finalDescription}
               </div>
             </div>
           </div>
@@ -169,15 +179,16 @@ export default async function AdDetailPage(props: Props) {
 
                 {/* RENDERIZADO CONDICIONAL EXCLUSIVO */}
                 {(() => {
-                  // DUEÑO: Ver todo (Debug)
+                  // Si es dueño, ve AMBOS (Modo Debug/Admin)
                   if (isOwner) {
                     return (
                       <div className="space-y-4">
                         <div className="p-3 bg-yellow-50 text-yellow-800 rounded-lg text-xs font-bold text-center border border-yellow-200">
-                          👑 Vista de Dueño (Ves ambas opciones)
+                          Vista de Dueño (Ves ambas opciones)
                         </div>
-                        <AdChat adData={ad} />
+                        <AdChat adData={adForChat} />
                         <div className="border-t pt-4">
+                          <div className="text-center text-xs text-gray-400 mb-2">Opción Directa (Simulada)</div>
                           <WhatsAppButton ad={ad} />
                         </div>
                       </div>
@@ -190,7 +201,7 @@ export default async function AdDetailPage(props: Props) {
                     return <WhatsAppButton ad={ad} />;
                   } else {
                     // OPCIÓN B: Asistente IA (Default)
-                    return <AdChat adData={ad} />;
+                    return <AdChat adData={adForChat} />;
                   }
                 })()}
 

@@ -60,6 +60,9 @@ export async function updateAd(formData: FormData) {
     let features: any = {};
     try { features = JSON.parse(featuresRaw || '{}'); } catch (e) { }
 
+    // FIX: Extract description from features if missing in formData (Critical for AI Chat)
+    const description = (formData.get('descripcion') as string) || features.description || '';
+
     // 4. Imagen (Bucket UNIFICADO: 'media')
     const file = formData.get('file') as File;
     let mediaUrl = ad.media_url;
@@ -82,7 +85,7 @@ export async function updateAd(formData: FormData) {
         .from('ads')
         .update({
             title: formData.get('titulo') as string,
-            description: formData.get('descripcion') as string,
+            description, // ✅ Guardar explícitamente en columna raíz
             price: Number(formData.get('precio')) || 0,
             category: formData.get('categoria') as string,
             contact_phone: formData.get('contact_phone') as string,
@@ -141,6 +144,9 @@ export async function createAd(formData: FormData) {
             if (features['longitude']) features['longitude'] = Number(features['longitude']) || null;
         } catch (e) { }
 
+        // FIX: Ensure description maps to root column
+        const finalDescription = description || features.description || '';
+
         // 3. Imagen (Bucket: 'media')
         let mediaUrl = formData.get('media_url') as string;
         const file = formData.get('file') as File;
@@ -167,7 +173,7 @@ export async function createAd(formData: FormData) {
             .insert({
                 user_id: user.id,
                 title,
-                description,
+                description: finalDescription, // ✅ Usar descripción saneada
                 price,
                 category,
                 contact_phone,

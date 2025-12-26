@@ -132,6 +132,16 @@ export default async function AdDetailPage(props: Props) {
             {/* --- DETALLES AVANZADOS --- */}
             <AdAdvancedDetails category={ad.category} features={ad.features} />
 
+            {/* MAPA (Ubicación Aproximada) */}
+            {ad.lat && ad.lng && (
+              <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm overflow-hidden mb-8">
+                <h3 className="text-lg font-bold text-gray-900 mb-4">Ubicación Aproximada</h3>
+                <div className="h-[300px] rounded-xl overflow-hidden">
+                  <AdMap lat={ad.lat} lng={ad.lng} />
+                </div>
+              </div>
+            )}
+
             {/* LOREM / DESCRIPCIÓN */}
             <div className="bg-white rounded-2xl border border-gray-100 p-6 sm:p-8 shadow-sm">
               <h3 className="text-xl font-bold text-gray-900 mb-6 border-b border-gray-100 pb-4">Descripción Oficial</h3>
@@ -139,16 +149,6 @@ export default async function AdDetailPage(props: Props) {
                 {ad.description}
               </div>
             </div>
-
-            {/* MAPA */}
-            {ad.lat && ad.lng && (
-              <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm overflow-hidden">
-                <h3 className="text-lg font-bold text-gray-900 mb-4">Ubicación en Mapa</h3>
-                <div className="h-[300px] rounded-xl overflow-hidden">
-                  <AdMap lat={ad.lat} lng={ad.lng} />
-                </div>
-              </div>
-            )}
           </div>
 
           {/* COLUMNA DERECHA (Sidebar Sticky) - 4 Cols */}

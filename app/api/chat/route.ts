@@ -20,25 +20,34 @@ export async function POST(req: Request) {
     }
 
     // 2. Preparar los datos técnicos para la IA
-    const d = ad.details || {};
-    const currency = d.currency || 'CLP';
+    // FIX: Usar 'features' como fuente primaria si 'details' no existe (Legacy migration)
+    const d = ad.features || ad.details || {};
+    const currency = d.moneda || d.currency || 'CLP';
     const priceFmt = `${currency} ${ad.price.toLocaleString('es-CL')}`;
+
+    // FIX: Fallback Logic para Descripción
+    const finalDescription = ad.description || d.description || '';
+
+    // Validación: Si no hay información, cortar flujo amablemente
+    if (!finalDescription && Object.keys(d).length === 0) {
+        return new Response("El vendedor no ha detallado este anuncio aún. Por favor intenta contactarlo por WhatsApp.", { status: 200 });
+    }
 
     // Contexto dinámico según categoría
     let fichaTecnica = '';
-    if (ad.category === 'propiedad') {
+    if (ad.category === 'propiedad' || ad.category === 'inmuebles') {
         fichaTecnica = `
     - Tipo: ${d.type || 'Propiedad'}
-    - Superficie: ${d.m2Total || '?'} m²
-    - Dorms: ${d.rooms || '?'} | Baños: ${d.bathrooms || '?'}
-    - Gastos Comunes: $${d.ggcc || 'No especificado'}
+    - Superficie: ${d.m2Total || d.surface_m2 || '?'} m²
+    - Dorms: ${d.rooms || d.bedrooms || '?'} | Baños: ${d.bathrooms || '?'}
+    - Gastos Comunes: $${d.ggcc || d.common_expenses || 'No especificado'}
     - Estacionamiento: ${d.parking ? 'SÍ' : 'NO'} | Bodega: ${d.bodega ? 'SÍ' : 'NO'}
     `;
     } else {
         // Vehículo
         fichaTecnica = `
     - Año: ${d.year || '?'}
-    - Kilometraje: ${d.km || '?'} km
+    - Kilometraje: ${d.km || d.kilometers || '?'} km
     - Combustible: ${d.fuel || 'No especificado'}
     - Transmisión: ${d.transmission || 'No especificada'}
     - Dueños: ${d.owners || '?'}
@@ -54,7 +63,7 @@ export async function POST(req: Request) {
 
     ### DATOS DEL AVISO (LA VERDAD)
     - Precio: ${priceFmt}
-    - Descripción: "${ad.description || ''}"
+    - Descripción: "${finalDescription}"
     ${fichaTecnica}
 
     ### PROTOCOLO DE SEGURIDAD (IMPORTANTE)

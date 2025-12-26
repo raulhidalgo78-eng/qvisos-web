@@ -51,7 +51,7 @@ export default async function AdDetailPage(props: Props) {
   const lng = ad.lng || ad.features?.longitude;
 
   // Fallback de Descripción
-  const finalDescription = ad.description || ad.features?.description || "Sin descripción detallada.";
+  const safeContext = ad.description || ad.features?.description || "";
 
   // Formato Precio
   const priceDisplay = price > 0
@@ -59,7 +59,7 @@ export default async function AdDetailPage(props: Props) {
     : 'Precio a convenir';
 
   // Objeto Ad saneado para el Chat
-  const adForChat = { ...ad, description: finalDescription };
+  const adForChat = { ...ad, description: safeContext };
 
   return (
     <div className="bg-gray-50 min-h-screen pb-20">
@@ -160,7 +160,7 @@ export default async function AdDetailPage(props: Props) {
             <div className="bg-white rounded-2xl border border-gray-100 p-6 sm:p-8 shadow-sm">
               <h3 className="text-xl font-bold text-gray-900 mb-6 border-b border-gray-100 pb-4">Descripción Oficial</h3>
               <div className="prose prose-blue max-w-none text-gray-600 leading-relaxed whitespace-pre-wrap">
-                {finalDescription}
+                {safeContext || "Sin descripción disponible."}
               </div>
             </div>
           </div>

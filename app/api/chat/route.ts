@@ -25,11 +25,25 @@ export async function POST(req: Request) {
     const currency = d.moneda || d.currency || 'CLP';
     const priceFmt = `${currency} ${ad.price.toLocaleString('es-CL')}`;
 
-    // FIX: Fallback Logic para Descripción
-    const finalDescription = ad.description || d.description || '';
+    // FIX LÓGICA CHATBOT "Bulletproof"
+    // Intentar leer de la columna raíz, si falla, leer del JSON features, si falla, default.
+    const descriptionText = ad.description
+        || (ad.features && ad.features.description)
+        || (typeof ad.features === 'string' ? JSON.parse(ad.features).description : "")
+        || "No hay descripción detallada disponible para este anuncio.";
+
+    // Log para depuración (Esto aparecerá en Vercel Logs)
+    console.log("🤖 Chat Context Loaded:", {
+        id: ad.id,
+        source: ad.description ? "DB Column" : "Features JSON",
+        textLength: descriptionText.length
+    });
+
+    const finalDescription = descriptionText;
 
     // Validación: Si no hay información, cortar flujo amablemente
-    if (!finalDescription && Object.keys(d).length === 0) {
+    // Nota: Como tenemos un default string arriba, esta validación debe chequear contra el default
+    if (finalDescription === "No hay descripción detallada disponible para este anuncio." && Object.keys(d).length === 0) {
         return new Response("El vendedor no ha detallado este anuncio aún. Por favor intenta contactarlo por WhatsApp.", { status: 200 });
     }
 

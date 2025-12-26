@@ -98,6 +98,7 @@ export async function updateAd(formData: FormData) {
     if (updateError) throw new Error("Error DB: " + updateError.message);
 
     revalidatePath('/mis-anuncios');
+    revalidatePath('/anuncio/[slug]'); // Limpieza de Caché dinámica
     return { success: true };
 }
 

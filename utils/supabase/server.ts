@@ -5,9 +5,9 @@ import { cookies } from 'next/headers'
 
 // Esta función AHORA ES ASÍNCRONA (async)
 export async function createClient() {
-  
+
   // Usamos 'await' para la nueva versión de cookies
-  const cookieStore = await cookies() 
+  const cookieStore = await cookies()
 
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,

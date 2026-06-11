@@ -3,6 +3,7 @@
 import { createClient } from '@/utils/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
+import { isAdminUser } from '@/utils/admin';
 
 // --- ELIMINAR ANUNCIO ---
 export async function deleteAd(adId: string) {
@@ -42,7 +43,7 @@ export async function updateAd(formData: FormData) {
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) throw new Error("No autorizado");
 
-    const isAdmin = user.id === '6411ba0e-5e36-4e4e-aa1f-4183a2f88d45';
+    const isAdmin = isAdminUser(user.id);
     let dbClient = supabase;
 
     // 2. Verificar Dueño

@@ -3,14 +3,13 @@
 import { createClient } from '@/utils/supabase/server';
 import { createAdminClient } from '@/utils/supabase/admin'; // Importar cliente admin
 import { revalidatePath } from 'next/cache';
-
-const ADMIN_USER_ID = '6411ba0e-5e36-4e4e-aa1f-4183a2f88d45';
+import { isAdminUser } from '@/utils/admin';
 
 async function checkAdmin() {
   const supabase = await createClient();
   const { data: { user }, error } = await supabase.auth.getUser();
 
-  if (error || !user || user.id !== ADMIN_USER_ID) {
+  if (error || !user || !isAdminUser(user.id)) {
     throw new Error('No autorizado');
   }
   // Retornar cliente con privilegios de admin para operaciones de BD

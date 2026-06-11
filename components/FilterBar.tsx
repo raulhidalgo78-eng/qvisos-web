@@ -86,7 +86,7 @@ export default function FilterBar() {
                 </label>
                 {category === 'autos' ? (
                     // Autos Body Type (Simplificado para MVP, usando 'combustible' como placeholder de tipo si no hay campo car_body)
-                    // O simplemente no mostramos nada si no hay filtro de "Carrocería" en el estado actual. 
+                    // O simplemente no mostramos nada si no hay filtro de "Carrocería" en el estado actual.
                     // Mostraremos el de Transmisión aquí si es relevante, o nada si no hay campo mapeado.
                     // El usuario pidió "Dropdown: Carrocería". Como no tengo ese filtro en `filters`, usaré un placeholder visual o el de 'Combustible' si aplica.
                     // Usaremos Combustible como "Tipo" por ahora.

@@ -4,8 +4,7 @@ import { createClient } from '@/utils/supabase/server';
 import { createAdminClient } from '@/utils/supabase/admin'; // Importar cliente admin
 import { redirect } from 'next/navigation';
 import AdminDashboardClient from './AdminDashboardClient';
-
-const ADMIN_USER_ID = '6411ba0e-5e36-4e4e-aa1f-4183a2f88d45';
+import { isAdminUser } from '@/utils/admin';
 
 export default async function AdminDashboard() {
 
@@ -21,7 +20,7 @@ export default async function AdminDashboard() {
   const user = data.user;
   // --- Fin del arreglo ---
 
-  if (user.id !== ADMIN_USER_ID) {
+  if (!isAdminUser(user.id)) {
     redirect('/'); // Al inicio si no es admin
   }
 

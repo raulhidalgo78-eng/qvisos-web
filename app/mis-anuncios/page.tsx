@@ -6,8 +6,7 @@ import Link from 'next/link';
 import React from 'react';
 import MyAdCard from '@/components/MyAdCard';
 import { PlusCircle, ShieldCheck, Printer } from 'lucide-react';
-
-const ADMIN_USER_ID = '6411ba0e-5e36-4e4e-aa1f-4183a2f88d45';
+import { isAdminUser } from '@/utils/admin';
 
 export default async function MisAnunciosPage() {
 
@@ -51,7 +50,7 @@ export default async function MisAnunciosPage() {
         </div>
 
         {/* Panel Admin (Solo visible para ti) */}
-        {user.id === ADMIN_USER_ID && (
+        {isAdminUser(user.id) && (
           <div className="mb-8 bg-blue-50 border border-blue-200 rounded-xl p-6">
             <p className="text-blue-800 font-bold mb-4 flex items-center gap-2">
               <ShieldCheck size={20} />

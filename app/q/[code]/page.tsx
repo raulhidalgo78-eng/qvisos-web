@@ -2,43 +2,40 @@ import { createClient } from '@/utils/supabase/server';
 import { redirect } from 'next/navigation';
 
 interface Props {
-    params: {
-        code: string;
-    };
+    params: Promise<{ code: string }>;
 }
 
 export default async function QRRedirectionPage({ params }: Props) {
-    const code = params.code;
+    // FIX Next.js 15+: params es una Promise y debe esperarse
+    const { code } = await params;
+    const upperCode = code.toUpperCase();
     const supabase = await createClient();
 
     // 1. Buscar el código en la BD
     const { data: qr, error } = await supabase
         .from('qr_codes')
         .select('status, category, ad_id')
-        .eq('code', code)
+        .eq('code', upperCode)
         .single();
 
     if (error || !qr) {
         return (
-            <div style={{ padding: '40px', textAlign: 'center', fontFamily: 'sans-serif' }}>
-                <h1 style={{ color: 'red' }}>Código QR No Válido</h1>
-                <p>El código <strong>{code}</strong> no existe en nuestro sistema.</p>
+            <div className="min-h-[60vh] flex flex-col items-center justify-center text-center px-4">
+                <h1 className="text-2xl font-bold text-red-600 mb-2">Código QR No Válido</h1>
+                <p className="text-gray-600">El código <strong>{upperCode}</strong> no existe en nuestro sistema.</p>
             </div>
         );
     }
 
     // 2. Si ya está activo (tiene anuncio), redirigir al anuncio
     if (qr.status === 'active' && qr.ad_id) {
-        // Buscar el Slug y Estado del Anuncio
         const { data: ad } = await supabase
             .from('ads')
             .select('slug, status')
             .eq('id', qr.ad_id)
             .single();
 
-        // Validar que exista el anuncio y esté publicado
         if (ad && (ad.status === 'verified' || ad.status === 'aprobado')) {
-            // Redirigir al SLUG si existe, sino al ID
             redirect(`/anuncio/${ad.slug || qr.ad_id}`);
         }
 
@@ -46,34 +43,16 @@ export default async function QRRedirectionPage({ params }: Props) {
         redirect('/');
     }
 
-    // 3. Si es nuevo, redirigir al formulario de creación con los parámetros correctos
-    if (qr.status === 'new') {
-        let targetUrl = `/anuncio?code=${code}`;
-
-        // Mapeo de categorías a parámetros de URL
-        switch (qr.category) {
-            case 'venta_auto':
-                targetUrl += '&tipo=auto';
-                break;
-            case 'venta_propiedad':
-                targetUrl += '&tipo=propiedad-venta';
-                break;
-            case 'arriendo_propiedad':
-                targetUrl += '&tipo=propiedad-arriendo';
-                break;
-            // Si es 'generico' o null, no agregamos 'tipo', el formulario preguntará o mostrará default
-            default:
-                break;
-        }
-
-        redirect(targetUrl);
+    // 3. Código impreso pero libre -> Flujo de activación con código precargado
+    if (qr.status === 'printed' || qr.status === 'new') {
+        redirect(`/activar?prefill=${upperCode}`);
     }
 
     // 4. Estado desconocido
     return (
-        <div style={{ padding: '40px', textAlign: 'center', fontFamily: 'sans-serif' }}>
-            <h1>Estado del Código: {qr.status}</h1>
-            <p>Este código no se puede utilizar en este momento.</p>
+        <div className="min-h-[60vh] flex flex-col items-center justify-center text-center px-4">
+            <h1 className="text-2xl font-bold text-gray-800 mb-2">Estado del Código: {qr.status}</h1>
+            <p className="text-gray-600">Este código no se puede utilizar en este momento.</p>
         </div>
     );
 }

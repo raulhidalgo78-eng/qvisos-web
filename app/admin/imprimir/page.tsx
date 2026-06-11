@@ -259,7 +259,7 @@ export default function ProductionStation() {
   };
 
   if (loading) return <div className="h-screen flex items-center justify-center">Cargando...</div>;
-  const LOGO_URL = "https://wcczvedassfquzdrmwko.supabase.co/storage/v1/object/public/media/logo-qvisos.jpg";
+  const LOGO_URL = "/media/logo-qvisos.jpg";
 
   return (
     <div className={`min-h-screen bg-gray-100 flex flex-col items-center p-6 md:p-10 font-sans ${oswald.variable}`}>

@@ -19,9 +19,6 @@ export default async function SearchPage(props: {
     const maxPrice = searchParams.maxPrice ? Number(searchParams.maxPrice) : null;
     const sort = searchParams.sort as string || 'newest';
 
-    // LOG DE DEBUG OBLIGATORIO (Fix Crítico)
-    console.log("🔍 Backend recibiendo params:", { category, operacion, q, sort });
-
     // Construir consulta base (Usar 'verified' para coincidir con DB)
     let query = supabase
         .from('ads')
@@ -61,8 +58,6 @@ export default async function SearchPage(props: {
         } else if (dbCategory === 'autos') {
             query = query.not('category', 'ilike', 'inmuebles');
         }
-
-        console.log("🔒 STRICT FILTERING APPLIED:", { dbCategory, filter: `ilike ${dbCategory}` });
     }
 
     // 2. Operación (Usando operador ->> para extraer texto del JSONB y ser flexible con mayúsculas)
@@ -119,7 +114,7 @@ export default async function SearchPage(props: {
         // Gastos Comunes Limit (lte logic is tricky with raw JSON in supabase-js without arrow operators or RPC)
         // For MVP we will use simple filtering or skip if too complex without raw SQL.
         // NOTE: Supabase JS library handles basic JSON containment easily. Comparisons inside JSON are harder.
-        // We will SKIP numerical limit enforcement on server for GastosComunes to prevent errors, 
+        // We will SKIP numerical limit enforcement on server for GastosComunes to prevent errors,
         // OR we can fetch and filter in memory if dataset is small (which it is for now).
         // Let's filter in memory for now to ensure accuracy for the user demo.
     }
@@ -135,7 +130,7 @@ export default async function SearchPage(props: {
         });
     }
 
-    console.log('[SEARCH] Query Result:', { count: ads?.length, error, filters: { category, operacion, q } });
+    if (error) console.error('[SEARCH] Error en consulta:', error);
 
     return (
         <div className="min-h-screen bg-gray-50 py-8">

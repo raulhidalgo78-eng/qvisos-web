@@ -10,7 +10,7 @@ export default function Navbar() {
                     <div className="flex-shrink-0 flex items-center cursor-pointer">
                         <Link href="/">
                             <img
-                                src="https://wcczvedassfquzdrmwko.supabase.co/storage/v1/object/public/media/logo-qvisos.jpg"
+                                src="/media/logo-qvisos.jpg"
                                 alt="Logo Qvisos"
                                 className="h-14 md:h-16 w-auto object-contain hover:opacity-95 transition-opacity"
                                 style={{ maxHeight: '80px' }}
@@ -19,6 +19,12 @@ export default function Navbar() {
                     </div>
                     {/* BOTONES */}
                     <div className="flex items-center gap-4">
+                        <Link
+                            href="/buscar"
+                            className="text-sm font-medium text-gray-600 hover:text-blue-600 transition-colors hidden sm:block"
+                        >
+                            Buscar
+                        </Link>
                         <Link
                             href="/activar"
                             className="text-sm font-medium text-gray-600 hover:text-blue-600 transition-colors hidden sm:block"

@@ -123,8 +123,8 @@ function ActivarContent() {
             if (!authUser) throw new Error('Error de autenticación');
 
             if (isLoginMode) {
-                // Redirección Login
-                if (authUser.email === 'rhidalgo@radisson.cl') router.push('/admin');
+                // Redirección Login (según rol en metadata, sin emails hardcodeados)
+                if (authUser.user_metadata?.role === 'admin') router.push('/admin/dashboard');
                 else router.push('/mis-anuncios');
             } else {
                 // Redirección Vinculación

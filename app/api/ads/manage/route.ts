@@ -32,15 +32,15 @@ export async function POST(request: Request) {
 
         // Verificamos si es admin (opcional, dependiendo de tu lógica de roles)
         // Por ahora asumiremos que si tiene rol 'admin' en metadata o tabla de perfiles
-        // Para simplificar, consultamos una tabla de perfiles o metadata si existe, 
-        // pero el prompt dice "Admin o Dueño". 
+        // Para simplificar, consultamos una tabla de perfiles o metadata si existe,
+        // pero el prompt dice "Admin o Dueño".
         // Vamos a asumir que si no es dueño, rechazamos por ahora salvo que tengamos lógica de admin clara.
         // Si el usuario pidió explícitamente lógica de admin, podríamos agregarla si hay tabla de roles.
         // El prompt dice: "Recibe { adId, action }. Si action === ...".
         // Y "Validar autenticación (Admin o Dueño del aviso)".
 
         // Vamos a intentar ver si el usuario tiene rol de admin en su metadata (común en Supabase)
-        // O si hay una tabla de perfiles. 
+        // O si hay una tabla de perfiles.
         // Por seguridad, si no es dueño, verificamos si es admin.
 
         let isAdmin = false;

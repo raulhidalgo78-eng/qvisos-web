@@ -5,5 +5,5 @@
 /* Reset básico y estilos globales */
 body {
     /* Aseguramos que el contenido principal no se desborde horizontalmente */
-    overflow-x: hidden; 
+    overflow-x: hidden;
 }

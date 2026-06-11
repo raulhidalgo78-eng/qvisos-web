@@ -13,13 +13,13 @@ interface Props {
 
 export default function SinglePrintPage({ params }: Props) {
   const { code } = params;
-  
+
   // Usamos hooks para leer query params en client component
   const searchParams = useSearchParams();
   const format = searchParams.get('format') || 'propiedad';
   const intent = searchParams.get('intent') || 'venta';
 
-  const LOGO_URL = "https://sojkaasvfrzcdkseimqw.supabase.co/storage/v1/object/public/media/qvisos-logo-minimal.svg";
+  const LOGO_URL = "/media/logo-qvisos.jpg";
 
   // Configuraciones (Copiadas para mantener consistencia)
   const config: any = {
@@ -62,7 +62,7 @@ export default function SinglePrintPage({ params }: Props) {
 
       {/* EL CARTEL (Ocupa toda la pantalla) */}
       <div className="w-screen h-screen flex flex-col relative overflow-hidden border-8 border-white">
-        
+
         {/* CABECERA */}
         <div style={{ backgroundColor: activeColor.bg, height: '20%' }} className="w-full flex items-center justify-center">
           <h1 className="text-white font-black uppercase tracking-tighter leading-none text-center" style={{ fontSize: '18vw' }}>

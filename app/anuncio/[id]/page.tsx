@@ -9,29 +9,68 @@ import AdMap from '@/components/AdMap';
 import AdKeySpecs from '@/components/AdKeySpecs';
 import AdAdvancedDetails from '@/components/AdAdvancedDetails';
 
+import type { Metadata } from 'next';
+
 interface Props {
   params: Promise<{ id: string }>;
 }
 
 export const dynamic = 'force-dynamic';
 
+// --- HELPER COMPARTIDO: buscar aviso por slug o UUID ---
+async function fetchAd(id: string) {
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+  const supabase = await createClient();
+  let query = supabase.from('ads').select('*');
+  if (isUuid) query = query.eq('id', id);
+  else query = query.eq('slug', id);
+  const { data: ad } = await query.single();
+  return ad;
+}
+
+// --- SEO: Metadata dinámica (Open Graph para WhatsApp/Google) ---
+export async function generateMetadata(props: Props): Promise<Metadata> {
+  const { id } = await props.params;
+  const ad = await fetchAd(id);
+  if (!ad) return { title: 'Aviso no encontrado' };
+
+  const currency = ad.features?.moneda || 'CLP';
+  const priceTxt = ad.price > 0
+    ? (currency === 'UF' ? `UF ${ad.price.toLocaleString('es-CL')}` : `$${ad.price.toLocaleString('es-CL')}`)
+    : 'Precio a convenir';
+  const city = ad.features?.city ? ` en ${ad.features.city}` : '';
+  const description = (ad.description || '').slice(0, 155) ||
+    `${ad.title}${city}. ${priceTxt}. Aviso verificado con QR en QVisos.cl`;
+
+  return {
+    title: `${ad.title} — ${priceTxt}`,
+    description,
+    alternates: { canonical: `/anuncio/${ad.slug || ad.id}` },
+    openGraph: {
+      title: `${ad.title} — ${priceTxt}`,
+      description,
+      url: `https://qvisos.cl/anuncio/${ad.slug || ad.id}`,
+      type: 'article',
+      images: ad.media_url ? [{ url: ad.media_url, alt: ad.title }] : undefined,
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: `${ad.title} — ${priceTxt}`,
+      description,
+      images: ad.media_url ? [ad.media_url] : undefined,
+    },
+  };
+}
+
 export default async function AdDetailPage(props: Props) {
   const params = await props.params;
   const { id } = params;
 
-  // UUID check
-  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
-
-  const supabase = await createClient();
-
-  let query = supabase.from('ads').select('*');
-  if (isUuid) query = query.eq('id', id);
-  else query = query.eq('slug', id);
-
-  const { data: ad, error } = await query.single();
-  if (error || !ad) notFound();
+  const ad = await fetchAd(id);
+  if (!ad) notFound();
 
   // User check
+  const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   const isOwner = user && user.id === ad.user_id;
 
@@ -61,8 +100,28 @@ export default async function AdDetailPage(props: Props) {
   // Objeto Ad saneado para el Chat
   const adForChat = { ...ad, description: safeContext };
 
+  // --- SEO: Datos estructurados (JSON-LD) para Google ---
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': ad.category === 'autos' ? 'Car' : 'Product',
+    name: ad.title,
+    description: safeContext.slice(0, 500),
+    image: ad.media_url || undefined,
+    offers: {
+      '@type': 'Offer',
+      price: price,
+      priceCurrency: currency === 'UF' ? 'CLF' : 'CLP',
+      availability: 'https://schema.org/InStock',
+      url: `https://qvisos.cl/anuncio/${ad.slug || ad.id}`,
+    },
+  };
+
   return (
     <div className="bg-gray-50 min-h-screen pb-20">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
 
       {/* NAV SUTIL */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">

@@ -1,6 +1,7 @@
 import { createClient } from '@/utils/supabase/server';
 import { redirect } from 'next/navigation';
 import AnuncioForm from '@/components/AnuncioForm';
+import { isAdminUser } from '@/utils/admin';
 
 export default async function EditAdPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = await params;
@@ -12,7 +13,7 @@ export default async function EditAdPage({ params }: { params: Promise<{ id: str
         redirect('/login?message=Debes iniciar sesión');
     }
 
-    const isAdmin = user.id === '6411ba0e-5e36-4e4e-aa1f-4183a2f88d45';
+    const isAdmin = isAdminUser(user.id);
 
     // 2. Fetch Ad (Robust Logic with Logging)
     const ad = await fetchAdDataSafe(supabase, id, isAdmin);

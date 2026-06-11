@@ -20,7 +20,7 @@ export default async function HomePage() {
     .order('created_at', { ascending: false })
     .limit(4);
 
-  console.log('[HOME] Autos Fetch:', { count: autos?.length, error: errAutos });
+  if (errAutos) console.error('[HOME] Error fetch autos:', errAutos);
 
   // 2. Fetch Propiedades Venta
   const { data: ventas, error: errVentas } = await supabase
@@ -32,7 +32,7 @@ export default async function HomePage() {
     .order('created_at', { ascending: false })
     .limit(4);
 
-  console.log('[HOME] Ventas Fetch:', { count: ventas?.length, error: errVentas });
+  if (errVentas) console.error('[HOME] Error fetch ventas:', errVentas);
 
   // 3. Fetch Propiedades Arriendo
   const { data: arriendos, error: errArriendos } = await supabase
@@ -44,7 +44,7 @@ export default async function HomePage() {
     .order('created_at', { ascending: false })
     .limit(4);
 
-  console.log('[HOME] Arriendos Fetch:', { count: arriendos?.length, error: errArriendos });
+  if (errArriendos) console.error('[HOME] Error fetch arriendos:', errArriendos);
 
 
   // Componente de Sección Reutilizable

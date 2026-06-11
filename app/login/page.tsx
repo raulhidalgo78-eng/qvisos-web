@@ -3,6 +3,7 @@
 'use client';
 
 import React, { useState, Suspense } from 'react';
+import Link from 'next/link';
 import { supabase } from '../../lib/supabase';
 import { useRouter, useSearchParams } from 'next/navigation';
 
@@ -30,12 +31,11 @@ function LoginForm() {
     });
 
     if (error) {
-      setMessage(`❌ Error: ${error.message}`);
+      setMessage('Credenciales inválidas. Revisa tu email y contraseña.');
       setLoading(false);
     } else {
-      setMessage('✅ Éxito. Redirigiendo...');
+      setMessage('');
 
-      // --- AQUÍ ESTÁ EL ARREGLO ---
       // 1. Si hay una URL de retorno pendiente (ej: ir a crear anuncio), vamos ahí.
       if (returnUrl) {
         router.push(returnUrl);
@@ -53,44 +53,64 @@ function LoginForm() {
   };
 
   return (
-    <div style={{ padding: '40px', maxWidth: '500px', margin: '50px auto', fontFamily: 'sans-serif', border: '1px solid #ddd', borderRadius: '8px' }}>
-      <h1 style={{ textAlign: 'center', color: '#0070f3' }}>Iniciar Sesión</h1>
-
-      <form onSubmit={handleLogin}>
-        <div style={{ marginBottom: '15px' }}>
-          <label style={{ display: 'block', marginBottom: '5px' }}>Email:</label>
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            disabled={loading}
-            style={{ width: '100%', padding: '12px', border: '1px solid #ccc' }}
-          />
+    <div className="min-h-[70vh] flex items-center justify-center px-4 py-12">
+      <div className="bg-white w-full max-w-md rounded-2xl shadow-lg border border-gray-100 p-8">
+        <div className="text-center mb-8">
+          <h1 className="text-2xl font-extrabold text-gray-900">Iniciar Sesión</h1>
+          <p className="text-gray-500 text-sm mt-1">Ingresa para gestionar tus avisos</p>
         </div>
 
-        <div style={{ marginBottom: '25px' }}>
-          <label style={{ display: 'block', marginBottom: '5px' }}>Contraseña:</label>
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
+        <form onSubmit={handleLogin} className="space-y-5">
+          <div>
+            <label className="block text-sm font-bold text-gray-700 mb-1">Email</label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              disabled={loading}
+              autoComplete="email"
+              className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-shadow"
+              placeholder="tu@email.com"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-bold text-gray-700 mb-1">Contraseña</label>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              disabled={loading}
+              autoComplete="current-password"
+              className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-shadow"
+              placeholder="••••••••"
+            />
+          </div>
+
+          {message && (
+            <p className="text-sm text-red-600 bg-red-50 border border-red-100 rounded-lg p-3 text-center">
+              {message}
+            </p>
+          )}
+
+          <button
+            type="submit"
             disabled={loading}
-            style={{ width: '100%', padding: '12px', border: '1px solid #ccc' }}
-          />
-        </div>
+            className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-md transition-all disabled:opacity-50"
+          >
+            {loading ? 'Ingresando...' : 'Ingresar'}
+          </button>
+        </form>
 
-        <button
-          type="submit"
-          disabled={loading}
-          style={{ width: '100%', padding: '12px', backgroundColor: '#0070f3', color: 'white', border: 'none', cursor: 'pointer', fontSize: '16px' }}
-        >
-          {loading ? 'Ingresando...' : 'Ingresar'}
-        </button>
-      </form>
-
-      {message && <p style={{ marginTop: '20px', textAlign: 'center', fontWeight: 'bold' }}>{message}</p>}
+        <p className="text-center text-sm text-gray-500 mt-6">
+          ¿Aún no tienes cuenta?{' '}
+          <Link href="/activar" className="text-blue-600 font-bold hover:underline">
+            Activa tu QR aquí
+          </Link>
+        </p>
+      </div>
     </div>
   );
 }
@@ -98,7 +118,7 @@ function LoginForm() {
 // --- COMPONENTE PRINCIPAL (Protegido con Suspense para Vercel) ---
 export default function LoginPage() {
   return (
-    <Suspense fallback={<div style={{ padding: '50px', textAlign: 'center' }}>Cargando Login...</div>}>
+    <Suspense fallback={<div className="min-h-[70vh] flex items-center justify-center text-gray-500">Cargando...</div>}>
       <LoginForm />
     </Suspense>
   );

@@ -2,8 +2,11 @@ import { createClient } from '@/utils/supabase/server';
 import AdCard from '@/components/AdCard';
 import FilterBar from '@/components/FilterBar';
 import SortDropdown from '@/components/SortDropdown';
+import Link from 'next/link';
 
 export const dynamic = 'force-dynamic';
+
+const PAGE_SIZE = 20;
 
 export default async function SearchPage(props: {
     searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
@@ -18,11 +21,14 @@ export default async function SearchPage(props: {
     const minPrice = searchParams.minPrice ? Number(searchParams.minPrice) : null;
     const maxPrice = searchParams.maxPrice ? Number(searchParams.maxPrice) : null;
     const sort = searchParams.sort as string || 'newest';
+    const page = searchParams.page ? Math.max(1, Number(searchParams.page)) : 1;
+    const from = (page - 1) * PAGE_SIZE;
+    const to = from + PAGE_SIZE - 1;
 
     // Construir consulta base (Usar 'verified' para coincidir con DB)
     let query = supabase
         .from('ads')
-        .select('*')
+        .select('*', { count: 'exact' })
         .in('status', ['verified', 'aprobado']);
 
     // Ordenamiento
@@ -119,8 +125,8 @@ export default async function SearchPage(props: {
         // Let's filter in memory for now to ensure accuracy for the user demo.
     }
 
-    // Ejecutar consulta
-    let { data: ads, error } = await query;
+    // Ejecutar consulta con paginación
+    let { data: ads, error, count } = await query.range(from, to);
 
     // --- FILTROS EN MEMORIA (Para lógica compleja JSON > <) ---
     if (ads && gastosComunes) {
@@ -132,6 +138,21 @@ export default async function SearchPage(props: {
 
     if (error) console.error('[SEARCH] Error en consulta:', error);
 
+    const totalPages = count ? Math.ceil(count / PAGE_SIZE) : 1;
+
+    // Construir URL base para paginación (preservar todos los filtros actuales)
+    const buildPageUrl = (p: number) => {
+        const params = new URLSearchParams();
+        if (category) params.set('category', category);
+        if (operacion) params.set('operacion', operacion);
+        if (q) params.set('q', q);
+        if (minPrice) params.set('minPrice', String(minPrice));
+        if (maxPrice) params.set('maxPrice', String(maxPrice));
+        if (sort !== 'newest') params.set('sort', sort);
+        if (p > 1) params.set('page', String(p));
+        return `/buscar?${params.toString()}`;
+    };
+
     return (
         <div className="min-h-screen bg-gray-50 py-8">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -141,6 +162,9 @@ export default async function SearchPage(props: {
                         Resultados de Búsqueda
                         {category && <span className="text-blue-600 capitalize"> - {category}</span>}
                         {operacion && <span className="text-green-600 capitalize"> ({operacion})</span>}
+                        {count !== null && count !== undefined && (
+                            <span className="text-gray-400 text-lg font-normal ml-2">({count} encontrados)</span>
+                        )}
                     </h1>
                     <div className="flex-shrink-0">
                         <SortDropdown />
@@ -161,11 +185,38 @@ export default async function SearchPage(props: {
                                 <p className="text-gray-400 mt-2">Prueba quitando algunos filtros.</p>
                             </div>
                         ) : (
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-6">
-                                {ads.map((ad: any) => (
-                                    <AdCard key={ad.id} ad={ad} />
-                                ))}
-                            </div>
+                            <>
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-6">
+                                    {ads.map((ad: any) => (
+                                        <AdCard key={ad.id} ad={ad} />
+                                    ))}
+                                </div>
+
+                                {/* Paginación */}
+                                {totalPages > 1 && (
+                                    <div className="flex items-center justify-center gap-2 mt-10">
+                                        {page > 1 && (
+                                            <Link
+                                                href={buildPageUrl(page - 1)}
+                                                className="px-4 py-2 rounded-lg border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                                            >
+                                                ← Anterior
+                                            </Link>
+                                        )}
+                                        <span className="px-4 py-2 text-sm text-gray-600">
+                                            Página {page} de {totalPages}
+                                        </span>
+                                        {page < totalPages && (
+                                            <Link
+                                                href={buildPageUrl(page + 1)}
+                                                className="px-4 py-2 rounded-lg border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                                            >
+                                                Siguiente →
+                                            </Link>
+                                        )}
+                                    </div>
+                                )}
+                            </>
                         )}
                     </div>
                 </div>

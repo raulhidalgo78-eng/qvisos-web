@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Image from 'next/image';
 import React from 'react';
 import { Snowflake, Sun, Waves, Zap, Wind, Armchair, Flame, Car, ShieldCheck, MapPin, Bed, Bath, Ruler } from 'lucide-react';
 
@@ -97,10 +98,12 @@ export default function AdCard({ ad }: AdCardProps) {
                     </div>
 
                     {ad.media_url ? (
-                        <img
+                        <Image
                             src={ad.media_url}
                             alt={ad.title}
-                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                            fill
+                            className="object-cover group-hover:scale-105 transition-transform duration-300"
+                            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                         />
                     ) : (
                         <div className="w-full h-full flex items-center justify-center text-gray-400 text-sm">

@@ -1,6 +1,6 @@
 import { openai } from '@ai-sdk/openai';
 import { streamText } from 'ai';
-import { supabase } from '../../../lib/supabase';
+import { createClient } from '@/utils/supabase/server';
 
 // Configuración para Vercel (Edge/Serverless)
 export const maxDuration = 30;
@@ -9,6 +9,7 @@ export async function POST(req: Request) {
     const { messages, adId } = await req.json();
 
     // 1. Obtener la "Verdad" del anuncio desde Supabase
+    const supabase = await createClient();
     const { data: ad, error } = await supabase
         .from('ads')
         .select('*')

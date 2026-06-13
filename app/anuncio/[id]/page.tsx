@@ -1,6 +1,7 @@
 import { createClient } from '@/utils/supabase/server';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import React from 'react';
 import { MapPin, ChevronLeft, Share2, Heart } from 'lucide-react';
 import AdChat from '@/components/AdChat';
@@ -15,7 +16,7 @@ interface Props {
   params: Promise<{ id: string }>;
 }
 
-export const dynamic = 'force-dynamic';
+export const revalidate = 300; // ISR: cachear 5 min, regenerar en background
 
 // --- HELPER COMPARTIDO: buscar aviso por slug o UUID ---
 async function fetchAd(id: string) {
@@ -176,10 +177,13 @@ export default async function AdDetailPage(props: Props) {
             {/* GALERÍA (Placeholder mejorado) */}
             <div className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 aspect-video relative group">
               {ad.media_url ? (
-                <img
+                <Image
                   src={ad.media_url}
                   alt={ad.title}
-                  className="w-full h-full object-contain bg-gray-100" // object-contain para no cortar, bg-gray para relleno
+                  fill
+                  className="object-contain bg-gray-100"
+                  sizes="(max-width: 1024px) 100vw, 60vw"
+                  priority
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center bg-gray-100 text-gray-400">

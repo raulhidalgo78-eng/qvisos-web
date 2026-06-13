@@ -268,8 +268,8 @@ export default function ProductionStation() {
         {/* --- PANEL DE CONFIGURACIÓN --- */}
         <div className="flex-1 space-y-8">
           <div>
-            <Link href="/mis-anuncios" className="text-gray-500 hover:text-gray-800 font-bold inline-flex items-center mb-4">
-              <span>&larr; Volver a Mis Anuncios</span>
+            <Link href="/admin/dashboard" className="text-gray-500 hover:text-gray-800 font-bold inline-flex items-center mb-4">
+              <span>&larr; Volver al Dashboard</span>
             </Link>
             <h1 className="text-4xl font-black text-gray-900 tracking-tight">🖨️ Generador de Letreros</h1>
             <p className="text-gray-500 text-lg">Configura tu letrero en 3 pasos.</p>

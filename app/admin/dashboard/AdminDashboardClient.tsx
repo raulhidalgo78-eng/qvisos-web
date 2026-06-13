@@ -1,9 +1,12 @@
 'use client';
 
 import React, { useState, useTransition } from 'react';
+import dynamic from 'next/dynamic';
 import Image from 'next/image';
-import { CheckCircle, PauseCircle, PlayCircle, Trash2, QrCode, AlertCircle, Archive, Calendar, History } from 'lucide-react';
+import { CheckCircle, PauseCircle, PlayCircle, Trash2, QrCode, AlertCircle, Archive, Calendar, History, Printer } from 'lucide-react';
 import { approveAd, toggleAdStatus, unlinkQr, deleteAd, extendAd } from './actions';
+
+const ProductionStation = dynamic(() => import('@/app/admin/imprimir/page'), { ssr: false });
 
 interface Ad {
     id: string;
@@ -24,7 +27,7 @@ interface AdminDashboardClientProps {
 }
 
 export default function AdminDashboardClient({ ads }: AdminDashboardClientProps) {
-    const [activeTab, setActiveTab] = useState<'pending' | 'active'>('pending');
+    const [activeTab, setActiveTab] = useState<'pending' | 'active' | 'produccion'>('pending');
     const [activeFilter, setActiveFilter] = useState<'all' | 'prop_venta' | 'prop_arriendo' | 'autos'>('all'); // NEW: Filter state
     const [isPending, startTransition] = useTransition();
 
@@ -205,6 +208,16 @@ export default function AdminDashboardClient({ ads }: AdminDashboardClientProps)
                         {allActiveAds.length}
                     </span>
                 </button>
+                <button
+                    onClick={() => setActiveTab('produccion')}
+                    className={`pb-4 px-6 text-sm font-medium transition-colors relative flex items-center gap-2 ${activeTab === 'produccion'
+                        ? 'text-blue-600 border-b-2 border-blue-600'
+                        : 'text-gray-500 hover:text-gray-700'
+                        }`}
+                >
+                    <Printer size={14} />
+                    Letreros QR
+                </button>
             </div>
 
             {/* Filter Content for Active Tab */}
@@ -251,7 +264,9 @@ export default function AdminDashboardClient({ ads }: AdminDashboardClientProps)
 
             {/* Content */}
             <div className="min-h-[400px]">
-                {activeTab === 'pending' ? (
+                {activeTab === 'produccion' ? (
+                    <ProductionStation />
+                ) : activeTab === 'pending' ? (
                     pendingAds.length > 0 ? (
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                             {pendingAds.map(ad => renderAdCard(ad, true))}

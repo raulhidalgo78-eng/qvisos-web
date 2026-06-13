@@ -168,7 +168,7 @@ export default async function AdDetailPage(props: Props) {
         </div>
 
         {/* --- LAYOUT GRID PRINCIPAL --- */}
-        <div className="grid grid-cols-1 lg:grid-cols12 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
 
           {/* COLUMNA IZQUIERDA (Galería + Detalles) - 8 Cols */}
           <div className="lg:col-span-8 space-y-8">

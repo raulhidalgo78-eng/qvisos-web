@@ -23,7 +23,7 @@ export default async function SearchPage(props: {
     let query = supabase
         .from('ads')
         .select('*')
-        .eq('status', 'verified');
+        .in('status', ['verified', 'aprobado']);
 
     // Ordenamiento
     if (sort === 'price_asc') {

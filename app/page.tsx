@@ -11,40 +11,27 @@ export default async function HomePage() {
 
   const supabase = await createClient();
 
-  // 1. Fetch Autos (Últimos 4, Status verified)
-  const { data: autos, error: errAutos } = await supabase
-    .from('ads')
-    .select('*')
-    .eq('status', 'verified')
-    .eq('category', 'autos')
-    .order('created_at', { ascending: false })
-    .limit(4);
-
-  if (errAutos) console.error('[HOME] Error fetch autos:', errAutos);
-
-  // 2. Fetch Propiedades Venta
-  const { data: ventas, error: errVentas } = await supabase
-    .from('ads')
-    .select('*')
-    .eq('status', 'verified')
-    .eq('category', 'inmuebles')
-    .contains('features', { operacion: 'Venta' })
-    .order('created_at', { ascending: false })
-    .limit(4);
-
-  if (errVentas) console.error('[HOME] Error fetch ventas:', errVentas);
-
-  // 3. Fetch Propiedades Arriendo
-  const { data: arriendos, error: errArriendos } = await supabase
-    .from('ads')
-    .select('*')
-    .eq('status', 'verified')
-    .eq('category', 'inmuebles')
-    .contains('features', { operacion: 'Arriendo' })
-    .order('created_at', { ascending: false })
-    .limit(4);
-
-  if (errArriendos) console.error('[HOME] Error fetch arriendos:', errArriendos);
+  // Fetch paralelo de las 3 secciones
+  const [
+    { data: autos },
+    { data: ventas },
+    { data: arriendos },
+  ] = await Promise.all([
+    supabase.from('ads').select('*')
+      .in('status', ['verified', 'aprobado'])
+      .eq('category', 'autos')
+      .order('created_at', { ascending: false }).limit(4),
+    supabase.from('ads').select('*')
+      .in('status', ['verified', 'aprobado'])
+      .eq('category', 'inmuebles')
+      .contains('features', { operacion: 'Venta' })
+      .order('created_at', { ascending: false }).limit(4),
+    supabase.from('ads').select('*')
+      .in('status', ['verified', 'aprobado'])
+      .eq('category', 'inmuebles')
+      .contains('features', { operacion: 'Arriendo' })
+      .order('created_at', { ascending: false }).limit(4),
+  ]);
 
 
   // Componente de Sección Reutilizable

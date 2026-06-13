@@ -8,6 +8,7 @@ import Image from 'next/image';
 import type { User } from '@supabase/supabase-js';
 import { updateAd, createAd } from '@/app/actions/ad-actions';
 import { checkQrCategory } from '@/app/actions/check-qr';
+import { compressImage } from '@/utils/compressImage';
 
 // --- IMPORTACIÓN SEGURA DEL MAPA (Lazy Load) ---
 import dynamic from 'next/dynamic';
@@ -49,15 +50,17 @@ export default function AnuncioForm({ initialData }: AnuncioFormProps) {
 
     const totalPhotos = existingUrls.length + files.length;
 
-    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         if (!e.target.files) return;
         const incoming = Array.from(e.target.files);
         if (totalPhotos + incoming.length > 8) {
             alert(`Solo puedes subir hasta 8 fotos. Ya tienes ${totalPhotos}.`);
             return;
         }
-        const urls = incoming.map(f => URL.createObjectURL(f));
-        setFiles(prev => [...prev, ...incoming]);
+        // Comprimir cada imagen antes de guardarla (max 1200px, 85% calidad JPEG)
+        const compressed = await Promise.all(incoming.map(f => compressImage(f)));
+        const urls = compressed.map(f => URL.createObjectURL(f));
+        setFiles(prev => [...prev, ...compressed]);
         setPreviewUrls(prev => [...prev, ...urls]);
     };
 

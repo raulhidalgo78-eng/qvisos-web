@@ -1,0 +1,9 @@
+@import "tailwindcss";
+
+/* Archivo: app/globals.css */
+
+/* Reset básico y estilos globales */
+body {
+    /* Aseguramos que el contenido principal no se desborde horizontalmente */
+    overflow-x: hidden;
+}

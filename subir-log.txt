@@ -1,0 +1,56 @@
+﻿**********************
+Inicio de la transcripción de Windows PowerShell
+Hora de inicio: 20260611182506
+Nombre de usuario: Espartabook\Raul
+Usuario RunAs: Espartabook\Raul
+Nombre de la configuración: 
+Máquina: ESPARTABOOK (Microsoft Windows NT 10.0.26200.0)
+Aplicación host: powershell -NoProfile -ExecutionPolicy Bypass -File C:\Users\Raul\Claude\Projects\qvisos\SUBIR-A-GITHUB.ps1
+Id. de proceso: 4988
+PSVersion: 5.1.26100.7920
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.26100.7920
+BuildVersion: 10.0.26100.7920
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+>> Actualizando clon existente...
+Already up to date.
+   - eliminado: lib\firebase.ts
+   - eliminado: components\ActivarForm.tsx
+   - eliminado: components\AnuncioClientWrapper.tsx
+   - eliminado: components\AiChat.tsx
+   - eliminado: components\KeyFeaturesGrid.tsx
+   - eliminado: components\PublicMap.tsx
+   - eliminado: app\qr
+   - eliminado: app\dashboard
+   - eliminado: app\api\create-kit
+   - eliminado: app\api\activate-kit
+   - eliminado: app\api\upload
+   - eliminado: app\api\admin\approve\router.ts
+>> Copiando archivos...
+>> Ejecutando npm install...
+
+To address issues that do not require attention, run:
+  npm audit fix
+
+To address all issues (including breaking changes), run:
+  npm audit fix --force
+
+Run `npm audit` for details.
+npm notice
+npm notice New minor version of npm available! 11.6.1 -> 11.17.0
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v11.17.0
+npm notice To update run: npm install -g npm@11.17.0
+npm notice
+
+
+
+
+LISTO - Vercel desplegara automaticamente en unos 2 minutos.
+**********************
+Fin de la transcripción de Windows PowerShell
+Hora de finalización: 20260611182539
+**********************

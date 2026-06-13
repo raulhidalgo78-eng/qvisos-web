@@ -64,34 +64,37 @@ export async function updateAd(formData: FormData) {
     // FIX: Extract description from features if missing in formData (Critical for AI Chat)
     const description = (formData.get('descripcion') as string) || features.description || '';
 
-    // 4. Imagen (Bucket UNIFICADO: 'media')
-    const file = formData.get('file') as File;
-    let mediaUrl = ad.media_url;
+    // 4. Imágenes (Bucket: 'media')
+    const existingUrlsRaw = formData.get('existing_urls') as string;
+    const existingUrls: string[] = existingUrlsRaw ? JSON.parse(existingUrlsRaw) : (ad.media_url ? [ad.media_url] : []);
 
-    if (file && file.size > 0) {
-        // Limpieza de nombre
+    const newFiles = formData.getAll('files') as File[];
+    const uploadedUrls: string[] = [];
+
+    for (const file of newFiles) {
+        if (!file || file.size === 0) continue;
         const fileName = `${user.id}/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.]/g, '')}`;
-        const { error: uploadError } = await supabase.storage
-            .from('media')
-            .upload(fileName, file);
-
+        const { error: uploadError } = await supabase.storage.from('media').upload(fileName, file);
         if (uploadError) throw new Error("Error subiendo imagen");
-
         const { data } = supabase.storage.from('media').getPublicUrl(fileName);
-        mediaUrl = data.publicUrl;
+        uploadedUrls.push(data.publicUrl);
     }
+
+    const allUrls = [...existingUrls, ...uploadedUrls];
+    const mediaUrl = allUrls[0] || ad.media_url;
 
     // 5. Update DB
     const { error: updateError } = await dbClient
         .from('ads')
         .update({
             title: formData.get('titulo') as string,
-            description, // ✅ Guardar explícitamente en columna raíz
+            description,
             price: Number(formData.get('precio')) || 0,
             category: formData.get('categoria') as string,
             contact_phone: formData.get('contact_phone') as string,
             features,
             media_url: mediaUrl,
+            media_urls: allUrls,
             updated_at: new Date().toISOString()
         })
         .eq('id', adId);
@@ -149,24 +152,33 @@ export async function createAd(formData: FormData) {
         // FIX: Ensure description maps to root column
         const finalDescription = description || features.description || '';
 
-        // 3. Imagen (Bucket: 'media')
-        let mediaUrl = formData.get('media_url') as string;
-        const file = formData.get('file') as File;
+        // 3. Imágenes (Bucket: 'media')
+        const newFiles = formData.getAll('files') as File[];
+        const uploadedUrls: string[] = [];
 
-        if (!mediaUrl && file && file.size > 0) {
+        for (const file of newFiles) {
+            if (!file || file.size === 0) continue;
             const cleanName = file.name.replace(/[^a-zA-Z0-9.]/g, '');
             const fileName = `${user.id}/${Date.now()}-${cleanName}`;
-
-            const { error: uploadError } = await supabase.storage
-                .from('media')
-                .upload(fileName, file);
-
+            const { error: uploadError } = await supabase.storage.from('media').upload(fileName, file);
             if (uploadError) throw new Error("Error subiendo imagen: " + uploadError.message);
-
             const { data } = supabase.storage.from('media').getPublicUrl(fileName);
-            mediaUrl = data.publicUrl;
+            uploadedUrls.push(data.publicUrl);
         }
 
+        // Fallback: soporte para envío de archivo único legacy
+        if (uploadedUrls.length === 0) {
+            const singleFile = formData.get('file') as File;
+            if (singleFile && singleFile.size > 0) {
+                const fileName = `${user.id}/${Date.now()}-${singleFile.name.replace(/[^a-zA-Z0-9.]/g, '')}`;
+                const { error } = await supabase.storage.from('media').upload(fileName, singleFile);
+                if (error) throw new Error("Error subiendo imagen: " + error.message);
+                const { data } = supabase.storage.from('media').getPublicUrl(fileName);
+                uploadedUrls.push(data.publicUrl);
+            }
+        }
+
+        const mediaUrl = uploadedUrls[0] || (formData.get('media_url') as string);
         if (!mediaUrl) throw new Error("La imagen es obligatoria.");
 
         // 4. INSERTAR EN 'ads'
@@ -175,14 +187,14 @@ export async function createAd(formData: FormData) {
             .insert({
                 user_id: user.id,
                 title,
-                description: finalDescription, // ✅ Usar descripción saneada
+                description: finalDescription,
                 price,
                 category,
                 contact_phone,
                 features,
                 media_url: mediaUrl,
-                slug // <--- INCLUDE SLUG
-                // status: 'active' <--- ELIMINADO: Usamos DEFAULT de la DB
+                media_urls: uploadedUrls,
+                slug
             })
             .select('id')
             .single();

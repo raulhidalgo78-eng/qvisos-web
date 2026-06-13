@@ -3,7 +3,8 @@
 import { createClient } from '@/utils/supabase/client';
 import { useRouter, useSearchParams } from 'next/navigation';
 import React, { useState, useEffect, useCallback } from 'react';
-import { MessageCircle, Bot, Shield, Sparkles, Pencil } from 'lucide-react';
+import { MessageCircle, Bot, Shield, Sparkles, X } from 'lucide-react';
+import Image from 'next/image';
 import type { User } from '@supabase/supabase-js';
 import { updateAd, createAd } from '@/app/actions/ad-actions';
 import { checkQrCategory } from '@/app/actions/check-qr';
@@ -34,9 +35,41 @@ export default function AnuncioForm({ initialData }: AnuncioFormProps) {
     const [error, setError] = useState<string | null>(null);
     const [user, setUser] = useState<User | null>(null);
 
-    // Formulario
-    const [file, setFile] = useState<File | null>(null);
+    // Formulario - Multi-foto
+    const [files, setFiles] = useState<File[]>([]);
+    const [previewUrls, setPreviewUrls] = useState<string[]>([]);
+    const [existingUrls, setExistingUrls] = useState<string[]>(
+        initialData?.media_urls?.length > 0
+            ? initialData.media_urls
+            : initialData?.media_url
+                ? [initialData.media_url]
+                : []
+    );
     const [isSubmitting, setIsSubmitting] = useState(false);
+
+    const totalPhotos = existingUrls.length + files.length;
+
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (!e.target.files) return;
+        const incoming = Array.from(e.target.files);
+        if (totalPhotos + incoming.length > 8) {
+            alert(`Solo puedes subir hasta 8 fotos. Ya tienes ${totalPhotos}.`);
+            return;
+        }
+        const urls = incoming.map(f => URL.createObjectURL(f));
+        setFiles(prev => [...prev, ...incoming]);
+        setPreviewUrls(prev => [...prev, ...urls]);
+    };
+
+    const removeNew = (index: number) => {
+        URL.revokeObjectURL(previewUrls[index]);
+        setFiles(prev => prev.filter((_, i) => i !== index));
+        setPreviewUrls(prev => prev.filter((_, i) => i !== index));
+    };
+
+    const removeExisting = (index: number) => {
+        setExistingUrls(prev => prev.filter((_, i) => i !== index));
+    };
 
     // Campos
     const [qrCodeInput, setQrCodeInput] = useState(initialData?.qr_code || searchParams.get('code') || '');
@@ -169,12 +202,14 @@ export default function AnuncioForm({ initialData }: AnuncioFormProps) {
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-        if (!file && !initialData) { alert('Sube una foto.'); return; }
+        if (totalPhotos === 0) { alert('Sube al menos una foto.'); return; }
         setIsSubmitting(true);
 
         try {
             const formData = new FormData(e.currentTarget);
-            if (file) formData.set('file', file);
+            // Pasar archivos nuevos y URLs existentes al server action
+            files.forEach(f => formData.append('files', f));
+            formData.set('existing_urls', JSON.stringify(existingUrls));
 
             // Reconstruir objeto features
             const features: any = {};
@@ -700,12 +735,70 @@ export default function AnuncioForm({ initialData }: AnuncioFormProps) {
                     </div>
                 </div>
 
-                {/* 6. Contacto y Foto */}
+                {/* 6. Contacto y Fotos */}
                 <input name="contact_phone" defaultValue={user?.user_metadata?.phone} placeholder="WhatsApp (+569...)" required className="w-full p-3 border rounded-lg" />
 
                 <div>
-                    <label className="font-bold block mb-2">Foto Principal</label>
-                    <input type="file" name="file" onChange={e => e.target.files && setFile(e.target.files[0])} className="w-full" required={!initialData} />
+                    <label className="font-bold block mb-3">
+                        Fotos del anuncio
+                        <span className={`ml-2 text-sm font-normal ${totalPhotos >= 8 ? 'text-red-500' : 'text-gray-400'}`}>
+                            ({totalPhotos}/8)
+                        </span>
+                    </label>
+
+                    {/* Grid de previews */}
+                    {totalPhotos > 0 && (
+                        <div className="grid grid-cols-4 gap-2 mb-3">
+                            {existingUrls.map((url, i) => (
+                                <div key={`e-${i}`} className="relative aspect-square rounded-lg overflow-hidden bg-gray-100 border">
+                                    <Image src={url} alt={`Foto ${i + 1}`} fill className="object-cover" sizes="100px" />
+                                    <button
+                                        type="button"
+                                        onClick={() => removeExisting(i)}
+                                        className="absolute top-1 right-1 bg-red-500 hover:bg-red-600 text-white rounded-full w-5 h-5 flex items-center justify-center"
+                                    >
+                                        <X size={12} />
+                                    </button>
+                                    {i === 0 && (
+                                        <span className="absolute bottom-1 left-1 bg-black/60 text-white text-[9px] px-1.5 py-0.5 rounded font-medium">
+                                            Principal
+                                        </span>
+                                    )}
+                                </div>
+                            ))}
+                            {previewUrls.map((url, i) => (
+                                <div key={`n-${i}`} className="relative aspect-square rounded-lg overflow-hidden bg-gray-100 border border-blue-200">
+                                    <img src={url} alt={`Nueva ${i + 1}`} className="w-full h-full object-cover" />
+                                    <button
+                                        type="button"
+                                        onClick={() => removeNew(i)}
+                                        className="absolute top-1 right-1 bg-red-500 hover:bg-red-600 text-white rounded-full w-5 h-5 flex items-center justify-center"
+                                    >
+                                        <X size={12} />
+                                    </button>
+                                    <span className="absolute bottom-1 left-1 bg-blue-500/80 text-white text-[9px] px-1.5 py-0.5 rounded font-medium">
+                                        Nueva
+                                    </span>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+
+                    {totalPhotos < 8 && (
+                        <>
+                            <input
+                                type="file"
+                                accept="image/*"
+                                multiple
+                                onChange={handleFileChange}
+                                className="w-full"
+                                required={totalPhotos === 0}
+                            />
+                            <p className="text-xs text-gray-400 mt-1">
+                                Hasta 8 fotos. La primera será la imagen principal del anuncio.
+                            </p>
+                        </>
+                    )}
                 </div>
 
                 <button type="submit" disabled={isSubmitting} className="w-full bg-blue-600 text-white font-bold py-4 rounded-xl hover:bg-blue-700 transition">

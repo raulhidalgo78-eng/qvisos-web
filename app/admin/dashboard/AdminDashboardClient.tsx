@@ -14,12 +14,12 @@ interface Ad {
     price: number;
     currency: string;
     status: string;
-    media_url: string; // Updated to match DB
+    media_url: string;
     created_at: string;
-    category: string; // Added for filtering
-    features: any; // Added for filtering
-    start_date?: string; // New
-    end_date?: string;   // New
+    category: string;
+    features: any;
+    start_date?: string;
+    end_date?: string;
 }
 
 interface AdminDashboardClientProps {
@@ -28,15 +28,13 @@ interface AdminDashboardClientProps {
 
 export default function AdminDashboardClient({ ads }: AdminDashboardClientProps) {
     const [activeTab, setActiveTab] = useState<'pending' | 'active' | 'produccion'>('pending');
-    const [activeFilter, setActiveFilter] = useState<'all' | 'prop_venta' | 'prop_arriendo' | 'autos'>('all'); // NEW: Filter state
+    const [activeFilter, setActiveFilter] = useState<'all' | 'prop_venta' | 'prop_arriendo' | 'autos'>('all');
     const [isPending, startTransition] = useTransition();
 
     const pendingAds = ads.filter(ad => ['pending', 'pending_verification'].includes(ad.status));
 
-    // Base active ads
     const allActiveAds = ads.filter(ad => ['verified', 'draft', 'aprobado'].includes(ad.status));
 
-    // Filtered active ads
     const activeAds = allActiveAds.filter(ad => {
         if (activeFilter === 'all') return true;
         if (activeFilter === 'autos') return ad.category === 'autos';
@@ -80,11 +78,10 @@ export default function AdminDashboardClient({ ads }: AdminDashboardClientProps)
 
         return (
             <div key={ad.id} className="bg-white rounded-lg shadow-md overflow-hidden border border-gray-200 flex flex-col">
-                {/* Image Thumbnail */}
                 <div className="relative h-48 w-full bg-gray-100">
-                    {ad.media_url ? ( // Check media_url
+                    {ad.media_url ? (
                         <Image
-                            src={ad.media_url} // Use media_url
+                            src={ad.media_url}
                             alt={ad.title}
                             fill
                             className="object-cover"
@@ -104,12 +101,10 @@ export default function AdminDashboardClient({ ads }: AdminDashboardClientProps)
                     </div>
                 </div>
 
-                {/* Content */}
                 <div className="p-4 flex-1 flex flex-col">
                     <h3 className="text-lg font-semibold text-gray-800 mb-1 line-clamp-1">{ad.title}</h3>
                     <p className="text-xl font-bold text-blue-600 mb-2">{formatPrice(ad.price, ad.currency)}</p>
 
-                    {/* Expiration Info */}
                     {!isPendingTab && (
                         <div className={`text-sm mb-4 flex items-center gap-1 ${isExpired ? 'text-red-600 font-bold' : isExpiringSoon ? 'text-orange-600 font-bold' : 'text-gray-500'}`}>
                             <Calendar size={14} />
@@ -281,7 +276,7 @@ export default function AdminDashboardClient({ ads }: AdminDashboardClientProps)
                     activeAds.length > 0 ? (
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                             {activeAds.map(ad => renderAdCard(ad, false))}
-                        </div>
+                                 </div>
                     ) : (
                         <div className="flex flex-col items-center justify-center h-64 text-gray-500">
                             <Archive size={48} className="mb-4 text-gray-400" />

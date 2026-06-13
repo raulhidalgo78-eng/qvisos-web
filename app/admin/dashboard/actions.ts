@@ -1,9 +1,10 @@
 'use server';
 
 import { createClient } from '@/utils/supabase/server';
-import { createAdminClient } from '@/utils/supabase/admin'; // Importar cliente admin
+import { createAdminClient } from '@/utils/supabase/admin';
 import { revalidatePath } from 'next/cache';
 import { isAdminUser } from '@/utils/admin';
+import { sendAdApprovedEmail } from '@/utils/email';
 
 async function checkAdmin() {
   const supabase = await createClient();
@@ -22,7 +23,14 @@ export async function approveAd(adId: string) {
 
     const startDate = new Date();
     const endDate = new Date();
-    endDate.setDate(startDate.getDate() + 90); // 90 days validity
+    endDate.setDate(startDate.getDate() + 90);
+
+    // Obtener datos del anuncio y del vendedor antes de aprobar
+    const { data: ad } = await supabase
+      .from('ads')
+      .select('title, slug, user_id')
+      .eq('id', adId)
+      .single();
 
     const { error } = await supabase
       .from('ads')
@@ -34,6 +42,16 @@ export async function approveAd(adId: string) {
       .eq('id', adId);
 
     if (error) throw error;
+
+    // Notificar al vendedor (fire-and-forget, no bloquea)
+    if (ad) {
+      const { data: userData } = await supabase.auth.admin.getUserById(ad.user_id);
+      const sellerEmail = userData?.user?.email;
+      if (sellerEmail) {
+        sendAdApprovedEmail(sellerEmail, ad.title, ad.slug ?? adId);
+      }
+    }
+
     revalidatePath('/admin/dashboard');
     return { success: true };
   } catch (error: any) {

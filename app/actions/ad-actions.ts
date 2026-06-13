@@ -4,6 +4,7 @@ import { createClient } from '@/utils/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { isAdminUser } from '@/utils/admin';
+import { sendNewAdPendingEmail } from '@/utils/email';
 
 // --- ELIMINAR ANUNCIO ---
 export async function deleteAd(adId: string) {
@@ -211,6 +212,9 @@ export async function createAd(formData: FormData) {
 
         revalidatePath('/mis-anuncios');
         revalidatePath('/admin/dashboard');
+
+        // Notificar al admin (fire-and-forget)
+        sendNewAdPendingEmail(title, newAd.id);
 
         return { success: true, adId: newAd.id };
 

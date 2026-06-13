@@ -96,7 +96,7 @@ export async function POST(req: Request) {
 
     // 4. Generar Respuesta
     const result = await streamText({
-        model: openai('gpt-4o'), // Asegúrate de tener saldo o usar gpt-3.5-turbo si prefieres
+        model: openai('gpt-4o-mini'),
         system: systemPrompt,
         messages,
     });

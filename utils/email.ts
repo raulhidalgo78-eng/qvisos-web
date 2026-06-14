@@ -3,7 +3,7 @@ import { Resend } from 'resend';
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 const FROM = 'Qvisos <notificaciones@qvisos.cl>';
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL ?? 'raulhidalgo78@gmail.com';
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL ?? 'contacto@qvisos.cl';
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://qvisos.cl';
 
 // --- ANUNCIO APROBADO → vendedor ---

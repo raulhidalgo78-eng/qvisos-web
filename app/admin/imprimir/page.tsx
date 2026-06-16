@@ -136,9 +136,13 @@ export default function ProductionStation() {
     // --- INYECCIÓN DE FUENTE OSWALD (Base64) ---
     try {
       const { oswaldBoldBase64 } = await import('./oswaldFont');
-      pdf.addFileToVFS("Oswald-Bold.ttf", oswaldBoldBase64);
-      pdf.addFont("Oswald-Bold.ttf", "Oswald", "bold");
-      pdf.setFont("Oswald", "bold");
+      if (oswaldBoldBase64) {
+        pdf.addFileToVFS("Oswald-Bold.ttf", oswaldBoldBase64);
+        pdf.addFont("Oswald-Bold.ttf", "Oswald", "bold");
+        pdf.setFont("Oswald", "bold");
+      } else {
+        pdf.setFont("helvetica", "bold");
+      }
     } catch (e) {
       console.error("Error cargando fuente Oswald:", e);
       pdf.setFont("helvetica", "bold"); // Fallback
@@ -259,7 +263,6 @@ export default function ProductionStation() {
   };
 
   if (loading) return <div className="h-screen flex items-center justify-center">Cargando...</div>;
-  const LOGO_URL = "/media/logo-qvisos.jpg";
 
   return (
     <div className={`min-h-screen bg-gray-100 flex flex-col items-center p-6 md:p-10 font-sans ${oswald.variable}`}>
@@ -396,13 +399,7 @@ export default function ProductionStation() {
                   fgColor="#000000"
                   bgColor="#ffffff"
                   includeMargin={false}
-                  imageSettings={{
-                    src: LOGO_URL,
-                    height: 60, width: 60,
-                    excavate: true,
-                    crossOrigin: 'anonymous',
-                  }}
-                />
+                    />
               </div>
               <p className="mt-2 text-black font-bold text-sm text-center uppercase tracking-tight" style={{ fontFamily: 'var(--font-oswald)' }}>
                 Escanea para ver precio
@@ -433,12 +430,6 @@ export default function ProductionStation() {
             fgColor="#000000"
             bgColor="#ffffff"
             includeMargin={false}
-            imageSettings={{
-              src: LOGO_URL,
-              height: 500, width: 500,
-              excavate: true,
-              crossOrigin: 'anonymous',
-            }}
           />
         ))}
       </div>

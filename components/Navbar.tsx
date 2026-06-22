@@ -29,10 +29,9 @@ export default function Navbar() {
                     <div className="flex-shrink-0 flex items-center">
                         <Link href="/">
                             <img
-                                src="/media/logo-qvisos.jpg"
-                                alt="Logo Qvisos"
-                                className="h-14 md:h-16 w-auto object-contain hover:opacity-95 transition-opacity"
-                                style={{ maxHeight: '80px' }}
+                                src="/logo-qvisos.svg"
+                                alt="Qvisos"
+                                className="h-12 md:h-14 w-auto hover:opacity-90 transition-opacity"
                             />
                         </Link>
                     </div>

@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 210 58" fill="none">
+  <!-- Ícono: cuadrado rojo redondeado -->
+  <rect x="3" y="3" width="52" height="52" rx="13" fill="#DC2626"/>
+  <!-- Q: cuerpo circular -->
+  <circle cx="29" cy="27" r="13" stroke="white" stroke-width="5.5" fill="none"/>
+  <!-- Q: cola diagonal -->
+  <line x1="38" y1="36" x2="47" y2="45" stroke="white" stroke-width="5.5" stroke-linecap="round"/>
+  <!-- Wordmark: visos -->
+  <text x="67" y="39"
+    font-family="-apple-system, BlinkMacSystemFont, 'Helvetica Neue', Helvetica, Arial, sans-serif"
+    font-size="29" font-weight="700" fill="#0F172A">visos</text>
+  <!-- Sufijo: .cl -->
+  <text x="172" y="39"
+    font-family="-apple-system, BlinkMacSystemFont, 'Helvetica Neue', Helvetica, Arial, sans-serif"
+    font-size="18" font-weight="400" fill="#94A3B8">.cl</text>
+</svg>
